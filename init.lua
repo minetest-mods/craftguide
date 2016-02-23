@@ -107,8 +107,8 @@ function craftguide:get_items(filter, player_name)
 	return items_list
 end
 
-minetest.register_on_player_receive_fields(function(player, listname, fields)
-	if listname ~= "xdecor:crafting_guide" then return end
+minetest.register_on_player_receive_fields(function(player, formname, fields)
+	if formname ~= "xdecor:crafting_guide" then return end
 	local player_name = player:get_player_name()
 	local stack = player:get_wielded_item()
 	local formspec = datas[player_name].formspec
