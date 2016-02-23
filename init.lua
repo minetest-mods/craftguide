@@ -40,45 +40,47 @@ function craftguide:get_formspec(stack, pagenum, item, recipe_num, filter, playe
 		if s < (pagenum - 1) * npp then
 			s = s + 1
 		else if i >= npp then break end
-			formspec = formspec.."item_image_button["..(i%8)..","..
-					     (math.floor(i/8)+1)..";1,1;"..name..";"..name..";]"
+			local X = i % 8
+			local Y = math.floor(i/8) + 1
+
+			formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
+					     name..";"..name..";]"
 			i = i + 1
 		end
 	end
 
 	if item and minetest.registered_items[item] then
-		--print(dump(minetest.get_all_craft_recipes(item)))
-		local items_num = #minetest.get_all_craft_recipes(item)
-		if recipe_num > items_num then recipe_num = 1 end
+		local recipes = minetest.get_all_craft_recipes(item)
+		if recipe_num > #recipes then recipe_num = 1 end
 
-		if items_num > 1 then formspec = formspec..
+		if #recipes > 1 then formspec = formspec..
 			"button[0,6;1.6,1;alternate;Alternate]"..
-			"label[0,5.5;Recipe "..recipe_num.." of "..items_num.."]"
+			"label[0,5.5;Recipe "..recipe_num.." of "..#recipes.."]"
 		end
 		
-		local type = minetest.get_all_craft_recipes(item)[recipe_num].type
+		local type = recipes[recipe_num].type
 		if type == "cooking" then formspec = formspec..
 			"image[3.75,4.6;0.5,0.5;default_furnace_fire_fg.png]"
 		end
 
-		local items = minetest.get_all_craft_recipes(item)[recipe_num].items
-		local width = minetest.get_all_craft_recipes(item)[recipe_num].width
+		local items = recipes[recipe_num].items
+		local width = recipes[recipe_num].width
 		if width == 0 then width = math.min(3, #items) end
-		-- Lua 5.3 removed `table.maxn`, use `xdecor.maxn` in case of breakage.
+		-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
+		-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 		local rows = math.ceil(table.maxn(items) / width)
 
-		local function is_group(item)
-			if item:sub(1,6) == "group:" then return "\nG" end
-			return ""
+		for i, v in pairs(items) do
+			local X = (i-1) % width + 4.5
+			local Y = math.floor((i-1) / width + (6 - math.min(2, rows)))
+			local label = ""
+			if v:sub(1,6) == "group:" then label = "\nG" end
+
+			formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
+					     self:get_recipe(v)..";"..self:get_recipe(v)..";"..label.."]"
 		end
 
-		for i, v in pairs(items) do formspec = formspec..
-			"item_image_button["..((i-1) % width + 4.5)..","..
-			(math.floor((i-1) / width + (6 - math.min(2, rows))))..";1,1;"..
-			self:get_recipe(v)..";"..self:get_recipe(v)..";"..is_group(v).."]"
-		end
-
-		local output = minetest.get_all_craft_recipes(item)[recipe_num].output
+		local output = recipes[recipe_num].output
 		formspec = formspec.."item_image_button[2.5,5;1,1;"..output..";"..item..";]"..
 				     "image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]"
 	end
