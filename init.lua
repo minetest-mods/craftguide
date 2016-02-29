@@ -144,6 +144,7 @@ minetest.register_craftitem(":xdecor:crafting_guide", {
 	inventory_image = "crafting_guide.png",
 	wield_image = "crafting_guide.png",
 	stack_max = 1,
+	groups = {book=1},
 	on_use = function(itemstack, user)
 		local player_name = user:get_player_name()
 		datas[player_name] = {}
@@ -156,6 +157,6 @@ minetest.register_craftitem(":xdecor:crafting_guide", {
 minetest.register_craft({ 
 	output = "xdecor:crafting_guide",
 	type = "shapeless",
-	recipe = {"default:book", "dye:blue"}
+	recipe = {"default:book"}
 })
 
