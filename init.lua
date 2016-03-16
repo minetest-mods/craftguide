@@ -17,7 +17,7 @@ end
 function craftguide:get_formspec(stack, pagenum, item, recipe_num, filter, player_name)
 	local inv_size = datas[player_name].size
 	local npp, i, s = 8*3, 0, 0
-	local pagemax = math.floor((inv_size - 1) / npp + 1)
+	local pagemax = math.ceil(inv_size / npp)
 
 	if     pagenum > pagemax then pagenum = 1
 	elseif pagenum == 0      then pagenum = pagemax end
