@@ -30,18 +30,18 @@ function craftguide:get_formspec(stack, pagenum, item, recipe_num, filter, playe
 			button[2.5,0.2;0.8,0.5;search;?]
 			button[3.2,0.2;0.8,0.5;clear;X]
 			tooltip[search;Search]
-			tooltip[clear;Reset] ]]
-			.."table[6,0.18;1.1,0.5;pagenum;#FFFF00,"..tostring(pagenum)..
-			",#FFFFFF,/ "..tostring(pagemax).."]"..
+			tooltip[clear;Reset]
+			table[6,0.18;1.1,0.5;pagenum;#FFFF00,]]..
+			pagenum..",#FFFFFF,/ "..pagemax.."]"..
 			"field[0.3,0.32;2.6,1;filter;;"..filter.."]"..
 			default.gui_bg..default.gui_bg_img
 
-	for _, name in pairs(self:get_items(filter, player_name)) do
+	for _, name in pairs(datas[player_name].items) do
 		if s < (pagenum - 1) * npp then
 			s = s + 1
 		else if i >= npp then break end
 			local X = i % 8
-			local Y = math.floor(i/8) + 1
+			local Y = ((i-X) / 8) + 1
 
 			formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
 					     name..";"..name..";]"
@@ -54,13 +54,13 @@ function craftguide:get_formspec(stack, pagenum, item, recipe_num, filter, playe
 		if recipe_num > #recipes then recipe_num = 1 end
 
 		if #recipes > 1 then formspec = formspec..
-			"button[0,6;1.6,1;alternate;Alternate]"..
-			"label[0,5.5;Recipe "..recipe_num.." of "..#recipes.."]"
+			[[ button[0,6;1.6,1;alternate;Alternate]
+			label[0,5.5;Recipe ]]..recipe_num.." of "..#recipes.."]"
 		end
 		
 		local type = recipes[recipe_num].type
 		if type == "cooking" then formspec = formspec..
-			"image[3.75,4.6;0.5,0.5;default_furnace_fire_fg.png]"
+			"image[3.75,4.6;0.5,0.5;default_furnace_front.png]"
 		end
 
 		local items = recipes[recipe_num].items
@@ -81,12 +81,12 @@ function craftguide:get_formspec(stack, pagenum, item, recipe_num, filter, playe
 		end
 
 		local output = recipes[recipe_num].output
-		formspec = formspec.."item_image_button[2.5,5;1,1;"..output..";"..item..";]"..
-				     "image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]"
+		formspec = formspec..[[ image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]
+				        item_image_button[2.5,5;1,1;]]..output..";"..item..";]"
+				     
 	end
 
-	stack:set_metadata(formspec)
-	datas[player_name].formspec = stack:get_metadata()
+	datas[player_name].formspec = formspec
 	minetest.show_formspec(player_name, "xdecor:crafting_guide", formspec)
 end
 
@@ -102,9 +102,9 @@ function craftguide:get_items(filter, player_name)
 		end
 	end
 
-	datas[player_name].size = #items_list
 	table.sort(items_list)
-	return items_list
+	datas[player_name].items = items_list
+	datas[player_name].size = #items_list
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
