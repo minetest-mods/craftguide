@@ -84,7 +84,7 @@ function craftguide:get_formspec(stack, pagenum, item, recipe_num, filter, playe
 		formspec = formspec.."item_image_button[2.5,5;1,1;"..output..";"..item..";]"..
 				     "image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]"
 	end
-	
+
 	stack:set_metadata(formspec)
 	datas[player_name].formspec = stack:get_metadata()
 	minetest.show_formspec(player_name, "xdecor:crafting_guide", formspec)
@@ -147,10 +147,13 @@ minetest.register_craftitem(":xdecor:crafting_guide", {
 	groups = {book=1},
 	on_use = function(itemstack, user)
 		local player_name = user:get_player_name()
-		datas[player_name] = {}
-
-		craftguide:get_items(nil, player_name)
-		craftguide:get_formspec(itemstack, 1, nil, 1, "", player_name)
+		if not datas[player_name] then
+			datas[player_name] = {}
+			craftguide:get_items(nil, player_name)
+			craftguide:get_formspec(itemstack, 1, nil, 1, "", player_name)
+		else
+			minetest.show_formspec(player_name, "xdecor:crafting_guide", datas[player_name].formspec)
+		end
 	end
 })
 
