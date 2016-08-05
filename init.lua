@@ -30,18 +30,16 @@ function craftguide:get_formspec(player_name, pagenum, recipe_num)
 			"field[0.3,0.32;2.6,1;filter;;"..data.filter.."]"..
 			default.gui_bg..default.gui_bg_img
 
-	local i, s = 0, 0
-	for _, name in pairs(data.items) do
-		if s < (pagenum - 1) * npp then
-			s = s + 1
-		else if i >= npp then break end
-			local X = i % 8
-			local Y = ((i-X) / 8) + 1
+	local first_item = (pagenum - 1) * npp
+	for i = first_item, first_item + npp - 1 do
+		local name = data.items[i + 1]
+		if not name then break end -- last page
 
-			formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
-					     name..";"..name..";]"
-			i = i + 1
-		end
+		local X = i % 8
+		local Y = ((i % npp - X) / 8) + 1
+
+		formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
+					name..";"..name..";]"
 	end
 
 	if data.item and minetest.registered_items[data.item] then
