@@ -4,7 +4,5 @@
 
 ##### Usable with a book named *"Crafting Guide"*. #####
 
-##### This mod is originating from [X-Decor](https://github.com/kilbith/xdecor). #####
-
 ![Preview](http://i.imgur.com/xblp1Vs.png)
 
