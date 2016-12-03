@@ -1,10 +1,21 @@
 local craftguide, datas, npp = {}, {}, 8*3
 local min, ceil, floor = math.min, math.ceil, math.floor
 
+local group_stereotypes = {
+	wool	     = "wool:white",
+	dye	     = "dye:white",
+	water_bucket = "bucket:bucket_water",
+	vessel	     = "vessels:glass_bottle",
+	coal	     = "default:coal_lump",
+	flower	     = "flowers:dandelion_yellow",
+	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
+}
+
 function craftguide:get_recipe(item)
 	if item:sub(1,6) == "group:" then
-		if item:sub(-4) == "wool" or item:sub(-3) == "dye" then
-			item = item:sub(7)..":white"
+		local short_itemstr = item:sub(7)
+		if group_stereotypes[short_itemstr] then
+			item = group_stereotypes[short_itemstr]
 		elseif minetest.registered_items["default:"..item:sub(7)] then
 			item = item:gsub("group:", "default:")
 		else for node, def in pairs(minetest.registered_items) do
@@ -13,6 +24,30 @@ function craftguide:get_recipe(item)
 		end
 	end
 	return item
+end
+
+function craftguide:extract_groups(itemstr)
+	if itemstr:sub(1,6) ~= "group:" then return end
+	return itemstr:sub(7):split(",")
+end
+
+function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
+	local item_desc = minetest.registered_items[item].description
+	local tooltip = "tooltip["..item..";"..((groups and "") or item_desc)
+
+	if groups then
+		local groupstr = "Any item belonging to the "
+		for i=1, #groups do
+			groupstr = groupstr..minetest.colorize("#FFFF00", groups[i])..
+				   ((groups[i+1] and " and ") or "")
+		end
+		tooltip = tooltip..groupstr.." group(s)"
+	end
+	if recipe_type == "cooking" then
+		tooltip = tooltip.."\nCooking time: "..minetest.colorize("#FFFF00", cooktime)
+	end
+
+	return tooltip.."]"
 end
 
 function craftguide:get_formspec(player_name)
@@ -53,9 +88,9 @@ function craftguide:get_formspec(player_name)
 			label[0,5.5;Recipe ]]..data.recipe_num.." of "..#recipes.."]"
 		end
 
-		local type = recipes[data.recipe_num].type
-		if type == "cooking" then formspec = formspec..
-			"image[3.75,4.6;0.5,0.5;default_furnace_front.png]"
+		local recipe_type = recipes[data.recipe_num].type
+		if recipe_type == "cooking" then
+			formspec = formspec.."image[3.75,4.6;0.5,0.5;default_furnace_front.png]"
 		end
 
 		local items = recipes[data.recipe_num].items
@@ -68,11 +103,13 @@ function craftguide:get_formspec(player_name)
 		for i, v in pairs(items) do
 			local X = (i-1) % width + 4.5
 			local Y = floor((i-1) / width + (6 - min(2, rows)))
-			local label = ""
-			if v:sub(1,6) == "group:" then label = "\nG" end
+			local groups = self:extract_groups(v)
+			local label = (groups and "\nG") or ""
+			local item = self:get_recipe(v)
+			local tooltip = self:get_tooltip(item, recipe_type, width, groups)
 
 			formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
-					     self:get_recipe(v)..";"..self:get_recipe(v)..";"..label.."]"
+					     item..";"..item..";"..label.."]"..tooltip
 		end
 
 		local output = recipes[data.recipe_num].output
