@@ -32,22 +32,22 @@ function craftguide:extract_groups(itemstr)
 end
 
 function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
-	local item_desc = minetest.registered_items[item].description
-	local tooltip = "tooltip["..item..";"..((groups and "") or item_desc)
-
+	local tooltip = ""
 	if groups then
 		local groupstr = "Any item belonging to the "
 		for i=1, #groups do
 			groupstr = groupstr..minetest.colorize("#FFFF00", groups[i])..
 				   ((groups[i+1] and " and ") or "")
 		end
-		tooltip = tooltip..groupstr.." group(s)"
+		tooltip = "tooltip["..item..";"..groupstr.." group(s)"..
+			  ((recipe_type ~= "cooking" and "]") or "")
 	end
 	if recipe_type == "cooking" then
-		tooltip = tooltip.."\nCooking time: "..minetest.colorize("#FFFF00", cooktime)
+		tooltip = ((groups and tooltip) or ("tooltip["..item..";"))..
+			  ((groups and "") or minetest.registered_items[item].description)..
+			  "\nCooking time: "..minetest.colorize("#FFFF00", cooktime).."]"
 	end
-
-	return tooltip.."]"
+	return tooltip
 end
 
 function craftguide:get_formspec(player_name)
@@ -166,6 +166,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	else for item in pairs(fields) do
 		 if minetest.get_craft_recipe(item).items then
 			data.item = item
+			data.recipe_num = 1
 			craftguide:get_formspec(player_name)
 		 end
 	     end
