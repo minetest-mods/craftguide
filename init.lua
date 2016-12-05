@@ -1,5 +1,5 @@
 local craftguide, datas, npp = {}, {}, 8*3
-local min, ceil, floor = math.min, math.ceil, math.floor
+local min, ceil = math.min, math.ceil
 
 local group_stereotypes = {
 	wool	     = "wool:white",
@@ -84,7 +84,7 @@ function craftguide:get_formspec(player_name)
 		if data.recipe_num > #recipes then data.recipe_num = 1 end
 
 		if #recipes > 1 then formspec = formspec..
-			[[ button[0,6;1.6,1;alternate;Alternate]
+			[[ button[0,6;2,1;alternate;Alternate]
 			label[0,5.5;Recipe ]]..data.recipe_num.." of "..#recipes.."]"
 		end
 
@@ -102,7 +102,7 @@ function craftguide:get_formspec(player_name)
 
 		for i, v in pairs(items) do
 			local X = (i-1) % width + 4.5
-			local Y = floor((i-1) / width + (6 - min(2, rows)))
+			local Y = ceil(i / width + (5 - min(2, rows)))
 			local groups = self:extract_groups(v)
 			local label = (groups and "\nG") or ""
 			local item = self:get_recipe(v)
@@ -114,7 +114,7 @@ function craftguide:get_formspec(player_name)
 
 		local output = recipes[data.recipe_num].output
 		formspec = formspec..[[ image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]
-				        item_image_button[2.5,5;1,1;]]..output..";"..data.item..";]"		     
+				        item_image_button[2.5,5;1,1;]]..output..";"..data.item..";]"
 	end
 
 	data.formspec = formspec
@@ -192,7 +192,7 @@ minetest.register_craftitem("craftguide:book", {
 	end
 })
 
-minetest.register_craft({ 
+minetest.register_craft({
 	output = "craftguide:book",
 	type = "shapeless",
 	recipe = {"default:book"}
