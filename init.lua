@@ -93,48 +93,60 @@ function craftguide:get_formspec(player_name)
 
 	if data.item and minetest.registered_items[data.item] then
 		local recipes = minetest.get_all_craft_recipes(data.item)
-		data.recipe_num = data.recipe_num or 1
+		local is_fuel_only = minetest.get_craft_result({
+			method="fuel", width=1, items={data.item}}).time
+		local tooltip_l = self:get_tooltip(data.item)
 
-		if progressive_mode then
-			local T = self:recipe_in_inv(player_name, data.item)
-			for i=#T, 1, -1 do
-				if not T[i] then table.remove(recipes, i) end
+		if is_fuel_only and not recipes then
+			formspec = formspec..
+				"image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR270]"..
+				"item_image_button[2.5,5;1,1;"..data.item..";"..data.item..";]"..
+				tooltip_l.."image[4.5,5;1,1;craftguide_none.png]"
+		else
+			if progressive_mode then
+				local T = self:recipe_in_inv(player_name, data.item)
+				for i=#T, 1, -1 do
+					if not T[i] then table.remove(recipes, i) end
+				end
 			end
-		end
 
-		if data.recipe_num > #recipes then data.recipe_num = 1 end
-		if #recipes > 1 then formspec = formspec..
-			[[ button[0,6;2,1;alternate;Alternate]
-			label[0,5.5;Recipe ]]..data.recipe_num.." of "..#recipes.."]"
-		end
+			data.recipe_num = data.recipe_num or 1
+			if data.recipe_num > #recipes then data.recipe_num = 1 end
 
-		local recipe_type = recipes[data.recipe_num].type
-		if recipe_type == "cooking" then
-			formspec = formspec.."image[3.75,4.6;0.5,0.5;default_furnace_front.png]"
-		end
+			if #recipes > 1 then formspec = formspec..[[
+				button[0,6;2,1;alternate;Alternate]
+				label[0,5.5;Recipe ]]..data.recipe_num.." of "..#recipes.."]"
+			end
 
-		local items = recipes[data.recipe_num].items
-		local width = recipes[data.recipe_num].width
-		if width == 0 then width = min(3, #items) end
-		-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
-		-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
-		local rows = ceil(table.maxn(items) / width)
+			local recipe_type = recipes[data.recipe_num].type
+			if recipe_type == "cooking" then
+				formspec = formspec.."image[3.75,4.6;0.5,0.5;default_furnace_front.png]"
+			end
 
-		for i, v in pairs(items) do
-			local X = (i-1) % width + 4.5
-			local Y = ceil(i / width + (5 - min(2, rows)))
-			local groups = extract_groups(v)
-			local label = groups and "\nG" or ""
-			local item = self:group_to_item(v)
-			local tooltip = self:get_tooltip(item, recipe_type, width, groups)
+			local items = recipes[data.recipe_num].items
+			local width = recipes[data.recipe_num].width
+			if width == 0 then width = min(3, #items) end
+			-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
+			-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
+			local rows = ceil(table.maxn(items) / width)
 
-			formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
+			for i, v in pairs(items) do
+				local X = (i-1) % width + 4.5
+				local Y = ceil(i / width + (5 - min(2, rows)))
+				local groups = extract_groups(v)
+				local label = groups and "\nG" or ""
+				local item = self:group_to_item(v)
+				local tooltip = self:get_tooltip(item, recipe_type, width, groups)
+
+				formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
 					     item..";"..item..";"..label.."]"..tooltip
-		end
+			end
 
-		local output = recipes[data.recipe_num].output
-		formspec = formspec..[[ image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]
-					item_image_button[2.5,5;1,1;]]..output..";"..data.item..";]"
+			local output = recipes[data.recipe_num].output
+			formspec = formspec..[[
+				image[3.5,5;1,1;gui_furnace_arrow_bg.png^[transformR90]
+				item_image_button[2.5,5;1,1;]]..output..";"..data.item..";]"..tooltip_l
+		end
 	end
 
 	data.formspec = formspec
@@ -142,9 +154,7 @@ function craftguide:get_formspec(player_name)
 end
 
 local function has_item(T)
-	for i=1, #T do
-		if T[i] then return true end
-	end
+	for i=1, #T do if T[i] then return true end end
 end
 
 function craftguide:recipe_in_inv(player_name, item_name)
@@ -167,9 +177,11 @@ end
 function craftguide:get_items(player_name)
 	local items_list, data = {}, datas[player_name]
 	for name, def in pairs(minetest.registered_items) do
+		local is_fuel_only = minetest.get_craft_result({
+			method="fuel", width=1, items={name}}).time > 0
 		if not (def.groups.not_in_creative_inventory == 1) and
-			minetest.get_craft_recipe(name).items	   and
-			def.description and def.description ~= ""  and
+		       (minetest.get_craft_recipe(name).items or is_fuel_only) and
+			def.description and def.description ~= "" and
 		       (def.name:find(data.filter, 1, true) or
 			def.description:lower():find(data.filter, 1, true)) then
 
@@ -213,7 +225,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		elseif data.pagenum == 0           then data.pagenum = data.pagemax end
 		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
-		 if minetest.get_craft_recipe(item).items then
+		 local is_fuel = minetest.get_craft_result({
+		 	method="fuel", width=1, items={item}}).time > 0
+		 if minetest.get_craft_recipe(item).items or is_fuel then
 			if progressive_mode then
 				local _, has_item = craftguide:recipe_in_inv(player_name, item)
 				if not has_item then return end
@@ -228,8 +242,8 @@ end)
 
 minetest.register_craftitem("craftguide:book", {
 	description = "Crafting Guide",
-	inventory_image = "crafting_guide.png",
-	wield_image = "crafting_guide.png",
+	inventory_image = "craftguide_book.png",
+	wield_image = "craftguide_book.png",
 	stack_max = 1,
 	groups = {book=1},
 	on_use = function(itemstack, user)
