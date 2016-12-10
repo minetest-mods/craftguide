@@ -27,28 +27,36 @@ function craftguide:group_to_item(item)
 	return item
 end
 
-function craftguide:extract_groups(itemstr)
-	if itemstr:sub(1,6) ~= "group:" then return end
-	return itemstr:sub(7):split(",")
+local function extract_groups(str)
+	if str:sub(1,6) ~= "group:" then return end
+	return str:sub(7):split(",")
+end
+
+local function colorize(str)
+	return minetest.colorize("#FFFF00", str)
 end
 
 function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
-	local tooltip = ""
+	local tooltip = "tooltip["..item..";"
+	local fueltime = minetest.get_craft_result({method="fuel", width=1, items={item}}).time
+	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
+	local item_desc = groups and "" or minetest.registered_items[item].description
+
 	if groups then
 		local groupstr = "Any item belonging to the "
 		for i=1, #groups do
-			groupstr = groupstr..minetest.colorize("#FFFF00", groups[i])..
-				   ((groups[i+1] and " and ") or "")
+			groupstr = groupstr..colorize(groups[i])..(groups[i+1] and " and " or "")
 		end
-		tooltip = "tooltip["..item..";"..groupstr.." group(s)"..
-			  ((recipe_type ~= "cooking" and "]") or "")
+		tooltip = tooltip..groupstr.." group(s)"
 	end
 	if recipe_type == "cooking" then
-		tooltip = ((groups and tooltip) or ("tooltip["..item..";"))..
-			  ((groups and "") or minetest.registered_items[item].description)..
-			  "\nCooking time: "..minetest.colorize("#FFFF00", cooktime).."]"
+		tooltip = tooltip..item_desc.."\nCooking time: "..colorize(cooktime)
 	end
-	return tooltip
+	if fueltime > 0 then
+		tooltip = tooltip..item_desc.."\nBurning time: "..colorize(fueltime)
+	end
+
+	return has_extras and tooltip.."]" or ""
 end
 
 function craftguide:get_formspec(player_name)
@@ -63,8 +71,7 @@ function craftguide:get_formspec(player_name)
 			tooltip[clear;Reset]
 			field_close_on_enter[craftguide_filter, false]
 			button[5.4,0;0.8,0.95;prev;<] ]]..
-			"label[6.1,0.18;"..minetest.colorize("#FFFF00",
-				data.pagenum).." / "..data.pagemax.."]"..
+			"label[6.1,0.18;"..colorize(data.pagenum).." / "..data.pagemax.."]"..
 			"button[7.2,0;0.8,0.95;next;>]"..
 			"field[0.3,0.32;2.6,1;craftguide_filter;;"..
 				minetest.formspec_escape(data.filter).."]"..
@@ -77,7 +84,7 @@ function craftguide:get_formspec(player_name)
 	local first_item = (data.pagenum - 1) * npp
 	for i = first_item, first_item + npp - 1 do
 		local name = data.items[i+1]
-		if not name then break end -- last page
+		if not name then break end
 		local X = i % 8
 		local Y = ((i % npp - X) / 8) + 1
 
@@ -116,8 +123,8 @@ function craftguide:get_formspec(player_name)
 		for i, v in pairs(items) do
 			local X = (i-1) % width + 4.5
 			local Y = ceil(i / width + (5 - min(2, rows)))
-			local groups = self:extract_groups(v)
-			local label = (groups and "\nG") or ""
+			local groups = extract_groups(v)
+			local label = groups and "\nG" or ""
 			local item = self:group_to_item(v)
 			local tooltip = self:get_tooltip(item, recipe_type, width, groups)
 
@@ -161,10 +168,10 @@ function craftguide:get_items(player_name)
 	local items_list, data = {}, datas[player_name]
 	for name, def in pairs(minetest.registered_items) do
 		if not (def.groups.not_in_creative_inventory == 1) and
-			    minetest.get_craft_recipe(name).items and
-			    def.description and def.description ~= "" and
-			   (def.name:find(data.filter, 1, true) or
-				def.description:lower():find(data.filter, 1, true)) then
+			minetest.get_craft_recipe(name).items	   and
+			def.description and def.description ~= ""  and
+		       (def.name:find(data.filter, 1, true) or
+			def.description:lower():find(data.filter, 1, true)) then
 
 			if progressive_mode then
 				local _, has_item = self:recipe_in_inv(player_name, name)
@@ -192,7 +199,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		craftguide:get_items(player_name)
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
-		data.recipe_num = (data.recipe_num and data.recipe_num + 1) or 1
+		data.recipe_num = data.recipe_num and data.recipe_num + 1 or 1
 		craftguide:get_formspec(player_name)
 	elseif fields.search or fields.key_enter_field == "craftguide_filter" then
 		data.filter = fields.craftguide_filter:lower()
