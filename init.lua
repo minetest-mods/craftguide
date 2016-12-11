@@ -168,6 +168,14 @@ local function has_item(T)
 	for i=1, #T do if T[i] then return true end end
 end
 
+local function group_to_items(group)
+	local T = {}
+	for name, def in pairs(minetest.registered_items) do
+		if def.groups[group:sub(7)] then T[#T+1] = name end
+	end
+	return T
+end
+
 function craftguide:recipe_in_inv(player_name, item_name)
 	local player = minetest.get_player_by_name(player_name)
 	local inv = player:get_inventory()
@@ -177,7 +185,17 @@ function craftguide:recipe_in_inv(player_name, item_name)
 	for i=1, #recipes do
 		T[i] = true
 		for _, item in pairs(recipes[i].items) do
-			if not inv:contains_item("main", self:group_to_item(item)) then
+			local group_in_inv = false
+			if item:sub(1,6) == "group:" then
+				local groups = group_to_items(item)
+				for j=1, #groups do
+					if inv:contains_item("main", groups[j]) then
+						group_in_inv = true
+					end
+				end
+			end
+
+			if not group_in_inv and not inv:contains_item("main", item) then
 				T[i] = false
 			end
 		end
