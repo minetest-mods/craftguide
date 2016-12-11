@@ -144,7 +144,7 @@ function craftguide:get_formspec(player_name)
 				      name..";"..name.."_inv;]"
 	end
 
-	if data.item ~= "" and minetest.registered_items[data.item] then
+	if data.item and minetest.registered_items[data.item] then
 		local is_fuel_only = minetest.get_craft_result({
 			method="fuel", width=1, items={data.item}}).time > 0
 		local tooltip = self:get_tooltip(data.item)
@@ -253,9 +253,11 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		elseif data.pagenum == 0           then data.pagenum = data.pagemax end
 		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
-		 item = item:sub(1,-5)
+		 if not item:find(":") then return end
+		 item = item:sub(-4) == "_inv" and item:sub(1,-5) or item
 		 local is_fuel = minetest.get_craft_result({
 		 	method="fuel", width=1, items={item}}).time > 0
+
 		 if minetest.get_craft_recipe(item).items or is_fuel then
 			if progressive_mode then
 				local _, has_item =
