@@ -24,7 +24,7 @@ function craftguide:group_to_item(item)
 		     end
 		end
 	end
-	return item
+	return item:sub(1,6) == "group:" and "" or item
 end
 
 local function extract_groups(str)
