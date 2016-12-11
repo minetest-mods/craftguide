@@ -144,7 +144,7 @@ function craftguide:get_formspec(player_name)
 				      name..";"..name.."_inv;]"
 	end
 
-	if data.item and minetest.registered_items[data.item] then
+	if data.item ~= "" and minetest.registered_items[data.item] then
 		local is_fuel_only = minetest.get_craft_result({
 			method="fuel", width=1, items={data.item}}).time > 0
 		local tooltip = self:get_tooltip(data.item)
