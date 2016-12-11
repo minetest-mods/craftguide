@@ -141,7 +141,7 @@ function craftguide:get_formspec(player_name)
 		local Y = ((i % npp - X) / 8) + 1
 
 		formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
-				      name..";"..name..";]"
+				      name..";"..name.."_inv;]"
 	end
 
 	if data.item and minetest.registered_items[data.item] then
@@ -194,7 +194,6 @@ function craftguide:recipe_in_inv(player_name, item_name)
 					end
 				end
 			end
-
 			if not group_in_inv and not inv:contains_item("main", item) then
 				T[i] = false
 			end
@@ -254,6 +253,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		elseif data.pagenum == 0           then data.pagenum = data.pagemax end
 		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
+		 item = item:sub(1,-5)
 		 local is_fuel = minetest.get_craft_result({
 		 	method="fuel", width=1, items={item}}).time > 0
 		 if minetest.get_craft_recipe(item).items or is_fuel then
