@@ -46,7 +46,10 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	local fueltime = minetest.get_craft_result({
 		method="fuel", width=1, items={item}}).time
 	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
-	local item_desc = groups and "" or minetest.registered_items[item].description
+	local item_desc = ""
+	if minetest.registered_items[item] and not groups then
+		item_desc = minetest.registered_items[item].description
+	end
 
 	if groups then
 		local groupstr = "Any item belonging to the "
