@@ -1,11 +1,9 @@
 local craftguide, datas = {}, {}
-local min, max, ceil, floor = math.min, math.max, math.ceil, math.floor
-local function round(n) return floor((floor(n * 2) + 1) / 2) end
-
 local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
+local min, max, ceil, floor = math.min, math.max, math.ceil, math.floor
 local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
-		"([%d]+[.%d+]*)[%s+]*x[%s+]*([%d]+[.%d+]*)")
-iX, iY = max(8, round(iX or 8)), max(1, round(iY or 3))
+		"([%d]+)[.%d+]*[^%d]*x[^%d]*([%d]+)[.%d+]*")
+iX, iY = max(8, iX or 8), max(1, iY or 3)
 local ipp = iX * iY
 local offset_X = (iX / 2) + (iX % 2 == 0 and 0.5 or 0)
 
