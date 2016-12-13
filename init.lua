@@ -257,6 +257,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	elseif fields.search or fields.key_enter_field == "craftguide_filter" then
 		data.filter = fields.craftguide_filter:lower()
 		data.pagenum = 1
+		if progressive_mode then data.item = nil end
 		craftguide:get_items(player_name)
 		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
