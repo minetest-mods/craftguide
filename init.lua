@@ -209,7 +209,7 @@ function craftguide:recipe_in_inv(player_name, item_name)
 end
 
 function craftguide:get_items(player_name)
-	local items_list, data, list_size = {}, datas[player_name]
+	local items_list, data, list_size = {}, datas[player_name], 0
 	for name, def in pairs(minetest.registered_items) do
 		local is_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={name}}).time > 0
@@ -219,7 +219,6 @@ function craftguide:get_items(player_name)
 		       (def.name:find(data.filter, 1, true) or
 			def.description:lower():find(data.filter, 1, true)) then
 
-			list_size = #items_list
 			if progressive_mode then
 				local _, player_has_item =
 					self:recipe_in_inv(player_name, name)
@@ -229,12 +228,13 @@ function craftguide:get_items(player_name)
 			else
 				items_list[list_size+1] = name
 			end
+			list_size = #items_list
 		end
 	end
 
 	table.sort(items_list)
 	data.items = items_list
-	data.size = list_size or 0
+	data.size = list_size
 	data.pagemax = max(1, ceil(data.size / ipp))
 end
 
