@@ -116,7 +116,7 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 				output..";"..item..";]"..tooltip_l
 end
 
-function craftguide:get_formspec(player_name)
+function craftguide:get_formspec(player_name, no_recipe_update)
 	local data = datas[player_name]
 	local formspec = "size["..iX..","..(iY+3)..".6;]"..[[
 			background[1,1;1,1;craftguide_bg.png;true]
@@ -147,7 +147,8 @@ function craftguide:get_formspec(player_name)
 				      name..";"..name.."_inv;]"
 	end
 
-	if data.item and minetest.registered_items[data.item] then
+	if data.item and minetest.registered_items[data.item] and not
+			no_recipe_update then
 		local is_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={data.item}}).time > 0
 		local tooltip = self:get_tooltip(data.item)
@@ -247,9 +248,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	local data = datas[player_name]
 
 	if fields.clear then
-		data.filter, data.item, data.pagenum, data.recipe_num = "", nil, 1, 1
+		data.filter, data.pagenum, data.recipe_num = "", 1, 1
 		craftguide:get_items(player_name)
-		craftguide:get_formspec(player_name)
+		craftguide:get_formspec(player_name, true)
 	elseif fields.alternate then
 		local recipe = data.recipes_item[data.recipe_num + 1]
 		data.recipe_num = recipe and data.recipe_num + 1 or 1
@@ -257,9 +258,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	elseif fields.search or fields.key_enter_field == "craftguide_filter" then
 		data.filter = fields.craftguide_filter:lower()
 		data.pagenum = 1
-		if progressive_mode then data.item = nil end
 		craftguide:get_items(player_name)
-		craftguide:get_formspec(player_name)
+		craftguide:get_formspec(player_name, progressive_mode)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
 		if data.pagenum > data.pagemax then
@@ -267,8 +267,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		elseif data.pagenum == 0 then
 			data.pagenum = data.pagemax
 		end
-		if progressive_mode then data.item = nil end
-		craftguide:get_formspec(player_name)
+		craftguide:get_formspec(player_name, progressive_mode)
 	else for item in pairs(fields) do
 		if not item:find(":") then return end
 		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
