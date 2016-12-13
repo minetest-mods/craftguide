@@ -10,7 +10,8 @@ list the items in the crafting guide for which you already have the ingredients
 in your inventory. The progressive mode is disabled by default and can be enabled with 
 `craftguide_progressive_mode = true` in `minetest.conf`.
 
-The formspec size is also easily configurable by the user, see [here](https://github.com/minetest-mods/craftguide/blob/master/init.lua#L3-L6).
+The formspec size is also easily configurable with this setting in `minetest.conf`:
+`craftguide_size = WxH` (default: `8x3`). The minimum accepted size is `8x1`.
 
 ![Preview](http://i.imgur.com/xblp1Vs.png)
 

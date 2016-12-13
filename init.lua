@@ -1,16 +1,13 @@
-local min, ceil, max = math.min, math.ceil, math.max
+local craftguide, datas = {}, {}
+local min, max, ceil, floor = math.min, math.max, math.ceil, math.floor
+local function round(n) return floor((floor(n * 2) + 1) / 2) end
 
---------- Formspec configuration -----------
-local iX = 8  -- item list width (min. 8)
-local iY = 3  -- item list height (min. 1)
---------------------------------------------
-
-iX, iY = max(8, ceil(iX)), max(1, ceil(iY))
+local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
+local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
+		"([%d]+[.%d+]*)[%s+]*x[%s+]*([%d]+[.%d+]*)")
+iX, iY = max(8, round(iX or 8)), max(1, round(iY or 3))
 local ipp = iX * iY
 local offset_X = (iX / 2) + (iX % 2 == 0 and 0.5 or 0)
-
-local craftguide, datas = {}, {}
-local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
 
 local group_stereotypes = {
 	wool	     = "wool:white",
@@ -259,25 +256,26 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
-		data.pagenum = data.pagenum > data.pagemax and 1 or data.pagenum
-		data.pagenum = data.pagenum < 1 and data.pagemax or data.pagenum
+		if data.pagenum > data.pagemax then
+			data.pagenum = 1
+		elseif data.pagenum == 0 then
+			data.pagenum = data.pagemax
+		end
 		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
-		 if not item:find(":") then return end
-		 item = item:sub(-4) == "_inv" and item:sub(1,-5) or item
+		if not item:find(":") then return end
+		item = item:sub(-4) == "_inv" and item:sub(1,-5) or item
 
-		 if minetest.get_craft_recipe(item) then
-			if progressive_mode then
-				local _, player_has_item =
-					craftguide:recipe_in_inv(player_name, item)
-				if not player_has_item then return end
-			end
+		if progressive_mode then
+			local _, player_has_item =
+				craftguide:recipe_in_inv(player_name, item)
+			if not player_has_item then return end
+		end
 
-			data.item = item
-			data.recipe_num = 1
-			data.recipes_item = minetest.get_all_craft_recipes(item)
-			craftguide:get_formspec(player_name)
-		 end
+		data.item = item
+		data.recipe_num = 1
+		data.recipes_item = minetest.get_all_craft_recipes(item)
+		craftguide:get_formspec(player_name)
 	     end
 	end
 end)
