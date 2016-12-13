@@ -263,6 +263,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		elseif data.pagenum == 0 then
 			data.pagenum = data.pagemax
 		end
+		if progressive_mode then data.item = nil end
 		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
 		if not item:find(":") then return end
