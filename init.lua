@@ -90,7 +90,7 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 	-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 	local rows = ceil(table.maxn(items) / width)
 
-	if width > 3 or rows > 3 then
+	if recipe_type == "normal" and width > 3 or rows > 3 then
 		formspec = formspec.."label["..(offset_X)..","..(iY+2)..
 					 ";Recipe is too big to\nbe displayed ("..
 					 width.."x"..rows..")]"
