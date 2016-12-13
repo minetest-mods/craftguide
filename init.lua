@@ -1,6 +1,6 @@
 local craftguide, datas = {}, {}
 local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
-local min, max, ceil, floor = math.min, math.max, math.ceil, math.floor
+local min, max, ceil = math.min, math.max, math.ceil
 local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
 		"([%d]+)[.%d+]*[^%d]*x[^%d]*([%d]+)[.%d+]*")
 iX, iY = max(8, iX or 8), max(1, iY or 3)
@@ -262,7 +262,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
 		if not item:find(":") then return end
-		item = item:sub(-4) == "_inv" and item:sub(1,-5) or item
+		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
 
 		if progressive_mode then
 			local _, player_has_item =
@@ -301,6 +301,12 @@ minetest.register_craft({
 	output = "craftguide:book",
 	type = "shapeless",
 	recipe = {"default:book"}
+})
+
+minetest.register_craft({
+	type = "fuel",
+	recipe = "craftguide:book",
+	burntime = 3
 })
 
 minetest.register_alias("xdecor:crafting_guide", "craftguide:book")
