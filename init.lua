@@ -90,7 +90,11 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 	-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 	local rows = ceil(table.maxn(items) / width)
 
-	for i, v in pairs(items) do
+	if #items > 9 then
+		formspec = formspec.."label["..(offset_X)..","..(iY+2)..
+					 ";Recipe is too big to\nbe displayed ("..
+					 width.."x"..rows..")]"
+	else for i, v in pairs(items) do
 		local X = (i-1) % width + offset_X
 		local Y = ceil(i / width + ((iY + 2) - min(2, rows)))
 		local groups = extract_groups(v)
@@ -100,12 +104,12 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 
 		formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
 				      item..";"..item..";"..label.."]"..tooltip
+	     end
 	end
-
 	local output = recipes[recipe_num].output
 	return formspec.."image["..(offset_X-1)..","..(iY+2)..
 				".12;0.9,0.7;craftguide_arrow.png]"..
-			"item_image_button["..(offset_X-2)..","..(iY+2)..";1,1;"..
+			 "item_image_button["..(offset_X-2)..","..(iY+2)..";1,1;"..
 				output..";"..item..";]"..tooltip_l
 end
 
