@@ -230,8 +230,8 @@ function craftguide:get_items(player_name)
 
 	table.sort(items_list)
 	data.items = items_list
-	data.size = list_size
-	data.pagemax = max(1, ceil(list_size / ipp))
+	data.size = list_size or 0
+	data.pagemax = max(1, ceil(data.size / ipp))
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
