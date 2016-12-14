@@ -103,14 +103,9 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 		local Y = ceil(i / width + ((iY + 2) - min(2, rows)))
 
 		if recipe_type == "normal" and width > 3 or rows > 3 then
-			btn_size = 3 / width
-			if width > 3 then
-				X = (btn_size * (i % width)) + offset_X
-			end
-			if rows > 3 then
-				Y = (btn_size * floor((i-1) / rows)) + (iY + 3) -
-				     min(2, rows)
-			end
+			btn_size = width > 3 and 3 / width or 3 / rows
+			X = (btn_size * (i % width)) + offset_X
+			Y = (btn_size * floor((i-1) / width)) + (iY + 3) - min(2, rows)
 		end
 
 		local groups = extract_groups(v)
