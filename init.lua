@@ -1,6 +1,6 @@
 local craftguide, datas = {}, {}
 local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
-local min, max, ceil = math.min, math.max, math.ceil
+local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
 		"([%d]+)[.%d+]*[^%d]*x[^%d]*([%d]+)[.%d+]*")
 iX, iY = max(8, iX or 8), max(1, iY or 3)
@@ -92,21 +92,35 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 	-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 	-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 	local rows = ceil(table.maxn(items) / width)
+	local btn_size = 1
 
-	if recipe_type == "normal" and width > 3 or rows > 3 then
+	if recipe_type == "normal" and width > 6 or rows > 6 then
 		formspec = formspec.."label["..(offset_X)..","..(iY+2)..
 					 ";Recipe is too big to\nbe displayed ("..
 					 width.."x"..rows..")]"
 	else for i, v in pairs(items) do
 		local X = (i-1) % width + offset_X
 		local Y = ceil(i / width + ((iY + 2) - min(2, rows)))
+
+		if recipe_type == "normal" and width > 3 or rows > 3 then
+			btn_size = 3 / width
+			if width > 3 then
+				X = (btn_size * (i % width)) + offset_X
+			end
+			if rows > 3 then
+				Y = (btn_size * floor((i-1) / rows)) + (iY + 3) -
+				     min(2, rows)
+			end
+		end
+
 		local groups = extract_groups(v)
 		local label = groups and "\nG" or ""
 		local item = self:group_to_item(v)
 		local tooltip = self:get_tooltip(item, recipe_type, width, groups)
 
-		formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
-				      item..";"..item..";"..label.."]"..tooltip
+		formspec = formspec.."item_image_button["..X..","..Y..";"..
+				     btn_size..","..btn_size..";"..
+				     item..";"..item..";"..label.."]"..tooltip
 	     end
 	end
 	local output = recipes[recipe_num].output
@@ -248,9 +262,9 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	local data = datas[player_name]
 
 	if fields.clear then
-		data.filter, data.pagenum, data.recipe_num = "", 1, 1
+		data.filter, data.item, data.pagenum, data.recipe_num = "", nil, 1, 1
 		craftguide:get_items(player_name)
-		craftguide:get_formspec(player_name, true)
+		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
 		local recipe = data.recipes_item[data.recipe_num + 1]
 		data.recipe_num = recipe and data.recipe_num + 1 or 1
