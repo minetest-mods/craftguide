@@ -92,9 +92,10 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 	-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 	-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 	local rows = ceil(table.maxn(items) / width)
-	local btn_size = 1
+	local btn_size, craftgrid_limit = 1, 5
 
-	if recipe_type == "normal" and width > 6 or rows > 6 then
+	if recipe_type == "normal" and
+			width > craftgrid_limit or rows > craftgrid_limit then
 		formspec = formspec.."label["..(offset_X)..","..(iY+2)..
 					 ";Recipe is too big to\nbe displayed ("..
 					 width.."x"..rows..")]"
