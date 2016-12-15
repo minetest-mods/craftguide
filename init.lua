@@ -5,7 +5,7 @@ local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
 		"([%d]+)[.%d+]*[^%d]*x[^%d]*([%d]+)[.%d+]*")
 iX, iY = max(8, iX or 8), max(1, iY or 3)
 local ipp = iX * iY
-local offset_X = (iX / 2) + (iX % 2 == 0 and 0.5 or 0)
+local xoffset = iX / 2 + (iX % 2 == 0 and 0.5 or 0)
 
 local group_stereotypes = {
 	wool	     = "wool:white",
@@ -42,15 +42,14 @@ local function colorize(str)
 end
 
 function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
-	local tooltip = "tooltip["..item..";"
+	local tooltip, item_desc = "tooltip["..item..";", ""
 	local fueltime = minetest.get_craft_result({
 		method="fuel", width=1, items={item}}).time
 	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
-	local item_desc = ""
+
 	if minetest.registered_items[item] and not groups then
 		item_desc = minetest.registered_items[item].description
 	end
-
 	if groups then
 		local groupstr = "Any item belonging to the "
 		for i=1, #groups do
@@ -82,7 +81,7 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 		"label[0,"..(iY+2)..".5;Recipe "..recipe_num.." of "..#recipes.."]"
 	end
 	if recipe_type == "cooking" then
-		formspec = formspec.."image["..(offset_X-0.8)..","..(iY+1)..
+		formspec = formspec.."image["..(xoffset-0.8)..","..(iY+1)..
 				     ".5;0.5,0.5;default_furnace_front.png]"
 	end
 
@@ -96,17 +95,17 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 
 	if recipe_type == "normal" and
 			width > craftgrid_limit or rows > craftgrid_limit then
-		formspec = formspec.."label["..(offset_X)..","..(iY+2)..
+		formspec = formspec.."label["..xoffset..","..(iY+2)..
 					 ";Recipe is too big to\nbe displayed ("..
 					 width.."x"..rows..")]"
 	else for i, v in pairs(items) do
-		local X = (i-1) % width + offset_X
-		local Y = ceil(i / width + ((iY + 2) - min(2, rows)))
+		local X = (i-1) % width + xoffset
+		local Y = ceil(i / width + iY+2 - min(2, rows))
 
 		if recipe_type == "normal" and width > 3 or rows > 3 then
 			btn_size = width > 3 and 3 / width or 3 / rows
-			X = (btn_size * (i % width)) + offset_X
-			Y = (btn_size * floor((i-1) / width)) + (iY + 3) - min(2, rows)
+			X = btn_size * (i % width) + xoffset
+			Y = btn_size * floor((i-1) / width) + iY+3 - min(2, rows)
 		end
 
 		local groups = extract_groups(v)
@@ -120,9 +119,9 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 	     end
 	end
 	local output = recipes[recipe_num].output
-	return formspec.."image["..(offset_X-1)..","..(iY+2)..
+	return formspec.."image["..(xoffset-1)..","..(iY+2)..
 				".12;0.9,0.7;craftguide_arrow.png]"..
-			 "item_image_button["..(offset_X-2)..","..(iY+2)..";1,1;"..
+			 "item_image_button["..(xoffset-2)..","..(iY+2)..";1,1;"..
 				output..";"..item..";]"..tooltip_l
 end
 
@@ -143,7 +142,7 @@ function craftguide:get_formspec(player_name, no_recipe_update)
 				minetest.formspec_escape(data.filter).."]"
 
 	if not next(data.items) then
-		formspec = formspec.."label[2.9,2;No item to show]"
+		formspec = formspec.."label["..(xoffset-1)..".9,2;No item to show]"
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
@@ -151,7 +150,7 @@ function craftguide:get_formspec(player_name, no_recipe_update)
 		local name = data.items[i+1]
 		if not name then break end
 		local X = i % iX
-		local Y = ((i % ipp - X) / iX) + 1
+		local Y = (i % ipp - X) / iX+1
 
 		formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
 				      name..";"..name.."_inv;]"
@@ -165,11 +164,11 @@ function craftguide:get_formspec(player_name, no_recipe_update)
 
 		if is_fuel and not minetest.get_craft_recipe(data.item).items then
 			formspec = formspec..
-				"image["..(offset_X-1)..","..(iY+2)..
+				"image["..(xoffset-1)..","..(iY+2)..
 					".12;0.9,0.7;craftguide_arrow.png]"..
-				"item_image_button["..offset_X..","..(iY+2)..";1,1;"..
+				"item_image_button["..xoffset..","..(iY+2)..";1,1;"..
 					data.item..";"..data.item..";]"..
-				tooltip.."image["..(offset_X-2)..","..
+				tooltip.."image["..(xoffset-2)..","..
 					(iY+2)..";1,1;craftguide_none.png]"
 		else
 			formspec = formspec..
