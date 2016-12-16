@@ -1,4 +1,3 @@
-
 local craftguide, datas = {}, {}
 local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
@@ -48,8 +47,12 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 		method="fuel", width=1, items={item}}).time
 	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
 
-	if minetest.registered_items[item] and not groups then
-		item_desc = minetest.registered_items[item].description
+	if minetest.registered_items[item] then
+		if not groups then
+			item_desc = minetest.registered_items[item].description
+		end
+	else
+		return tooltip..item.."]"
 	end
 	if groups then
 		local groupstr = "Any item belonging to the "
@@ -280,13 +283,13 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		end
 		craftguide:get_formspec(player_name, progressive_mode)
 	else for item in pairs(fields) do
-		if not item:find(":") then return end
+		if not item:find(":") then break end
 		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
 
 		local recipes = minetest.get_all_craft_recipes(item)
-		local is_fuel = minetest.get_craft_result({
+		local is_not_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={item}}).time == 0
-		if not recipes and is_fuel then return end
+		if not recipes and is_not_fuel then return end
 
 		if progressive_mode then
 			local _, player_has_item =
