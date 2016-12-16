@@ -142,7 +142,8 @@ function craftguide:get_formspec(player_name, no_recipe_update)
 				minetest.formspec_escape(data.filter).."]"
 
 	if not next(data.items) then
-		formspec = formspec.."label["..(xoffset-1)..".9,2;No item to show]"
+		formspec = formspec.."label["..(xoffset -
+			(iX%2 == 0 and 1.5 or 1))..",2;No item to show]"
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
