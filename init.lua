@@ -74,12 +74,6 @@ end
 
 function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes)
 	local formspec, recipe_type = "", recipes[recipe_num].type
-	if progressive_mode then
-		local T = self:recipe_in_inv(player_name, item)
-		for i=#T, 1, -1 do
-			if not T[i] then table.remove(recipes, i) end
-		end
-	end
 	if #recipes > 1 then formspec = formspec..
 		"button[0,"..(iY+3)..";2,1;alternate;Alternate]"..
 		"label[0,"..(iY+2)..".5;Recipe "..recipe_num.." of "..#recipes.."]"
@@ -129,7 +123,7 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 				output..";"..item..";]"..tooltip_l
 end
 
-function craftguide:get_formspec(player_name, no_recipe_update)
+function craftguide:get_formspec(player_name, is_fuel)
 	local data = datas[player_name]
 	local formspec = "size["..iX..","..(iY+3)..".6;]"..[[
 			background[1,1;1,1;craftguide_bg.png;true]
@@ -161,13 +155,10 @@ function craftguide:get_formspec(player_name, no_recipe_update)
 				      name..";"..name.."_inv;]"
 	end
 
-	if data.item and minetest.registered_items[data.item] and not
-			no_recipe_update then
-		local is_fuel = minetest.get_craft_result({
-			method="fuel", width=1, items={data.item}}).time > 0
+	if data.item and minetest.registered_items[data.item] then
 		local tooltip = self:get_tooltip(data.item)
-
-		if is_fuel and not minetest.get_craft_recipe(data.item).items then
+		if not data.recipes_item or (is_fuel and not
+				minetest.get_craft_recipe(data.item).items) then
 			formspec = formspec..
 				"image["..(xoffset-1)..","..(iY+2)..
 					".12;0.9,0.7;craftguide_arrow.png]"..
@@ -200,10 +191,10 @@ local function group_to_items(group)
 	return items_with_group
 end
 
-function craftguide:recipe_in_inv(player_name, item_name)
+function craftguide:recipe_in_inv(player_name, item_name, recipes_f)
 	local player = minetest.get_player_by_name(player_name)
 	local inv = player:get_inventory()
-	local recipes = minetest.get_all_craft_recipes(item_name) or {}
+	local recipes = recipes_f or minetest.get_all_craft_recipes(item_name) or {}
 	local show_item_recipes = {}
 
 	for i=1, #recipes do
@@ -223,7 +214,13 @@ function craftguide:recipe_in_inv(player_name, item_name)
 			end
 		end
 	end
-	return show_item_recipes, player_has_item(show_item_recipes)
+	for i=#show_item_recipes, 1, -1 do
+		if not show_item_recipes[i] then
+			table.remove(recipes, i)
+		end
+	end
+
+	return recipes, player_has_item(show_item_recipes)
 end
 
 function craftguide:get_items(player_name)
@@ -238,11 +235,8 @@ function craftguide:get_items(player_name)
 			def.description:lower():find(data.filter, 1, true)) then
 
 			if progressive_mode then
-				local _, player_has_item =
-					self:recipe_in_inv(player_name, name)
-				if player_has_item then
-					items_list[list_size+1] = name
-				end
+				local _, has_item = self:recipe_in_inv(player_name, name)
+				if has_item then items_list[list_size+1] = name end
 			else
 				items_list[list_size+1] = name
 			end
@@ -273,7 +267,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		data.filter = fields.craftguide_filter:lower()
 		data.pagenum = 1
 		craftguide:get_items(player_name)
-		craftguide:get_formspec(player_name, progressive_mode)
+		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
 		if data.pagenum > data.pagemax then
@@ -281,26 +275,26 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		elseif data.pagenum == 0 then
 			data.pagenum = data.pagemax
 		end
-		craftguide:get_formspec(player_name, progressive_mode)
+		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
 		if not item:find(":") then break end
 		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
 
 		local recipes = minetest.get_all_craft_recipes(item)
-		local is_not_fuel = minetest.get_craft_result({
-			method="fuel", width=1, items={item}}).time == 0
-		if not recipes and is_not_fuel then return end
+		local is_fuel = minetest.get_craft_result({
+			method="fuel", width=1, items={item}}).time > 0
+		if not recipes and not is_fuel then return end
 
 		if progressive_mode then
-			local _, player_has_item =
-				craftguide:recipe_in_inv(player_name, item)
-			if not player_has_item then return end
+			local _, has_item = craftguide:recipe_in_inv(player_name, item)
+			if not has_item then return end
+			recipes = craftguide:recipe_in_inv(player_name, item, recipes)
 		end
 
 		data.item = item
 		data.recipe_num = 1
 		data.recipes_item = recipes
-		craftguide:get_formspec(player_name)
+		craftguide:get_formspec(player_name, is_fuel)
 	     end
 	end
 end)
