@@ -282,8 +282,11 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	else for item in pairs(fields) do
 		if not item:find(":") then return end
 		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
-		local recipes = minetest.get_all_craft_recipes(item) 
-		if not recipes then return end
+
+		local recipes = minetest.get_all_craft_recipes(item)
+		local is_fuel = minetest.get_craft_result({
+			method="fuel", width=1, items={item}}).time == 0
+		if not recipes and is_fuel then return end
 
 		if progressive_mode then
 			local _, player_has_item =
