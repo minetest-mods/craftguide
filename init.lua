@@ -52,7 +52,7 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 			item_desc = minetest.registered_items[item].description
 		end
 	else
-		return tooltip..item.."]"
+		return tooltip.."Unknown Item ("..item..")]"
 	end
 	if groups then
 		local groupstr = "Any item belonging to the "
