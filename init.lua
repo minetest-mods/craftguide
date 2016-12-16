@@ -110,12 +110,12 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 
 		local groups = extract_groups(v)
 		local label = groups and "\nG" or ""
-		local item = self:group_to_item(v)
-		local tooltip = self:get_tooltip(item, recipe_type, width, groups)
+		local item_r = self:group_to_item(v)
+		local tooltip = self:get_tooltip(item_r, recipe_type, width, groups)
 
 		formspec = formspec.."item_image_button["..X..","..Y..";"..
 				     btn_size..","..btn_size..";"..
-				     item..";"..item..";"..label.."]"..tooltip
+				     item_r..";"..item_r..";"..label.."]"..tooltip
 	     end
 	end
 	local output = recipes[recipe_num].output
