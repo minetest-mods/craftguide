@@ -1,3 +1,4 @@
+
 local craftguide, datas = {}, {}
 local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
@@ -281,6 +282,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	else for item in pairs(fields) do
 		if not item:find(":") then return end
 		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
+		local recipes = minetest.get_all_craft_recipes(item) 
+		if not recipes then return end
 
 		if progressive_mode then
 			local _, player_has_item =
@@ -290,7 +293,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
 		data.item = item
 		data.recipe_num = 1
-		data.recipes_item = minetest.get_all_craft_recipes(item)
+		data.recipes_item = recipes
 		craftguide:get_formspec(player_name)
 	     end
 	end
