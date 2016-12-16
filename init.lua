@@ -38,7 +38,7 @@ local function extract_groups(str)
 end
 
 local function colorize(str)
-	return minetest.colorize("#FFFF00", str)
+	return minetest.colorize and minetest.colorize("#FFFF00", str) or str
 end
 
 function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
