@@ -29,11 +29,12 @@ function craftguide:group_to_item(item)
 			item = group_stereotypes[short_itemstr]
 		elseif minetest.registered_items["default:"..item:sub(7)] then
 			item = item:gsub("group:", "default:")
-		else for node, def in pairs(minetest.registered_items) do
-			 if def.groups[item:match("[^,:]+$")] then
-				item = node
-			 end
-		     end
+		else
+			for node, def in pairs(minetest.registered_items) do
+				if def.groups[item:match("[^,:]+$")] then
+					item = node
+				end
+			end
 		end
 	end
 	return item:sub(1,6) == "group:" and "" or item
@@ -91,7 +92,7 @@ function craftguide:get_recipe(player_name, tooltipl, item, recipe_num, recipes)
 	end
 	if recipe_type == "cooking" then
 		formspec = formspec.."image["..(xoffset-0.8)..","..(iY+1)..
-				     ".5;0.5,0.5;default_furnace_front.png]"
+			".5;0.5,0.5;default_furnace_front.png]"
 	end
 
 	local items = recipes[recipe_num].items
@@ -102,36 +103,39 @@ function craftguide:get_recipe(player_name, tooltipl, item, recipe_num, recipes)
 
 	if recipe_type == "normal" and
 			width > craftgrid_limit or rows > craftgrid_limit then
-		formspec = formspec.."label["..xoffset..","..(iY+2)..
-					 ";Recipe is too big to\nbe displayed ("..
-					 width.."x"..rows..")]"
-	else for i, v in pairs(items) do
-		local X = (i-1) % width + xoffset
-		local Y = ceil(i / width + iY+2 - min(2, rows))
+		formspec = formspec..
+			"label["..xoffset..","..(iY+2)..
+			";Recipe is too big to\nbe displayed ("..
+			width.."x"..rows..")]"
+	else
+		for i, v in pairs(items) do
+			local X = (i-1) % width + xoffset
+			local Y = ceil(i / width + iY+2 - min(2, rows))
 
-		if recipe_type == "normal" and width > 3 or rows > 3 then
-			btn_size = width > 3 and 3 / width or 3 / rows
-			X = btn_size * (i % width) + xoffset
-			Y = btn_size * floor((i-1) / width) + iY+3 -
-			    min(2, rows)
+			if recipe_type == "normal" and
+					width > 3 or rows > 3 then
+				btn_size = width > 3 and 3 / width or 3 / rows
+				X = btn_size * (i % width) + xoffset
+				Y = btn_size * floor((i-1) / width) + iY+3 -
+					min(2, rows)
+			end
+
+			local groups = extract_groups(v)
+			local label = groups and "\nG" or ""
+			local item_r = self:group_to_item(v)
+			local tooltip = self:get_tooltip(item_r, recipe_type,
+								width, groups)
+
+			formspec = formspec.."item_image_button["..X..","..Y..
+				";"..btn_size..","..btn_size..";"..item_r..
+				";"..item_r..";"..label.."]"..tooltip
 		end
-
-		local groups = extract_groups(v)
-		local label = groups and "\nG" or ""
-		local item_r = self:group_to_item(v)
-		local tooltip = self:get_tooltip(item_r, recipe_type,
-						 width, groups)
-
-		formspec = formspec.."item_image_button["..X..","..Y..";"..
-					btn_size..","..btn_size..";"..
-					item_r..";"..item_r..";"..label.."]"..
-					tooltip
-	     end
 	end
 	local output = recipes[recipe_num].output
-	return formspec.."image["..(xoffset-1)..","..(iY+2)..
+	return formspec..
+			"image["..(xoffset-1)..","..(iY+2)..
 				".12;0.9,0.7;craftguide_arrow.png]"..
-			 "item_image_button["..(xoffset-2)..","..(iY+2)..";1,1;"..
+			"item_image_button["..(xoffset-2)..","..(iY+2)..";1,1;"..
 				output..";"..item..";]"..tooltipl
 end
 
@@ -164,7 +168,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 		local Y = (i % ipp - X) / iX+1
 
 		formspec = formspec.."item_image_button["..X..","..Y..";1,1;"..
-				      name..";"..name.."_inv;]"
+			name..";"..name.."_inv;]"
 	end
 
 	if data.item and minetest.registered_items[data.item] then
@@ -181,7 +185,8 @@ function craftguide:get_formspec(player_name, is_fuel)
 		else
 			formspec = formspec..
 				self:get_recipe(player_name, tooltip, data.item,
-					     data.recipe_num, data.recipes_item)
+						data.recipe_num,
+						data.recipes_item)
 		end
 	end
 
@@ -215,8 +220,8 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 			if item:sub(1,6) == "group:" then
 				local groups = group_to_items(item)
 				for j=1, #groups do
-					if inv:contains_item("main",
-							     groups[j]) then
+					if inv:contains_item(
+							"main", groups[j]) then
 						group_in_inv = true
 					end
 				end
@@ -240,7 +245,7 @@ function craftguide:get_init_items(player_name)
 		local is_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={name}}).time > 0
 		if not (def.groups.not_in_creative_inventory == 1) and
-		       (minetest.get_craft_recipe(name).items or is_fuel) and
+			(minetest.get_craft_recipe(name).items or is_fuel) and
 			def.description and def.description ~= "" then
 
 			list_size = list_size + 1
@@ -310,29 +315,33 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			data.pagenum = data.pagemax
 		end
 		craftguide:get_formspec(player_name)
-	else for item in pairs(fields) do
-		if not item:find(":") then break end
-		if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
+	else
+		for item in pairs(fields) do
+			if not item:find(":") then break end
+			if item:sub(-4) == "_inv" then item = item:sub(1,-5) end
 
-		local recipes = minetest.get_all_craft_recipes(item)
-		local is_fuel = minetest.get_craft_result({
-			method="fuel", width=1, items={item}}).time > 0
-		if not recipes and not is_fuel then return end
+			local recipes = minetest.get_all_craft_recipes(item)
+			local is_fuel = minetest.get_craft_result({
+				method="fuel", width=1, items={item}}).time > 0
+			if not recipes and not is_fuel then return end
 
-		if progressive_mode then
-			local who = minetest.get_player_by_name(player_name)
-			local inv = who:get_inventory()
-			local _, has_item = craftguide:recipe_in_inv(inv, item)
+			if progressive_mode then
+				local who =
+					minetest.get_player_by_name(player_name)
+				local inv = who:get_inventory()
+				local _, has_item =
+					craftguide:recipe_in_inv(inv, item)
 
-			if not has_item then return end
-			recipes = craftguide:recipe_in_inv(inv, item, recipes)
+				if not has_item then return end
+				recipes = craftguide:recipe_in_inv(
+							inv, item, recipes)
+			end
+
+			data.item = item
+			data.recipe_num = 1
+			data.recipes_item = recipes
+			craftguide:get_formspec(player_name, is_fuel)
 		end
-
-		data.item = item
-		data.recipe_num = 1
-		data.recipes_item = recipes
-		craftguide:get_formspec(player_name, is_fuel)
-	     end
 	end
 end)
 
@@ -353,7 +362,7 @@ minetest.register_craftitem("craftguide:book", {
 			craftguide:get_formspec(player_name)
 		else
 			minetest.show_formspec(player_name, "craftguide:book",
-					       datas[player_name].formspec)
+						datas[player_name].formspec)
 		end
 	end
 })
