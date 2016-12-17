@@ -7,7 +7,7 @@ local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 
 local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
-		"([%d]+)[.%d+]*[^%d]*x[^%d]*([%d]+)[.%d+]*")
+		"([%d]+)[.%d+]*x([%d]+)[.%d+]*")
 iX, iY = max(8, iX or 8), max(1, iY or 3)
 local ipp = iX * iY
 local xoffset = iX / 2 + (iX % 2 == 0 and 0.5 or 0)
@@ -209,10 +209,11 @@ local function player_has_item(T)
 end
 
 local function group_to_items(group)
-	local items_with_group = {}
+	local items_with_group, counter = {}, 0
 	for name, def in pairs(minetest.registered_items) do
 		if def.groups[group:sub(7)] then
-			items_with_group[#items_with_group+1] = name
+			counter = counter + 1
+			items_with_group[counter] = name
 		end
 	end
 	return items_with_group
@@ -274,6 +275,7 @@ end
 
 function craftguide:get_filter_items(player_name)
 	local data = datas[player_name]
+	local filter = data.filter
 	local items_list = progressive_mode and data.items or data.init_items
 	local player = minetest.get_player_by_name(player_name)
 	local inv = player:get_inventory()
@@ -281,13 +283,21 @@ function craftguide:get_filter_items(player_name)
 
 	for i=1, #items_list do
 		local item = items_list[i]
-		local _, has_item = self:recipe_in_inv(inv, item)
+		local item_desc =
+			minetest.registered_items[item].description:lower()
 
-		if (data.filter ~= "" and item:find(data.filter, 1, true)) or
-				(data.filter == "" and progressive_mode and
-				has_item) then
-			counter = counter + 1
-			filtered_list[counter] = item
+		if filter ~= "" then
+			if item:find(filter, 1, true) or
+					item_desc:find(filter, 1, true) then
+				counter = counter + 1
+				filtered_list[counter] = item
+			end
+		elseif progressive_mode then
+			local _, has_item = self:recipe_in_inv(inv, item)
+			if has_item then
+				counter = counter + 1
+				filtered_list[counter] = item
+			end
 		end
 	end
 	data.items = filtered_list
