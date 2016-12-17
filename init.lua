@@ -222,37 +222,46 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 	return recipes, player_has_item(show_item_recipes)
 end
 
-function craftguide:get_items(player_name)
+function craftguide:get_init_items(player_name)
 	local items_list, data, list_size = {}, datas[player_name], 0
-	local player = minetest.get_player_by_name(player_name)
-	local inv = player:get_inventory()
-
 	for name, def in pairs(minetest.registered_items) do
 		local is_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={name}}).time > 0
 		if not (def.groups.not_in_creative_inventory == 1) and
 		       (minetest.get_craft_recipe(name).items or is_fuel) and
-			def.description and def.description ~= "" and
-		       (def.name:find(data.filter, 1, true) or
-			def.description:lower():find(data.filter, 1, true)) then
+			def.description and def.description ~= "" then
 
-			if progressive_mode then
-				local _, has_item = self:recipe_in_inv(inv, name)
-				if has_item then
-					list_size = list_size + 1
-					items_list[list_size] = name
-				end
-			else
-				list_size = list_size + 1
-				items_list[list_size] = name
-			end
+			list_size = list_size + 1
+			items_list[list_size] = name
 		end
 	end
 
 	sort(items_list)
 	data.items = items_list
-	data.size = list_size
-	data.pagemax = max(1, ceil(list_size / ipp))
+	data.size = #items_list
+	data.pagemax = max(1, ceil(data.size / ipp))
+end
+
+function craftguide:get_filter_items(player_name)
+	local data = datas[player_name]
+	local items_list = data.items
+	local player = minetest.get_player_by_name(player_name)
+	local inv = player:get_inventory()
+
+	for i=#items_list, 1, -1 do
+		if not items_list[i]:find(data.filter, 1, true) then
+			remove(items_list, i)
+		end
+		if progressive_mode then
+			local _, has_item =
+				self:recipe_in_inv(inv, items_list[i] or "")
+			if not has_item then remove(items_list, i) end
+		end
+	end
+
+	data.items = items_list
+	data.size = #items_list
+	data.pagemax = max(1, ceil(data.size / ipp))
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
@@ -262,7 +271,10 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 
 	if fields.clear then
 		data.filter, data.item, data.pagenum, data.recipe_num = "", nil, 1, 1
-		craftguide:get_items(player_name)
+		craftguide:get_init_items(player_name)
+		if progressive_mode then
+			craftguide:get_filter_items(player_name)
+		end
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
 		local recipe = data.recipes_item[data.recipe_num + 1]
@@ -271,7 +283,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	elseif fields.search or fields.key_enter_field == "craftguide_filter" then
 		data.filter = fields.craftguide_filter:lower()
 		data.pagenum = 1
-		craftguide:get_items(player_name)
+		craftguide:get_init_items(player_name)
+		craftguide:get_filter_items(player_name)
 		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
@@ -317,7 +330,10 @@ minetest.register_craftitem("craftguide:book", {
 		local player_name = user:get_player_name()
 		if progressive_mode or not datas[player_name] then
 			datas[player_name] = {filter="", pagenum=1}
-			craftguide:get_items(player_name)
+			craftguide:get_init_items(player_name)
+			if progressive_mode then
+				craftguide:get_filter_items(player_name)
+			end
 			craftguide:get_formspec(player_name)
 		else
 			minetest.show_formspec(player_name, "craftguide:book",
