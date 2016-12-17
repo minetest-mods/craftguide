@@ -145,7 +145,7 @@ end
 
 function craftguide:get_formspec(player_name, is_fuel)
 	local data = datas[player_name]
-	local pagemax = max(1, ceil(#data.items / ipp))
+	data.pagemax = max(1, ceil(#data.items / ipp))
 
 	local formspec = "size["..iX..","..(iY+3)..".6;]"..[[
 			background[1,1;1,1;craftguide_bg.png;true]
@@ -156,7 +156,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 			field_close_on_enter[craftguide_filter, false] ]]..
 			"button["..(iX-3)..".4,0;0.8,0.95;prev;<]"..
 			"label["..(iX-2)..".1,0.18;"..colorize(data.pagenum)..
-				" / "..pagemax.."]"..
+				" / "..data.pagemax.."]"..
 			"button["..(iX-1)..".2,0;0.8,0.95;next;>]"..
 			"field[0.3,0.32;2.6,1;craftguide_filter;;"..
 				minetest.formspec_escape(data.filter).."]"
@@ -322,18 +322,17 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		craftguide:get_formspec(player_name)
 	elseif fields.search or
 			fields.key_enter_field == "craftguide_filter" then
+		if fields.craftguide_filter == "" then return end
 		data.filter = fields.craftguide_filter:lower()
 		data.pagenum = 1
 		craftguide:get_filter_items(player_name)
 		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
-		local pagemax = max(1, ceil(#data.items / ipp))
-
-		if data.pagenum > pagemax then
+		if data.pagenum > data.pagemax then
 			data.pagenum = 1
 		elseif data.pagenum == 0 then
-			data.pagenum = pagemax
+			data.pagenum = data.pagemax
 		end
 		craftguide:get_formspec(player_name)
 	else
