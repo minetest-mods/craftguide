@@ -145,6 +145,8 @@ end
 
 function craftguide:get_formspec(player_name, is_fuel)
 	local data = datas[player_name]
+	local pagemax = max(1, ceil(#data.items / ipp))
+
 	local formspec = "size["..iX..","..(iY+3)..".6;]"..[[
 			background[1,1;1,1;craftguide_bg.png;true]
 			button[2.5,0.2;0.8,0.5;search;?]
@@ -154,7 +156,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 			field_close_on_enter[craftguide_filter, false] ]]..
 			"button["..(iX-3)..".4,0;0.8,0.95;prev;<]"..
 			"label["..(iX-2)..".1,0.18;"..colorize(data.pagenum)..
-				" / "..data.pagemax.."]"..
+				" / "..pagemax.."]"..
 			"button["..(iX-1)..".2,0;0.8,0.95;next;>]"..
 			"field[0.3,0.32;2.6,1;craftguide_filter;;"..
 				minetest.formspec_escape(data.filter).."]"
@@ -250,7 +252,9 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 end
 
 function craftguide:get_init_items(player_name)
-	local items_list, data, list_size = {}, datas[player_name], 0
+	local data = datas[player_name]
+	local items_list, counter = {}, 0
+
 	for name, def in pairs(minetest.registered_items) do
 		local is_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={name}}).time > 0
@@ -258,39 +262,35 @@ function craftguide:get_init_items(player_name)
 			(minetest.get_craft_recipe(name).items or is_fuel) and
 			def.description and def.description ~= "" then
 
-			list_size = list_size + 1
-			items_list[list_size] = name
+			counter = counter + 1
+			items_list[counter] = name
 		end
 	end
 
 	sort(items_list)
+	data.init_items = items_list
 	data.items = items_list
-	data.pagemax = max(1, ceil(list_size / ipp))
 end
 
 function craftguide:get_filter_items(player_name)
 	local data = datas[player_name]
-	local items_list, list_size = data.items, #data.items
+	local items_list = progressive_mode and data.items or data.init_items
 	local player = minetest.get_player_by_name(player_name)
 	local inv = player:get_inventory()
+	local filtered_list, counter = {}, 0
 
-	for i=list_size, 1, -1 do
-		if not items_list[i]:find(data.filter, 1, true) then
-			remove(items_list, i)
-			list_size = list_size - 1
-		end
-		if progressive_mode then
-			local _, has_item =
-				self:recipe_in_inv(inv, items_list[i] or "")
-			if not has_item then
-				remove(items_list, i)
-				list_size = list_size - 1
-			end
+	for i=1, #items_list do
+		local item = items_list[i]
+		local _, has_item = self:recipe_in_inv(inv, item)
+
+		if (data.filter ~= "" and item:find(data.filter, 1, true)) or
+				(data.filter == "" and progressive_mode and
+				has_item) then
+			counter = counter + 1
+			filtered_list[counter] = item
 		end
 	end
-
-	data.items = items_list
-	data.pagemax = max(1, ceil(list_size / ipp))
+	data.items = filtered_list
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
@@ -301,28 +301,29 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	if fields.clear then
 		data.filter, data.item, data.pagenum, data.recipe_num =
 			"", nil, 1, 1
-		craftguide:get_init_items(player_name)
+		data.items = data.init_items
 		if progressive_mode then
 			craftguide:get_filter_items(player_name)
 		end
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
-		local recipe = data.recipes_item[data.recipe_num + 1]
+		local recipe = data.recipes_item[data.recipe_num+1]
 		data.recipe_num = recipe and data.recipe_num + 1 or 1
 		craftguide:get_formspec(player_name)
 	elseif fields.search or
 			fields.key_enter_field == "craftguide_filter" then
 		data.filter = fields.craftguide_filter:lower()
 		data.pagenum = 1
-		craftguide:get_init_items(player_name)
 		craftguide:get_filter_items(player_name)
 		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
-		if data.pagenum > data.pagemax then
+		local pagemax = max(1, ceil(#data.items / ipp))
+
+		if data.pagenum > pagemax then
 			data.pagenum = 1
 		elseif data.pagenum == 0 then
-			data.pagenum = data.pagemax
+			data.pagenum = pagemax
 		end
 		craftguide:get_formspec(player_name)
 	else
