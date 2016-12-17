@@ -1,6 +1,11 @@
 local craftguide, datas = {}, {}
 local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
+
+-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
+-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
+local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
+
 local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
 		"([%d]+)[.%d+]*[^%d]*x[^%d]*([%d]+)[.%d+]*")
 iX, iY = max(8, iX or 8), max(1, iY or 3)
@@ -86,9 +91,7 @@ function craftguide:get_recipe(player_name, tooltip_l, item, recipe_num, recipes
 	local items = recipes[recipe_num].items
 	local width = recipes[recipe_num].width
 	if width == 0 then width = min(3, #items) end
-	-- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
-	-- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
-	local rows = ceil(table.maxn(items) / width)
+	local rows = ceil(maxn(items) / width)
 	local btn_size, craftgrid_limit = 1, 5
 
 	if recipe_type == "normal" and
@@ -191,9 +194,7 @@ local function group_to_items(group)
 	return items_with_group
 end
 
-function craftguide:recipe_in_inv(player_name, item_name, recipes_f)
-	local player = minetest.get_player_by_name(player_name)
-	local inv = player:get_inventory()
+function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 	local recipes = recipes_f or minetest.get_all_craft_recipes(item_name) or {}
 	local show_item_recipes = {}
 
@@ -215,9 +216,7 @@ function craftguide:recipe_in_inv(player_name, item_name, recipes_f)
 		end
 	end
 	for i=#show_item_recipes, 1, -1 do
-		if not show_item_recipes[i] then
-			table.remove(recipes, i)
-		end
+		if not show_item_recipes[i] then remove(recipes, i) end
 	end
 
 	return recipes, player_has_item(show_item_recipes)
@@ -225,6 +224,9 @@ end
 
 function craftguide:get_items(player_name)
 	local items_list, data, list_size = {}, datas[player_name], 0
+	local player = minetest.get_player_by_name(player_name)
+	local inv = player:get_inventory()
+
 	for name, def in pairs(minetest.registered_items) do
 		local is_fuel = minetest.get_craft_result({
 			method="fuel", width=1, items={name}}).time > 0
@@ -235,19 +237,22 @@ function craftguide:get_items(player_name)
 			def.description:lower():find(data.filter, 1, true)) then
 
 			if progressive_mode then
-				local _, has_item = self:recipe_in_inv(player_name, name)
-				if has_item then items_list[list_size+1] = name end
+				local _, has_item = self:recipe_in_inv(inv, name)
+				if has_item then
+					list_size = list_size + 1
+					items_list[list_size] = name
+				end
 			else
-				items_list[list_size+1] = name
+				list_size = list_size + 1
+				items_list[list_size] = name
 			end
-			list_size = #items_list
 		end
 	end
 
-	table.sort(items_list)
+	sort(items_list)
 	data.items = items_list
 	data.size = list_size
-	data.pagemax = max(1, ceil(data.size / ipp))
+	data.pagemax = max(1, ceil(list_size / ipp))
 end
 
 minetest.register_on_player_receive_fields(function(player, formname, fields)
@@ -286,9 +291,12 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		if not recipes and not is_fuel then return end
 
 		if progressive_mode then
-			local _, has_item = craftguide:recipe_in_inv(player_name, item)
+			local player = minetest.get_player_by_name(player_name)
+			local inv = player:get_inventory()
+			local _, has_item = craftguide:recipe_in_inv(inv, item)
+
 			if not has_item then return end
-			recipes = craftguide:recipe_in_inv(player_name, item, recipes)
+			recipes = craftguide:recipe_in_inv(inv, item, recipes)
 		end
 
 		data.item = item
