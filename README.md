@@ -1,17 +1,17 @@
-## Crafting Guide ##
+## ![Preview1](http://i.imgur.com/fIPNYkb.png) Crafting Guide ##
 
-#### A simple and fast Crafting Guide that doesn't suck for Minetest. ####
+#### A Crafting Guide for Minetest that doesn't suck. ####
 
-#### Usable with a book named *"Crafting Guide"*. ####
+#### `craftguide` is simply the most comprehensive mod of his category, with the cleanest code. ####
+#### Consult the [Minetest Wiki](http://wiki.minetest.net/Crafting_guide) for more details and comparisons. ####
 
-#### This crafting guide features two modes : Normal and Progressive. ####
-The Progressive mode is a Terraria-like crafting guide system that only 
-list the items in the crafting guide for which you already have the ingredients
-in your inventory. The progressive mode is disabled by default and can be enabled with 
-`craftguide_progressive_mode = true` in `minetest.conf`.
+#### This crafting guide is usable with a blue book named *"Crafting Guide"*. ####
 
-The formspec size is also easily configurable with this setting in `minetest.conf`:
+#### This crafting guide features two modes : Standard and Progressive. ####
+The Progressive mode is a Terraria-like system that only shows recipes you can craft from items in inventory.
+The progressive mode can be enabled with `craftguide_progressive_mode = true` in `minetest.conf`.
+
+**The formspec size is also configurable** with this setting in `minetest.conf`:
 `craftguide_size = WxH` (default: `8x3`). The minimum accepted size is `8x1`.
 
-![Preview](http://i.imgur.com/xblp1Vs.png)
-
+![Preview2](http://i.imgur.com/xblp1Vs.png)
