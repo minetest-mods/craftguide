@@ -335,30 +335,35 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			data.pagenum = data.pagemax
 		end
 		craftguide:get_formspec(player_name)
-	elseif next(fields):find(":") then
-		local item = next(fields)
-		if item:sub(-4) == "_inv" then
-			item = item:sub(1,-5)
+	else for item in pairs(fields) do
+		if item:find(":") then
+			if item:sub(-4) == "_inv" then
+				item = item:sub(1,-5)
+			end
+
+			local recipes = minetest.get_all_craft_recipes(item)
+			local is_fuel = minetest.get_craft_result({
+				method="fuel", width=1, items={item}}).time > 0
+			if not recipes and not is_fuel then return end
+
+			if progressive_mode then
+				local who =
+					minetest.get_player_by_name(player_name)
+				local inv = who:get_inventory()
+				local _, has_item =
+					craftguide:recipe_in_inv(inv, item)
+
+				if not has_item then return end
+				recipes = craftguide:recipe_in_inv(
+							inv, item, recipes)
+			end
+
+			data.item = item
+			data.recipe_num = 1
+			data.recipes_item = recipes
+			craftguide:get_formspec(player_name, is_fuel)
 		end
-
-		local recipes = minetest.get_all_craft_recipes(item)
-		local is_fuel = minetest.get_craft_result({
-			method="fuel", width=1, items={item}}).time > 0
-		if not recipes and not is_fuel then return end
-
-		if progressive_mode then
-			local who = minetest.get_player_by_name(player_name)
-			local inv = who:get_inventory()
-			local _, has_item = craftguide:recipe_in_inv(inv, item)
-
-			if not has_item then return end
-			recipes = craftguide:recipe_in_inv(inv, item, recipes)
-		end
-
-		data.item = item
-		data.recipe_num = 1
-		data.recipes_item = recipes
-		craftguide:get_formspec(player_name, is_fuel)
+	     end
 	end
 end)
 
