@@ -95,7 +95,7 @@ function craftguide:get_recipe(player_name, tooltipl, item, recipe_num, recipes)
 	if recipe_type == "cooking" then
 		formspec = formspec..
 			"image["..(xoffset-0.8)..","..(iY+1)..
-				".5;0.5,0.5;default_furnace_front.png]"
+				".5;0.5,0.5;craftguide_furnace.png]"
 	end
 
 	local items = recipes[recipe_num].items
@@ -189,7 +189,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 				"item_image_button["..xoffset..","..(iY+2)..
 					";1,1;"..data.item..";"..data.item..";]"..
 				tooltip.."image["..(xoffset-2)..","..
-					(iY+2)..";1,1;craftguide_none.png]"
+					(iY+2)..";1,1;craftguide_fire.png]"
 		else
 			formspec = formspec..
 				self:get_recipe(player_name, tooltip, data.item,
