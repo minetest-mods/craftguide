@@ -6,12 +6,6 @@ local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
 local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 
-local iX, iY = (minetest.setting_get("craftguide_size") or "8x3"):match(
-		"([%d]+)[.%d+]*x([%d]+)[.%d+]*")
-iX, iY = max(8, iX or 8), max(1, iY or 3)
-local ipp = iX * iY
-local xoffset = iX / 2 + (iX % 2 == 0 and 0.5 or 0)
-
 local group_stereotypes = {
 	wool	     = "wool:white",
 	dye	     = "dye:white",
@@ -83,7 +77,7 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	return has_extras and tooltip.."]" or ""
 end
 
-function craftguide:get_recipe(player_name, tooltipl, item, recipe_num, recipes)
+function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec..
@@ -126,13 +120,13 @@ function craftguide:get_recipe(player_name, tooltipl, item, recipe_num, recipes)
 			local groups = extract_groups(v)
 			local label = groups and "\nG" or ""
 			local item_r = self:group_to_item(v)
-			local tooltip = self:get_tooltip(
+			local tltip = self:get_tooltip(
 					item_r, recipe_type, width, groups)
 
 			formspec = formspec..
 				"item_image_button["..X..","..Y..";"..
 					btn_size..","..btn_size..";"..item_r..
-					";"..item_r..";"..label.."]"..tooltip
+					";"..item_r..";"..label.."]"..tltip
 		end
 	end
 	local output = recipes[recipe_num].output
@@ -140,30 +134,38 @@ function craftguide:get_recipe(player_name, tooltipl, item, recipe_num, recipes)
 		"image["..(xoffset-1)..","..(iY+2)..
 			".12;0.9,0.7;craftguide_arrow.png]"..
 		"item_image_button["..(xoffset-2)..","..(iY+2)..";1,1;"..
-			output..";"..item..";]"..tooltipl
+			output..";"..item..";]"..tooltip
 end
 
 function craftguide:get_formspec(player_name, is_fuel)
 	local data = datas[player_name]
+	local iY = data.iX - 5
+	local ipp = data.iX * iY
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
-	local formspec = "size["..iX..","..(iY+3)..".6;]"..[[
+	local formspec = "size["..data.iX..","..(iY+3)..".6;]"..[[
 			background[1,1;1,1;craftguide_bg.png;true]
-			button[2.5,0.2;0.8,0.5;search;?]
-			button[3.2,0.2;0.8,0.5;clear;X]
+			button[2.4,0.21;0.8,0.5;search;?]
+			button[3.05,0.21;0.8,0.5;clear;X]
 			tooltip[search;Search]
 			tooltip[clear;Reset]
+			tooltip[size_inc;Increase window size]
+			tooltip[size_dec;Decrease window size]
 			field_close_on_enter[craftguide_filter, false] ]]..
-			"button["..(iX-3)..".4,0;0.8,0.95;prev;<]"..
-			"label["..(iX-2)..".1,0.18;"..colorize(data.pagenum)..
-				" / "..data.pagemax.."]"..
-			"button["..(iX-1)..".2,0;0.8,0.95;next;>]"..
-			"field[0.3,0.32;2.6,1;craftguide_filter;;"..
+			"button["..(data.iX/2)..",-0.02;0.7,1;size_inc;+]"..
+			"button["..((data.iX/2) + 0.5)..
+				",-0.02;0.7,1;size_dec;-]"..
+			"button["..(data.iX-3)..".4,0;0.8,0.95;prev;<]"..
+			"label["..(data.iX-2)..".1,0.18;"..
+				colorize(data.pagenum).." / "..data.pagemax.."]"..
+			"button["..(data.iX-1)..".2,0;0.8,0.95;next;>]"..
+			"field[0.3,0.32;2.5,1;craftguide_filter;;"..
 				minetest.formspec_escape(data.filter).."]"
 
+	local xoffset = data.iX / 2 + (data.iX % 2 == 0 and 0.5 or 0)
 	if not next(data.items) then
 		formspec = formspec..
-			"label["..(xoffset - (iX%2 == 0 and 1.5 or 1))..
+			"label["..(xoffset - (data.iX % 2 == 0 and 1.5 or 1))..
 				",2;No item to show]"
 	end
 
@@ -171,8 +173,8 @@ function craftguide:get_formspec(player_name, is_fuel)
 	for i = first_item, first_item + ipp - 1 do
 		local name = data.items[i+1]
 		if not name then break end
-		local X = i % iX
-		local Y = (i % ipp - X) / iX+1
+		local X = i % data.iX
+		local Y = (i % ipp - X) / data.iX + 1
 
 		formspec = formspec..
 			"item_image_button["..X..","..Y..";1,1;"..
@@ -189,12 +191,11 @@ function craftguide:get_formspec(player_name, is_fuel)
 				"item_image_button["..xoffset..","..(iY+2)..
 					";1,1;"..data.item..";"..data.item..";]"..
 				tooltip.."image["..(xoffset-2)..","..
-					(iY+2)..";1,1;craftguide_fire.png]"
+					(iY+1.98)..";1,1;craftguide_fire.png]"
 		else
-			formspec = formspec..
-				self:get_recipe(player_name, tooltip, data.item,
-						data.recipe_num,
-						data.recipes_item)
+			formspec = formspec..self:get_recipe(
+					iY, xoffset, tooltip, data.item,
+					data.recipe_num, data.recipes_item)
 		end
 	end
 
@@ -237,8 +238,8 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 					end
 				end
 			end
-			if not group_in_inv and not
-					inv:contains_item("main", item) then
+			if not group_in_inv and
+					not inv:contains_item("main", item) then
 				show_item_recipes[i] = false
 			end
 		end
@@ -335,6 +336,12 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			data.pagenum = data.pagemax
 		end
 		craftguide:get_formspec(player_name)
+	elseif fields.size_inc or fields.size_dec then
+		if (fields.size_dec and data.iX == 8) or
+			(fields.size_inc and data.iX == 12) then return end
+		data.pagenum = 1
+		data.iX = data.iX - (fields.size_dec and 1 or -1)
+		craftguide:get_formspec(player_name)
 	else for item in pairs(fields) do
 		if item:find(":") then
 			if item:sub(-4) == "_inv" then
@@ -376,7 +383,7 @@ minetest.register_craftitem("craftguide:book", {
 	on_use = function(itemstack, user)
 		local player_name = user:get_player_name()
 		if progressive_mode or not datas[player_name] then
-			datas[player_name] = {filter="", pagenum=1}
+			datas[player_name] = {filter="", pagenum=1, iX=9}
 			craftguide:get_init_items(player_name)
 			if progressive_mode then
 				craftguide:get_filter_items(player_name)

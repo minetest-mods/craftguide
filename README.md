@@ -11,7 +11,4 @@
 The Progressive mode is a Terraria-like system that only shows recipes you can craft from items in inventory.
 The progressive mode can be enabled with `craftguide_progressive_mode = true` in `minetest.conf`.
 
-**The formspec size is also configurable** with this setting in `minetest.conf`:
-`craftguide_size = WxH` (default: `8x3`). The minimum accepted size is `8x1`.
-
-![Preview2](http://i.imgur.com/xblp1Vs.png)
+![Preview2](http://i.imgur.com/3q7rVSo.png)
