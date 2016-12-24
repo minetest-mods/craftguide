@@ -149,7 +149,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 	local ipp = data.iX * iY
 
 	if not data.items then
-		data.items = data.init_items
+		data.items = datas.init_items
 	end
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
@@ -266,10 +266,8 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 	return recipes, player_has_item(show_item_recipes)
 end
 
-function craftguide:get_init_items(player_name)
-	local data = datas[player_name]
+function craftguide:get_init_items()
 	local items_list, counter = {}, 0
-
 	for name, def in pairs(reg_items) do
 		local is_fuel = get_fueltime(name) > 0
 		if not (def.groups.not_in_creative_inventory == 1) and
@@ -282,13 +280,13 @@ function craftguide:get_init_items(player_name)
 	end
 
 	sort(items_list)
-	data.init_items = items_list
+	datas.init_items = items_list
 end
 
 function craftguide:get_filter_items(data, player)
 	local filter = data.filter
 	local items_list = progressive_mode and data.init_filter_items or
-		data.init_items
+		datas.init_items
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
@@ -326,7 +324,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 		data.filter, data.item, data.pagenum, data.recipe_num =
 			"", nil, 1, 1
 		data.items = progressive_mode and data.init_filter_items or
-			data.init_items
+			datas.init_items
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
 		local recipe = data.recipes_item[data.recipe_num + 1]
@@ -387,12 +385,15 @@ mt.register_craftitem("craftguide:book", {
 	stack_max = 1,
 	groups = {book=1},
 	on_use = function(itemstack, user)
+		if not datas.init_items then
+			craftguide:get_init_items()
+		end
+
 		local player_name = user:get_player_name()
 		local data = datas[player_name]
 
 		if progressive_mode or not data then
 			datas[player_name] = {filter="", pagenum=1, iX=9}
-			craftguide:get_init_items(player_name)
 			if progressive_mode then
 				craftguide:get_filter_items(
 						datas[player_name], user)
