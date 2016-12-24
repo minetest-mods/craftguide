@@ -1,8 +1,8 @@
 local craftguide, datas, mt = {}, {}, minetest
 local progressive_mode = mt.setting_getbool("craftguide_progressive_mode")
-local reg_items, get_recipes = mt.registered_items, mt.get_all_craft_recipes
-local get_player, get_recipe = mt.get_player_by_name, mt.get_craft_recipe
+local get_recipe, get_recipes = mt.get_craft_recipe, mt.get_all_craft_recipes
 local get_result, show_formspec = mt.get_craft_result, mt.show_formspec
+local reg_items = mt.registered_items
 
 -- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
@@ -168,11 +168,12 @@ function craftguide:get_formspec(player_name, is_fuel)
 			"field[0.3,0.32;2.5,1;filter;;"..
 				mt.formspec_escape(data.filter).."]"
 
-	local odd = data.iX % 2 == 0
-	local xoffset = data.iX / 2 + (odd and 0.5 or 0)
+	local even_num = data.iX % 2 == 0
+	local xoffset = data.iX / 2 + (even_num and 0.5 or 0)
+
 	if not next(data.items) then
 		formspec = formspec..
-			"label["..(xoffset - (odd and 1.5 or 1))..
+			"label["..(xoffset - (even_num and 1.5 or 1))..
 				",2;No item to show]"
 	end
 
@@ -227,6 +228,10 @@ local function group_to_items(group)
 	return items_with_group
 end
 
+local function item_in_inv(inv, item)
+	return inv:contains_item("main", item)
+end
+
 function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 	local recipes = recipes_f or get_recipes(item_name) or {}
 	local show_item_recipes = {}
@@ -238,14 +243,12 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 			if item:sub(1,6) == "group:" then
 				local groups = group_to_items(item)
 				for j=1, #groups do
-					if inv:contains_item(
-							"main", groups[j]) then
+					if item_in_inv(inv, groups[j]) then
 						group_in_inv = true
 					end
 				end
 			end
-			if not group_in_inv and
-					not inv:contains_item("main", item) then
+			if not group_in_inv and not item_in_inv(inv, item) then
 				show_item_recipes[i] = false
 			end
 		end
@@ -279,11 +282,9 @@ function craftguide:get_init_items(player_name)
 	data.items = items_list
 end
 
-function craftguide:get_filter_items(player_name)
-	local data = datas[player_name]
+function craftguide:get_filter_items(data, player)
 	local filter = data.filter
 	local items_list = progressive_mode and data.items or data.init_items
-	local player = get_player(player_name)
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
@@ -318,7 +319,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			"", nil, 1, 1
 		data.items = data.init_items
 		if progressive_mode then
-			craftguide:get_filter_items(player_name)
+			craftguide:get_filter_items(data, player)
 		end
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
@@ -329,7 +330,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			fields.filter ~= "" then
 		data.filter = fields.filter:lower()
 		data.pagenum = 1
-		craftguide:get_filter_items(player_name)
+		craftguide:get_filter_items(data, player)
 		craftguide:get_formspec(player_name)
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
@@ -387,7 +388,8 @@ mt.register_craftitem("craftguide:book", {
 			datas[player_name] = {filter="", pagenum=1, iX=9}
 			craftguide:get_init_items(player_name)
 			if progressive_mode then
-				craftguide:get_filter_items(player_name)
+				craftguide:get_filter_items(
+						datas[player_name], user)
 			end
 			craftguide:get_formspec(player_name)
 		else
