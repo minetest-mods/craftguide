@@ -1,5 +1,8 @@
-local craftguide, datas = {}, {}
-local progressive_mode = minetest.setting_getbool("craftguide_progressive_mode")
+local craftguide, datas, mt = {}, {}, minetest
+local progressive_mode = mt.setting_getbool("craftguide_progressive_mode")
+local reg_items, get_recipes = mt.registered_items, mt.get_all_craft_recipes
+local get_player, get_recipe = mt.get_player_by_name, mt.get_craft_recipe
+local get_result, show_formspec = mt.get_craft_result, mt.show_formspec
 
 -- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
@@ -21,12 +24,12 @@ function craftguide:group_to_item(item)
 		local short_itemstr = item:sub(7)
 		if group_stereotypes[short_itemstr] then
 			item = group_stereotypes[short_itemstr]
-		elseif minetest.registered_items["default:"..item:sub(7)] then
+		elseif reg_items["default:"..item:sub(7)] then
 			item = item:gsub("group:", "default:")
 		else
-			for node, def in pairs(minetest.registered_items) do
+			for name, def in pairs(reg_items) do
 				if def.groups[item:match("[^,:]+$")] then
-					item = node
+					item = name
 				end
 			end
 		end
@@ -41,18 +44,21 @@ end
 
 local function colorize(str)
 	-- If client <= 0.4.14, don't colorize for compatibility.
-	return minetest.colorize and minetest.colorize("#FFFF00", str) or str
+	return mt.colorize and mt.colorize("#FFFF00", str) or str
+end
+
+local function get_fueltime(item)
+	return get_result({method="fuel", width=1, items={item}}).time
 end
 
 function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	local tooltip, item_desc = "tooltip["..item..";", ""
-	local fueltime = minetest.get_craft_result({
-		method="fuel", width=1, items={item}}).time
+	local fueltime = get_fueltime(item)
 	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
 
-	if minetest.registered_items[item] then
+	if reg_items[item] then
 		if not groups then
-			item_desc = minetest.registered_items[item].description
+			item_desc = reg_items[item].description
 		end
 	else
 		return tooltip.."Unknown Item ("..item..")]"
@@ -160,12 +166,13 @@ function craftguide:get_formspec(player_name, is_fuel)
 				colorize(data.pagenum).." / "..data.pagemax.."]"..
 			"button["..(data.iX-1)..".2,0;0.8,0.95;next;>]"..
 			"field[0.3,0.32;2.5,1;filter;;"..
-				minetest.formspec_escape(data.filter).."]"
+				mt.formspec_escape(data.filter).."]"
 
-	local xoffset = data.iX / 2 + (data.iX % 2 == 0 and 0.5 or 0)
+	local odd = data.iX % 2 == 0
+	local xoffset = data.iX / 2 + (odd and 0.5 or 0)
 	if not next(data.items) then
 		formspec = formspec..
-			"label["..(xoffset - (data.iX % 2 == 0 and 1.5 or 1))..
+			"label["..(xoffset - (odd and 1.5 or 1))..
 				",2;No item to show]"
 	end
 
@@ -181,10 +188,10 @@ function craftguide:get_formspec(player_name, is_fuel)
 				name..";"..name.."_inv;]"
 	end
 
-	if data.item and minetest.registered_items[data.item] then
+	if data.item and reg_items[data.item] then
 		local tooltip = self:get_tooltip(data.item)
 		if not data.recipes_item or (is_fuel and not
-				minetest.get_craft_recipe(data.item).items) then
+				get_recipe(data.item).items) then
 			formspec = formspec..
 				"image["..(xoffset-1)..","..(iY+2)..
 					".12;0.9,0.7;craftguide_arrow.png]"..
@@ -200,7 +207,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 	end
 
 	data.formspec = formspec
-	minetest.show_formspec(player_name, "craftguide:book", formspec)
+	show_formspec(player_name, "craftguide", formspec)
 end
 
 local function player_has_item(T)
@@ -211,7 +218,7 @@ end
 
 local function group_to_items(group)
 	local items_with_group, counter = {}, 0
-	for name, def in pairs(minetest.registered_items) do
+	for name, def in pairs(reg_items) do
 		if def.groups[group:sub(7)] then
 			counter = counter + 1
 			items_with_group[counter] = name
@@ -221,8 +228,7 @@ local function group_to_items(group)
 end
 
 function craftguide:recipe_in_inv(inv, item_name, recipes_f)
-	local recipes = recipes_f or
-		minetest.get_all_craft_recipes(item_name) or {}
+	local recipes = recipes_f or get_recipes(item_name) or {}
 	local show_item_recipes = {}
 
 	for i=1, #recipes do
@@ -257,11 +263,10 @@ function craftguide:get_init_items(player_name)
 	local data = datas[player_name]
 	local items_list, counter = {}, 0
 
-	for name, def in pairs(minetest.registered_items) do
-		local is_fuel = minetest.get_craft_result({
-			method="fuel", width=1, items={name}}).time > 0
+	for name, def in pairs(reg_items) do
+		local is_fuel = get_fueltime(name) > 0
 		if not (def.groups.not_in_creative_inventory == 1) and
-			(minetest.get_craft_recipe(name).items or is_fuel) and
+			(get_recipe(name).items or is_fuel) and
 			def.description and def.description ~= "" then
 
 			counter = counter + 1
@@ -278,14 +283,13 @@ function craftguide:get_filter_items(player_name)
 	local data = datas[player_name]
 	local filter = data.filter
 	local items_list = progressive_mode and data.items or data.init_items
-	local player = minetest.get_player_by_name(player_name)
+	local player = get_player(player_name)
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
 	for i=1, #items_list do
 		local item = items_list[i]
-		local item_desc =
-			minetest.registered_items[item].description:lower()
+		local item_desc = reg_items[item].description:lower()
 
 		if filter ~= "" then
 			if item:find(filter, 1, true) or
@@ -304,8 +308,8 @@ function craftguide:get_filter_items(player_name)
 	data.items = filtered_list
 end
 
-minetest.register_on_player_receive_fields(function(player, formname, fields)
-	if formname ~= "craftguide:book" then return end
+mt.register_on_player_receive_fields(function(player, formname, fields)
+	if formname ~= "craftguide" then return end
 	local player_name = player:get_player_name()
 	local data = datas[player_name]
 
@@ -346,15 +350,12 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 				item = item:sub(1,-5)
 			end
 
-			local recipes = minetest.get_all_craft_recipes(item)
-			local is_fuel = minetest.get_craft_result({
-				method="fuel", width=1, items={item}}).time > 0
+			local recipes = get_recipes(item)
+			local is_fuel = get_fueltime(item) > 0
 			if not recipes and not is_fuel then return end
 
 			if progressive_mode then
-				local who =
-					minetest.get_player_by_name(player_name)
-				local inv = who:get_inventory()
+				local inv = player:get_inventory()
 				local _, has_item =
 					craftguide:recipe_in_inv(inv, item)
 
@@ -372,7 +373,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 	end
 end)
 
-minetest.register_craftitem("craftguide:book", {
+mt.register_craftitem("craftguide:book", {
 	description = "Crafting Guide",
 	inventory_image = "craftguide_book.png",
 	wield_image = "craftguide_book.png",
@@ -380,7 +381,9 @@ minetest.register_craftitem("craftguide:book", {
 	groups = {book=1},
 	on_use = function(itemstack, user)
 		local player_name = user:get_player_name()
-		if progressive_mode or not datas[player_name] then
+		local data = datas[player_name]
+
+		if progressive_mode or not data then
 			datas[player_name] = {filter="", pagenum=1, iX=9}
 			craftguide:get_init_items(player_name)
 			if progressive_mode then
@@ -388,23 +391,22 @@ minetest.register_craftitem("craftguide:book", {
 			end
 			craftguide:get_formspec(player_name)
 		else
-			minetest.show_formspec(player_name, "craftguide:book",
-						datas[player_name].formspec)
+			show_formspec(player_name, "craftguide", data.formspec)
 		end
 	end
 })
 
-minetest.register_craft({
+mt.register_craft({
 	output = "craftguide:book",
 	type = "shapeless",
 	recipe = {"default:book"}
 })
 
-minetest.register_craft({
+mt.register_craft({
 	type = "fuel",
 	recipe = "craftguide:book",
 	burntime = 3
 })
 
-minetest.register_alias("xdecor:crafting_guide", "craftguide:book")
+mt.register_alias("xdecor:crafting_guide", "craftguide:book")
 
