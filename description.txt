@@ -1,1 +1,2 @@
-A simple, flexible and efficient Crafting Guide.
+The most comprehensive Crafting Guide
+on Minetest.

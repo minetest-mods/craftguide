@@ -151,7 +151,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 			tooltip[clear;Reset]
 			tooltip[size_inc;Increase window size]
 			tooltip[size_dec;Decrease window size]
-			field_close_on_enter[craftguide_filter, false] ]]..
+			field_close_on_enter[filter, false] ]]..
 			"button["..(data.iX/2)..",-0.02;0.7,1;size_inc;+]"..
 			"button["..((data.iX/2) + 0.5)..
 				",-0.02;0.7,1;size_dec;-]"..
@@ -159,7 +159,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 			"label["..(data.iX-2)..".1,0.18;"..
 				colorize(data.pagenum).." / "..data.pagemax.."]"..
 			"button["..(data.iX-1)..".2,0;0.8,0.95;next;>]"..
-			"field[0.3,0.32;2.5,1;craftguide_filter;;"..
+			"field[0.3,0.32;2.5,1;filter;;"..
 				minetest.formspec_escape(data.filter).."]"
 
 	local xoffset = data.iX / 2 + (data.iX % 2 == 0 and 0.5 or 0)
@@ -318,13 +318,12 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 		end
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
-		local recipe = data.recipes_item[data.recipe_num+1]
+		local recipe = data.recipes_item[data.recipe_num + 1]
 		data.recipe_num = recipe and data.recipe_num + 1 or 1
 		craftguide:get_formspec(player_name)
-	elseif fields.search or
-			fields.key_enter_field == "craftguide_filter" then
-		if fields.craftguide_filter == "" then return end
-		data.filter = fields.craftguide_filter:lower()
+	elseif (fields.key_enter_field == "filter" or fields.search) and
+			fields.filter ~= "" then
+		data.filter = fields.filter:lower()
 		data.pagenum = 1
 		craftguide:get_filter_items(player_name)
 		craftguide:get_formspec(player_name)
@@ -336,9 +335,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
 			data.pagenum = data.pagemax
 		end
 		craftguide:get_formspec(player_name)
-	elseif fields.size_inc or fields.size_dec then
-		if (fields.size_dec and data.iX == 8) or
-			(fields.size_inc and data.iX == 12) then return end
+	elseif (fields.size_inc and data.iX < 12) or
+			(fields.size_dec and data.iX > 8) then
 		data.pagenum = 1
 		data.iX = data.iX - (fields.size_dec and 1 or -1)
 		craftguide:get_formspec(player_name)
