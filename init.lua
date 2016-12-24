@@ -21,10 +21,10 @@ local group_stereotypes = {
 
 function craftguide:group_to_item(item)
 	if item:sub(1,6) == "group:" then
-		local short_itemstr = item:sub(7)
-		if group_stereotypes[short_itemstr] then
-			item = group_stereotypes[short_itemstr]
-		elseif reg_items["default:"..item:sub(7)] then
+		local itemsub = item:sub(7)
+		if group_stereotypes[itemsub] then
+			item = group_stereotypes[itemsub]
+		elseif reg_items["default:"..itemsub] then
 			item = item:gsub("group:", "default:")
 		else
 			for name, def in pairs(reg_items) do
@@ -147,6 +147,10 @@ function craftguide:get_formspec(player_name, is_fuel)
 	local data = datas[player_name]
 	local iY = data.iX - 5
 	local ipp = data.iX * iY
+
+	if not data.items then
+		data.items = data.init_items
+	end
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
 	local formspec = "size["..data.iX..","..(iY+3)..".6;]"..[[
@@ -279,12 +283,12 @@ function craftguide:get_init_items(player_name)
 
 	sort(items_list)
 	data.init_items = items_list
-	data.items = items_list
 end
 
 function craftguide:get_filter_items(data, player)
 	local filter = data.filter
-	local items_list = progressive_mode and data.items or data.init_items
+	local items_list = progressive_mode and data.init_filter_items or
+		data.init_items
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
@@ -306,6 +310,10 @@ function craftguide:get_filter_items(data, player)
 			end
 		end
 	end
+
+	if progressive_mode and not data.items then
+		data.init_filter_items = filtered_list
+	end
 	data.items = filtered_list
 end
 
@@ -317,10 +325,8 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 	if fields.clear then
 		data.filter, data.item, data.pagenum, data.recipe_num =
 			"", nil, 1, 1
-		data.items = data.init_items
-		if progressive_mode then
-			craftguide:get_filter_items(data, player)
-		end
+		data.items = progressive_mode and data.init_filter_items or
+			data.init_items
 		craftguide:get_formspec(player_name)
 	elseif fields.alternate then
 		local recipe = data.recipes_item[data.recipe_num + 1]
