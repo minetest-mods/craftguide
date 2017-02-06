@@ -92,14 +92,20 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 				recipe_num.." of "..recipes_total.."]"
 	end
 	local recipe_type = recipes[recipe_num].type
+	local items = recipes[recipe_num].items
+	local width = recipes[recipe_num].width
+
 	if recipe_type == "cooking" then
 		formspec = formspec..
 			"image["..(xoffset-0.8)..","..(iY+1)..
 				".5;0.5,0.5;craftguide_furnace.png]"
+	-- Shapeless recipe
+	elseif recipe_type == "normal" and width == 0 then
+		formspec = formspec..
+			"image["..(xoffset-0.8)..","..(iY+1)..
+				".5;0.5,0.5;craftguide_shapeless.png]"
 	end
 
-	local items = recipes[recipe_num].items
-	local width = recipes[recipe_num].width
 	if width == 0 then width = min(3, #items) end
 	local rows = ceil(maxn(items) / width)
 	local btn_size, craftgrid_limit = 1, 5
