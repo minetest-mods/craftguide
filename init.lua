@@ -167,7 +167,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 			tooltip[clear;Reset]
 			tooltip[size_inc;Increase window size]
 			tooltip[size_dec;Decrease window size]
-			field_close_on_enter[filter, false] ]]..
+			field_close_on_enter[filter;false] ]]..
 			"button["..(data.iX/2)..",-0.02;0.7,1;size_inc;+]"..
 			"button["..((data.iX/2) + 0.5)..
 				",-0.02;0.7,1;size_dec;-]"..
@@ -465,4 +465,3 @@ mt.register_craft({
 })
 
 mt.register_alias("xdecor:crafting_guide", "craftguide:book")
-
