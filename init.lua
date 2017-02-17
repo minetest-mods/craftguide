@@ -361,24 +361,34 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 				item = item:sub(1,-5)
 			end
 
-			local recipes = get_recipes(item)
 			local is_fuel = get_fueltime(item) > 0
+			local recipes = get_recipes(item)
 			if not recipes and not is_fuel then return end
 
-			if progressive_mode then
-				local inv = player:get_inventory()
-				local _, has_item =
-					craftguide:recipe_in_inv(inv, item)
+			if item == data.item then
+				-- Cycle through alternatives when clicking same item again
+				if data.recipes_item and #data.recipes_item >= 2 then
+					local recipe = data.recipes_item[data.recipe_num + 1]
+					data.recipe_num = recipe and data.recipe_num + 1 or 1
+					craftguide:get_formspec(player_name)
+				end
+			else
 
-				if not has_item then return end
-				recipes = craftguide:recipe_in_inv(
-							inv, item, recipes)
+				if progressive_mode then
+					local inv = player:get_inventory()
+					local _, has_item =
+						craftguide:recipe_in_inv(inv, item)
+
+					if not has_item then return end
+					recipes = craftguide:recipe_in_inv(
+								inv, item, recipes)
+				end
+
+				data.item = item
+				data.recipe_num = 1
+				data.recipes_item = recipes
+				craftguide:get_formspec(player_name, is_fuel)
 			end
-
-			data.item = item
-			data.recipe_num = 1
-			data.recipes_item = recipes
-			craftguide:get_formspec(player_name, is_fuel)
 		end
 	     end
 	end
