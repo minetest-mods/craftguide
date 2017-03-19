@@ -474,4 +474,15 @@ mt.register_craft({
 	burntime = 10
 })
 
+if mt.get_modpath("sfinv_buttons") then
+	sfinv_buttons.register_button("craftguide", {
+		title = "Crafting guide",
+		tooltip = "Shows a list of available crafting recipes, cooking recipes and fuels",
+		action = function(player)
+			craftguide:on_use(nil, player)
+		end,
+		image = "craftguide_book.png",
+	})
+end
+
 mt.register_alias("xdecor:crafting_guide", "craftguide:book")
