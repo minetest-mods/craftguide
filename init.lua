@@ -24,7 +24,7 @@ function craftguide:group_to_item(item)
 		local itemsub = item:sub(7)
 		if group_stereotypes[itemsub] then
 			item = group_stereotypes[itemsub]
-		elseif reg_items["default:"..itemsub] then
+		elseif reg_items["default:" .. itemsub] then
 			item = item:gsub("group:", "default:")
 		else
 			for name, def in pairs(reg_items) do
@@ -48,11 +48,11 @@ local function colorize(str)
 end
 
 local function get_fueltime(item)
-	return get_result({method="fuel", width=1, items={item}}).time
+	return get_result({method = "fuel", width = 1, items = {item}}).time
 end
 
 function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
-	local tooltip, item_desc = "tooltip["..item..";", ""
+	local tooltip, item_desc = "tooltip[" .. item .. ";", ""
 	local fueltime = get_fueltime(item)
 	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
 
@@ -61,49 +61,47 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 			item_desc = reg_items[item].description
 		end
 	else
-		return tooltip.."Unknown Item ("..item..")]"
+		return tooltip .. "Unknown Item (" .. item .. ")]"
 	end
+
 	if groups then
 		local groupstr = "Any item belonging to the "
 		for i=1, #groups do
-			groupstr = groupstr..colorize(groups[i])..
-				(groups[i+1] and " and " or "")
+			groupstr = groupstr .. colorize(groups[i]) ..
+				  (groups[i + 1] and " and " or "")
 		end
-		tooltip = tooltip..groupstr.." group(s)"
-	end
-	if recipe_type == "cooking" then
-		tooltip = tooltip..item_desc.."\nCooking time: "..
-			colorize(cooktime)
-	end
-	if fueltime > 0 then
-		tooltip = tooltip..item_desc.."\nBurning time: "..
-			colorize(fueltime)
+		tooltip = tooltip .. groupstr .. " group(s)"
 	end
 
-	return has_extras and tooltip.."]" or ""
+	if recipe_type == "cooking" then
+		tooltip = tooltip .. item_desc .. "\nCooking time: " .. colorize(cooktime)
+	end
+
+	if fueltime > 0 then
+		tooltip = tooltip .. item_desc .. "\nBurning time: " .. colorize(fueltime)
+	end
+
+	return has_extras and tooltip .. "]" or ""
 end
 
 function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
-		formspec = formspec..
-			"button[0,"..(iY+3)..";2,1;alternate;Alternate]"..
-			"label[0,"..(iY+2)..".5;Recipe "..
-				recipe_num.." of "..recipes_total.."]"
+		formspec = formspec ..
+			"button[0," .. (iY + 3) .. ";2,1;alternate;Alternate]" ..
+			"label[0," .. (iY + 2) .. ".5;Recipe " ..
+				recipe_num .. " of " .. recipes_total .. "]"
 	end
+
 	local recipe_type = recipes[recipe_num].type
 	local items = recipes[recipe_num].items
 	local width = recipes[recipe_num].width
 
-	if recipe_type == "cooking" then
-		formspec = formspec..
-			"image["..(xoffset-0.8)..","..(iY+1)..
-				".5;0.5,0.5;craftguide_furnace.png]"
-	-- Shapeless recipe
-	elseif recipe_type == "normal" and width == 0 then
-		formspec = formspec..
-			"image["..(xoffset-0.8)..","..(iY+1)..
-				".5;0.5,0.5;craftguide_shapeless.png]"
+	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) then
+		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
+		formspec = formspec ..
+			"image[" .. (xoffset - 0.8) .. "," .. (iY + 1)  ..
+				".5;0.5,0.5;craftguide_" .. icon .. ".png]"
 	end
 
 	if width == 0 then width = min(3, #items) end
@@ -112,41 +110,38 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 
 	if recipe_type == "normal" and
 			width > craftgrid_limit or rows > craftgrid_limit then
-		formspec = formspec..
-			"label["..xoffset..","..(iY+2)..
-				";Recipe is too big to\nbe displayed ("..
-				width.."x"..rows..")]"
+		formspec = formspec ..
+			"label[" .. xoffset .. "," .. (iY + 2) ..
+				";Recipe is too big to\nbe displayed (" ..
+				width .. "x" .. rows .. ")]"
 	else
 		for i, v in pairs(items) do
-			local X = (i-1) % width + xoffset
-			local Y = ceil(i / width + iY+2 - min(2, rows))
+			local X = (i - 1) % width + xoffset
+			local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
-			if recipe_type == "normal" and
-					width > 3 or rows > 3 then
+			if recipe_type == "normal" and width > 3 or rows > 3 then
 				btn_size = width > 3 and 3 / width or 3 / rows
 				X = btn_size * (i % width) + xoffset
-				Y = btn_size * floor((i-1) / width) + iY+3 -
-					min(2, rows)
+				Y = btn_size * floor((i - 1) / width) + (iY + 3) - min(2, rows)
 			end
 
 			local groups = extract_groups(v)
 			local label = groups and "\nG" or ""
 			local item_r = self:group_to_item(v)
-			local tltip = self:get_tooltip(
-					item_r, recipe_type, width, groups)
+			local tltip = self:get_tooltip(item_r, recipe_type, width, groups)
 
-			formspec = formspec..
-				"item_image_button["..X..","..Y..";"..
-					btn_size..","..btn_size..";"..item_r..
-					";"..item_r..";"..label.."]"..tltip
+			formspec = formspec ..
+				"item_image_button[" .. X .. "," .. Y .. ";" ..
+					btn_size .. "," .. btn_size .. ";" .. item_r ..
+					";" .. item_r .. ";" .. label .. "]" .. tltip
 		end
 	end
 	local output = recipes[recipe_num].output
-	return formspec..
-		"image["..(xoffset-1)..","..(iY+2)..
-			".12;0.9,0.7;craftguide_arrow.png]"..
-		"item_image_button["..(xoffset-2)..","..(iY+2)..";1,1;"..
-			output..";"..item..";]"..tooltip
+	return formspec ..
+		"image[" .. (xoffset - 1) .. "," .. (iY + 2) ..
+			".12;0.9,0.7;craftguide_arrow.png]" ..
+		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2) .. ";1,1;" ..
+			output .. ";" .. item .. ";]" .. tooltip
 end
 
 function craftguide:get_formspec(player_name, is_fuel)
@@ -159,7 +154,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 	end
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
-	local formspec = "size["..data.iX..","..(iY+3)..".6;]"..[[
+	local formspec = "size[" .. data.iX .. "," .. (iY + 3) .. ".6;]" .. [[
 			background[1,1;1,1;craftguide_bg.png;true]
 			button[2.4,0.21;0.8,0.5;search;?]
 			button[3.05,0.21;0.8,0.5;clear;X]
@@ -167,53 +162,51 @@ function craftguide:get_formspec(player_name, is_fuel)
 			tooltip[clear;Reset]
 			tooltip[size_inc;Increase window size]
 			tooltip[size_dec;Decrease window size]
-			field_close_on_enter[filter;false] ]]..
-			"button["..(data.iX/2)..",-0.02;0.7,1;size_inc;+]"..
-			"button["..((data.iX/2) + 0.5)..
-				",-0.02;0.7,1;size_dec;-]"..
-			"button["..(data.iX-3)..".4,0;0.8,0.95;prev;<]"..
-			"label["..(data.iX-2)..".1,0.18;"..
-				colorize(data.pagenum).." / "..data.pagemax.."]"..
-			"button["..(data.iX-1)..".2,0;0.8,0.95;next;>]"..
-			"field[0.3,0.32;2.5,1;filter;;"..
-				mt.formspec_escape(data.filter).."]"
+			field_close_on_enter[filter;false] ]] ..
+			"button[" .. (data.iX / 2) .. ",-0.02;0.7,1;size_inc;+]" ..
+			"button[" .. ((data.iX / 2) + 0.5) ..
+				",-0.02;0.7,1;size_dec;-]" ..
+			"button[" .. (data.iX - 3) .. ".4,0;0.8,0.95;prev;<]" ..
+			"label[" .. (data.iX - 2) .. ".1,0.18;" ..
+				colorize(data.pagenum) .. " / " .. data.pagemax .. "]" ..
+			"button[" .. (data.iX - 1) .. ".2,0;0.8,0.95;next;>]" ..
+			"field[0.3,0.32;2.5,1;filter;;" ..
+				mt.formspec_escape(data.filter) .. "]"
 
 	local even_num = data.iX % 2 == 0
 	local xoffset = data.iX / 2 + (even_num and 0.5 or 0)
 
 	if not next(data.items) then
-		formspec = formspec..
-			"label["..(xoffset - (even_num and 1.5 or 1))..
-				",2;No item to show]"
+		formspec = formspec ..
+			"label[" .. (xoffset - (even_num and 1.5 or 1)) .. ",2;No item to show]"
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
 	for i = first_item, first_item + ipp - 1 do
-		local name = data.items[i+1]
+		local name = data.items[i + 1]
 		if not name then break end
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
 
-		formspec = formspec..
-			"item_image_button["..X..","..Y..";1,1;"..
-				name..";"..name.."_inv;]"
+		formspec = formspec ..
+			"item_image_button[" .. X .. "," .. Y .. ";1,1;" ..
+				name .. ";" .. name .. "_inv;]"
 	end
 
 	if data.item and reg_items[data.item] then
 		local tooltip = self:get_tooltip(data.item)
-		if not data.recipes_item or (is_fuel and not
-				get_recipe(data.item).items) then
-			formspec = formspec..
-				"image["..(xoffset-1)..","..(iY+2)..
-					".12;0.9,0.7;craftguide_arrow.png]"..
-				"item_image_button["..xoffset..","..(iY+2)..
-					";1,1;"..data.item..";"..data.item..";]"..
-				tooltip.."image["..(xoffset-2)..","..
-					(iY+1.98)..";1,1;craftguide_fire.png]"
+		if not data.recipes_item or (is_fuel and not get_recipe(data.item).items) then
+			formspec = formspec ..
+				"image[" .. (xoffset - 1) .. "," .. (iY + 2) ..
+					".12;0.9,0.7;craftguide_arrow.png]" ..
+				"item_image_button[" .. xoffset .. "," .. (iY + 2) ..
+					";1,1;" .. data.item .. ";" .. data.item .. ";]" ..
+				tooltip .. "image[" .. (xoffset - 2) .. "," ..
+					(iY + 1.98) .. ";1,1;craftguide_fire.png]"
 		else
-			formspec = formspec..self:get_recipe(
-					iY, xoffset, tooltip, data.item,
-					data.recipe_num, data.recipes_item)
+			formspec = formspec ..
+				self:get_recipe(iY, xoffset, tooltip, data.item,
+						data.recipe_num, data.recipes_item)
 		end
 	end
 
@@ -222,8 +215,10 @@ function craftguide:get_formspec(player_name, is_fuel)
 end
 
 local function player_has_item(T)
-	for i=1, #T do
-		if T[i] then return true end
+	for i = 1, #T do
+		if T[i] then
+			return true
+		end
 	end
 end
 
@@ -235,6 +230,7 @@ local function group_to_items(group)
 			items_with_group[counter] = name
 		end
 	end
+
 	return items_with_group
 end
 
@@ -252,7 +248,7 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 			local group_in_inv = false
 			if item:sub(1,6) == "group:" then
 				local groups = group_to_items(item)
-				for j=1, #groups do
+				for j = 1, #groups do
 					if item_in_inv(inv, groups[j]) then
 						group_in_inv = true
 					end
@@ -263,7 +259,8 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 			end
 		end
 	end
-	for i=#show_item_recipes, 1, -1 do
+
+	for i = #show_item_recipes, 1, -1 do
 		if not show_item_recipes[i] then
 			remove(recipes, i)
 		end
@@ -277,7 +274,7 @@ function craftguide:get_init_items()
 	for name, def in pairs(reg_items) do
 		local is_fuel = get_fueltime(name) > 0
 		if not (def.groups.not_in_creative_inventory == 1) and
-			(get_recipe(name).items or is_fuel) and
+		       (get_recipe(name).items or is_fuel) and
 			def.description and def.description ~= "" then
 
 			counter = counter + 1
@@ -291,8 +288,7 @@ end
 
 function craftguide:get_filter_items(data, player)
 	local filter = data.filter
-	local items_list = progressive_mode and data.init_filter_items or
-		datas.init_items
+	local items_list = progressive_mode and data.init_filter_items or datas.init_items
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
@@ -301,8 +297,7 @@ function craftguide:get_filter_items(data, player)
 		local item_desc = reg_items[item].description:lower()
 
 		if filter ~= "" then
-			if item:find(filter, 1, true) or
-					item_desc:find(filter, 1, true) then
+			if item:find(filter, 1, true) or item_desc:find(filter, 1, true) then
 				counter = counter + 1
 				filtered_list[counter] = item
 			end
@@ -327,21 +322,22 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 	local data = datas[player_name]
 
 	if fields.clear then
-		data.filter, data.item, data.pagenum, data.recipe_num =
-			"", nil, 1, 1
-		data.items = progressive_mode and data.init_filter_items or
-			datas.init_items
+		data.filter, data.item, data.pagenum, data.recipe_num = "", nil, 1, 1
+		data.items = progressive_mode and data.init_filter_items or datas.init_items
 		craftguide:get_formspec(player_name)
+
 	elseif fields.alternate then
 		local recipe = data.recipes_item[data.recipe_num + 1]
 		data.recipe_num = recipe and data.recipe_num + 1 or 1
 		craftguide:get_formspec(player_name)
+
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
 		data.filter = fields.filter:lower()
 		data.pagenum = 1
 		craftguide:get_filter_items(data, player)
 		craftguide:get_formspec(player_name)
+
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
 		if data.pagenum > data.pagemax then
@@ -350,11 +346,13 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			data.pagenum = data.pagemax
 		end
 		craftguide:get_formspec(player_name)
+
 	elseif (fields.size_inc and data.iX < 12) or
 			(fields.size_dec and data.iX > 8) then
 		data.pagenum = 1
 		data.iX = data.iX - (fields.size_dec and 1 or -1)
 		craftguide:get_formspec(player_name)
+
 	else for item in pairs(fields) do
 		if item:find(":") then
 			if item:sub(-4) == "_inv" then
@@ -366,22 +364,18 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			if not recipes and not is_fuel then return end
 
 			if item == data.item then
-				-- Cycle through alternatives when clicking same item again
 				if data.recipes_item and #data.recipes_item >= 2 then
 					local recipe = data.recipes_item[data.recipe_num + 1]
 					data.recipe_num = recipe and data.recipe_num + 1 or 1
 					craftguide:get_formspec(player_name)
 				end
 			else
-
 				if progressive_mode then
 					local inv = player:get_inventory()
-					local _, has_item =
-						craftguide:recipe_in_inv(inv, item)
+					local _, has_item = craftguide:recipe_in_inv(inv, item)
 
 					if not has_item then return end
-					recipes = craftguide:recipe_in_inv(
-								inv, item, recipes)
+					recipes = craftguide:recipe_in_inv(inv, item, recipes)
 				end
 
 				data.item = item
@@ -403,10 +397,9 @@ function craftguide:on_use(itemstack, user)
 	local data = datas[player_name]
 
 	if progressive_mode or not data then
-		datas[player_name] = {filter="", pagenum=1, iX=9}
+		datas[player_name] = {filter = "", pagenum = 1, iX = 9}
 		if progressive_mode then
-			craftguide:get_filter_items(
-					datas[player_name], user)
+			craftguide:get_filter_items(datas[player_name], user)
 		end
 		craftguide:get_formspec(player_name)
 	else
@@ -419,7 +412,7 @@ mt.register_craftitem("craftguide:book", {
 	inventory_image = "craftguide_book.png",
 	wield_image = "craftguide_book.png",
 	stack_max = 1,
-	groups = {book=1},
+	groups = {book = 1},
 	on_use = function(itemstack, user)
 		craftguide:on_use(itemstack, user)
 	end
@@ -434,7 +427,7 @@ mt.register_node("craftguide:sign", {
 	paramtype = "light",
 	paramtype2 = "wallmounted",
 	sunlight_propagates = true,
-	groups = {wood=1, oddly_breakable_by_hand=1, flammable=3},
+	groups = {wood = 1, oddly_breakable_by_hand = 1, flammable = 3},
 	node_box = {
 		type = "wallmounted",
 		wall_top    = {-0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125},
@@ -474,7 +467,7 @@ mt.register_craft({
 	burntime = 10
 })
 
-if mt.get_modpath("sfinv_buttons") then
+if rawget(_G, "sfinv_buttons") then
 	sfinv_buttons.register_button("craftguide", {
 		title = "Crafting guide",
 		tooltip = "Shows a list of available crafting recipes, cooking recipes and fuels",
