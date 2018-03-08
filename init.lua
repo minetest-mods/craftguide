@@ -66,7 +66,7 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 
 	if groups then
 		local groupstr = "Any item belonging to the "
-		for i=1, #groups do
+		for i = 1, #groups do
 			groupstr = groupstr .. colorize(groups[i]) ..
 				  (groups[i + 1] and " and " or "")
 		end
@@ -88,8 +88,8 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
-			"button[0," .. (iY + 3) .. ";2,1;alternate;Alternate]" ..
-			"label[0," .. (iY + 2) .. ".5;Recipe " ..
+			"button[0," .. (iY + 3.3) .. ";2,1;alternate;Alternate]" ..
+			"label[0," .. (iY + 2.8) .. ";Recipe " ..
 				recipe_num .. " of " .. recipes_total .. "]"
 	end
 
@@ -100,11 +100,14 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) then
 		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
 		formspec = formspec ..
-			"image[" .. (xoffset - 0.8) .. "," .. (iY + 1)  ..
+			"image[" .. (xoffset - 0.8) .. "," .. (iY + 1.7)  ..
 				".5;0.5,0.5;craftguide_" .. icon .. ".png]"
 	end
 
-	if width == 0 then width = min(3, #items) end
+	if width == 0 then
+		width = min(3, #items)
+	end
+
 	local rows = ceil(maxn(items) / width)
 	local btn_size, craftgrid_limit = 1, 5
 
@@ -131,16 +134,17 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 			local tltip = self:get_tooltip(item_r, recipe_type, width, groups)
 
 			formspec = formspec ..
-				"item_image_button[" .. X .. "," .. Y .. ";" ..
+				"item_image_button[" .. X .. "," .. (Y + 0.2) .. ";" ..
 					btn_size .. "," .. btn_size .. ";" .. item_r ..
 					";" .. item_r .. ";" .. label .. "]" .. tltip
 		end
 	end
+
 	local output = recipes[recipe_num].output
 	return formspec ..
-		"image[" .. (xoffset - 1) .. "," .. (iY + 2) ..
+		"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
 			".12;0.9,0.7;craftguide_arrow.png]" ..
-		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2) .. ";1,1;" ..
+		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2.2) .. ";1,1;" ..
 			output .. ";" .. item .. ";]" .. tooltip
 end
 
@@ -154,22 +158,22 @@ function craftguide:get_formspec(player_name, is_fuel)
 	end
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
-	local formspec = "size[" .. data.iX .. "," .. (iY + 3) .. ".6;]" .. [[
+	local formspec = "size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]" .. [[
 			background[1,1;1,1;craftguide_bg.png;true]
-			button[2.4,0.21;0.8,0.5;search;?]
-			button[3.05,0.21;0.8,0.5;clear;X]
+			button[2.4,0.23;0.8,0.5;search;?]
+			button[3.05,0.23;0.8,0.5;clear;X]
 			tooltip[search;Search]
 			tooltip[clear;Reset]
 			tooltip[size_inc;Increase window size]
 			tooltip[size_dec;Decrease window size]
 			field_close_on_enter[filter;false] ]] ..
-			"button[" .. (data.iX / 2) .. ",-0.02;0.7,1;size_inc;+]" ..
-			"button[" .. ((data.iX / 2) + 0.5) ..
+			"button[" .. (data.iX * 0.48) .. ",-0.02;0.7,1;size_inc;+]" ..
+			"button[" .. ((data.iX * 0.48) + 0.5) ..
 				",-0.02;0.7,1;size_dec;-]" ..
-			"button[" .. (data.iX - 3) .. ".4,0;0.8,0.95;prev;<]" ..
-			"label[" .. (data.iX - 2) .. ".1,0.18;" ..
+			"button[" .. (data.iX - 3.1) .. ".4,0;0.8,0.95;prev;<]" ..
+			"label[" .. (data.iX - 2.2) .. ".1,0.18;" ..
 				colorize(data.pagenum) .. " / " .. data.pagemax .. "]" ..
-			"button[" .. (data.iX - 1) .. ".2,0;0.8,0.95;next;>]" ..
+			"button[" .. (data.iX - 1.2) .. ".2,0;0.8,0.95;next;>]" ..
 			"field[0.3,0.32;2.5,1;filter;;" ..
 				mt.formspec_escape(data.filter) .. "]"
 
@@ -189,7 +193,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 		local Y = (i % ipp - X) / data.iX + 1
 
 		formspec = formspec ..
-			"item_image_button[" .. X .. "," .. Y .. ";1,1;" ..
+			"item_image_button[" .. (X - (X * 0.05)) .. "," .. Y .. ";1.1,1.1;" ..
 				name .. ";" .. name .. "_inv;]"
 	end
 
@@ -242,7 +246,7 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 	local recipes = recipes_f or get_recipes(item_name) or {}
 	local show_item_recipes = {}
 
-	for i=1, #recipes do
+	for i = 1, #recipes do
 		show_item_recipes[i] = true
 		for _, item in pairs(recipes[i].items) do
 			local group_in_inv = false
@@ -292,7 +296,7 @@ function craftguide:get_filter_items(data, player)
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
-	for i=1, #items_list do
+	for i = 1, #items_list do
 		local item = items_list[i]
 		local item_desc = reg_items[item].description:lower()
 
@@ -348,7 +352,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 		craftguide:get_formspec(player_name)
 
 	elseif (fields.size_inc and data.iX < 12) or
-			(fields.size_dec and data.iX > 8) then
+			(fields.size_dec and data.iX > 9) then
 		data.pagenum = 1
 		data.iX = data.iX - (fields.size_dec and 1 or -1)
 		craftguide:get_formspec(player_name)
@@ -397,7 +401,7 @@ function craftguide:on_use(itemstack, user)
 	local data = datas[player_name]
 
 	if progressive_mode or not data then
-		datas[player_name] = {filter = "", pagenum = 1, iX = 9}
+		datas[player_name] = {filter = "", pagenum = 1, iX = 10}
 		if progressive_mode then
 			craftguide:get_filter_items(datas[player_name], user)
 		end
