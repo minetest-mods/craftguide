@@ -1,5 +1,5 @@
-local craftguide, datas, mt = {}, {}, minetest
-local progressive_mode = mt.setting_getbool("craftguide_progressive_mode")
+local craftguide, datas, mt = {}, {searches = {}}, minetest
+local progressive_mode = mt.settings:get_bool("craftguide_progressive_mode")
 local get_recipe, get_recipes = mt.get_craft_recipe, mt.get_all_craft_recipes
 local get_result, show_formspec = mt.get_craft_result, mt.show_formspec
 local reg_items = mt.registered_items
@@ -8,6 +8,8 @@ local reg_items = mt.registered_items
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
+
+local DEFAULT_SIZE, MIN_LIMIT, MAX_LIMIT = 10, 9, 12
 
 local group_stereotypes = {
 	wool	     = "wool:white",
@@ -34,6 +36,7 @@ function craftguide:group_to_item(item)
 			end
 		end
 	end
+
 	return item:sub(1,6) == "group:" and "" or item
 end
 
@@ -156,6 +159,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 	if not data.items then
 		data.items = datas.init_items
 	end
+
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
 	local formspec = "size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]" .. [[
@@ -201,12 +205,13 @@ function craftguide:get_formspec(player_name, is_fuel)
 		local tooltip = self:get_tooltip(data.item)
 		if not data.recipes_item or (is_fuel and not get_recipe(data.item).items) then
 			formspec = formspec ..
-				"image[" .. (xoffset - 1) .. "," .. (iY + 2) ..
+				"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
 					".12;0.9,0.7;craftguide_arrow.png]" ..
-				"item_image_button[" .. xoffset .. "," .. (iY + 2) ..
+				"item_image_button[" .. xoffset .. "," .. (iY + 2.2) ..
 					";1,1;" .. data.item .. ";" .. data.item .. ";]" ..
-				tooltip .. "image[" .. (xoffset - 2) .. "," ..
-					(iY + 1.98) .. ";1,1;craftguide_fire.png]"
+				tooltip ..
+				"image[" .. (xoffset - 2) .. "," ..
+					(iY + 2.18) .. ";1,1;craftguide_fire.png]"
 		else
 			formspec = formspec ..
 				self:get_recipe(iY, xoffset, tooltip, data.item,
@@ -292,6 +297,11 @@ end
 
 function craftguide:get_filter_items(data, player)
 	local filter = data.filter
+	if datas.searches[filter] then
+		data.items = datas.searches[filter]
+		return
+	end
+
 	local items_list = progressive_mode and data.init_filter_items or datas.init_items
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
@@ -314,9 +324,14 @@ function craftguide:get_filter_items(data, player)
 		end
 	end
 
-	if progressive_mode and not data.items then
-		data.init_filter_items = filtered_list
+	if progressive_mode then
+		if not data.items then
+			data.init_filter_items = filtered_list
+		end
+	elseif filter ~= "" and not datas.searches[filter] then
+		datas.searches[filter] = filtered_list
 	end
+
 	data.items = filtered_list
 end
 
@@ -351,8 +366,8 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 		end
 		craftguide:get_formspec(player_name)
 
-	elseif (fields.size_inc and data.iX < 12) or
-			(fields.size_dec and data.iX > 9) then
+	elseif (fields.size_inc and data.iX < MAX_LIMIT) or
+			(fields.size_dec and data.iX > MIN_LIMIT) then
 		data.pagenum = 1
 		data.iX = data.iX - (fields.size_dec and 1 or -1)
 		craftguide:get_formspec(player_name)
@@ -401,7 +416,7 @@ function craftguide:on_use(itemstack, user)
 	local data = datas[player_name]
 
 	if progressive_mode or not data then
-		datas[player_name] = {filter = "", pagenum = 1, iX = 10}
+		datas[player_name] = {filter = "", pagenum = 1, iX = DEFAULT_SIZE}
 		if progressive_mode then
 			craftguide:get_filter_items(datas[player_name], user)
 		end
