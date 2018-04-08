@@ -4,6 +4,12 @@ local get_recipe, get_recipes = mt.get_craft_recipe, mt.get_all_craft_recipes
 local get_result, show_formspec = mt.get_craft_result, mt.show_formspec
 local reg_items = mt.registered_items
 
+craftguide.path = minetest.get_modpath("craftguide")
+
+-- Intllib
+local S = dofile(craftguide.path .. "/intllib.lua")
+craftguide.intllib = S
+
 -- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 local remove, maxn, sort = table.remove, table.maxn, table.sort
@@ -64,24 +70,25 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 			item_desc = reg_items[item].description
 		end
 	else
-		return tooltip .. "Unknown Item (" .. item .. ")]"
+		return tooltip .. S("Unknown Item (@1)", item) .. "]"
 	end
 
 	if groups then
-		local groupstr = "Any item belonging to the "
+		local groupstr = ""
 		for i = 1, #groups do
-			groupstr = groupstr .. colorize(groups[i]) ..
-				  (groups[i + 1] and " and " or "")
+			groupstr = groupstr .. colorize(groups[i]) .. (groups[i + 1] and ", " or "")
 		end
-		tooltip = tooltip .. groupstr .. " group(s)"
+		tooltip = tooltip .. S("Any item belonging to the group(s)") .. ": " .. groupstr
 	end
 
 	if recipe_type == "cooking" then
-		tooltip = tooltip .. item_desc .. "\nCooking time: " .. colorize(cooktime)
+		tooltip = tooltip .. item_desc .. "\n"
+				.. S("Cooking time") .. ": " .. colorize(cooktime)
 	end
 
 	if fueltime > 0 then
-		tooltip = tooltip .. item_desc .. "\nBurning time: " .. colorize(fueltime)
+		tooltip = tooltip .. item_desc .. "\n"
+				.. S("Burning time") .. ": " .. colorize(fueltime)
 	end
 
 	return has_extras and tooltip .. "]" or ""
@@ -91,9 +98,8 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
-			"button[0," .. (iY + 3.3) .. ";2,1;alternate;Alternate]" ..
-			"label[0," .. (iY + 2.8) .. ";Recipe " ..
-				recipe_num .. " of " .. recipes_total .. "]"
+			"button[0," .. (iY + 3.3) .. ";2,1;alternate;" .. S("Alternate") .. "]" ..
+			"label[0," .. (iY + 2.8) .. ";" .. S("Recipe @1 of @2", recipe_num, recipes_total) .. "]"
 	end
 
 	local recipe_type = recipes[recipe_num].type
@@ -117,9 +123,8 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	if recipe_type == "normal" and
 			width > craftgrid_limit or rows > craftgrid_limit then
 		formspec = formspec ..
-			"label[" .. xoffset .. "," .. (iY + 2) ..
-				";Recipe is too big to\nbe displayed (" ..
-				width .. "x" .. rows .. ")]"
+			"label[" .. xoffset .. "," .. (iY + 2) .. ";"
+				.. S("Recipe is too big to\nbe displayed (@1x@2)", width, rows) .. "]"
 	else
 		for i, v in pairs(items) do
 			local X = (i - 1) % width + xoffset
@@ -166,11 +171,14 @@ function craftguide:get_formspec(player_name, is_fuel)
 			background[1,1;1,1;craftguide_bg.png;true]
 			button[2.4,0.23;0.8,0.5;search;?]
 			button[3.05,0.23;0.8,0.5;clear;X]
-			tooltip[search;Search]
-			tooltip[clear;Reset]
-			tooltip[size_inc;Increase window size]
-			tooltip[size_dec;Decrease window size]
-			field_close_on_enter[filter;false] ]] ..
+			field_close_on_enter[filter;false]
+		]] ..
+			"tooltip[search;" .. S("Search") .. "]" ..
+			"tooltip[clear;" .. S("Reset") .. "]" ..
+			"tooltip[size_inc;" .. S("Increase window size") .. "]" ..
+			"tooltip[size_dec;" .. S("Decrease window size") .. "]" ..
+			"tooltip[prev;" .. S("Previous page") .. "]" ..
+			"tooltip[next;" .. S("Next page") .. "]" ..
 			"button[" .. (data.iX * 0.48) .. ",-0.02;0.7,1;size_inc;+]" ..
 			"button[" .. ((data.iX * 0.48) + 0.5) ..
 				",-0.02;0.7,1;size_dec;-]" ..
@@ -186,7 +194,8 @@ function craftguide:get_formspec(player_name, is_fuel)
 
 	if not next(data.items) then
 		formspec = formspec ..
-			"label[" .. (xoffset - (even_num and 1.5 or 1)) .. ",2;No item to show]"
+			"label[" .. (xoffset - (even_num and 1.5 or 1)) .. ",2;"
+				.. S("No item to show") .. "]"
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
@@ -427,7 +436,7 @@ function craftguide:on_use(itemstack, user)
 end
 
 mt.register_craftitem("craftguide:book", {
-	description = "Crafting Guide",
+	description = S("Crafting Guide"),
 	inventory_image = "craftguide_book.png",
 	wield_image = "craftguide_book.png",
 	stack_max = 1,
@@ -438,7 +447,7 @@ mt.register_craftitem("craftguide:book", {
 })
 
 mt.register_node("craftguide:sign", {
-	description = "Crafting Guide Sign",
+	description = S("Crafting Guide Sign"),
 	drawtype = "nodebox",
 	tiles = {"craftguide_sign.png"},
 	inventory_image = "craftguide_sign_inv.png",
@@ -455,7 +464,7 @@ mt.register_node("craftguide:sign", {
 	},
 	on_construct = function(pos)
 		local meta = minetest.get_meta(pos)
-		meta:set_string("infotext", "Crafting Guide Sign")
+		meta:set_string("infotext", S("Crafting Guide Sign"))
 	end,
 	on_rightclick = function(pos, node, user, itemstack)
 		craftguide:on_use(itemstack, user)
@@ -488,8 +497,8 @@ mt.register_craft({
 
 if rawget(_G, "sfinv_buttons") then
 	sfinv_buttons.register_button("craftguide", {
-		title = "Crafting guide",
-		tooltip = "Shows a list of available crafting recipes, cooking recipes and fuels",
+		title = S("Crafting Guide"),
+		tooltip = S("Shows a list of available crafting recipes, cooking recipes and fuels"),
 		action = function(player)
 			craftguide:on_use(nil, player)
 		end,
