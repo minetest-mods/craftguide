@@ -15,7 +15,9 @@ craftguide.intllib = S
 local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 
-local DEFAULT_SIZE, MIN_LIMIT, MAX_LIMIT = 10, 9, 12
+local DEFAULT_SIZE = 10
+local MIN_LIMIT, MAX_LIMIT = 9, 12
+DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
 local group_stereotypes = {
 	wool	     = "wool:white",
@@ -76,8 +78,10 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	if groups then
 		local groupstr = ""
 		for i = 1, #groups do
-			groupstr = groupstr .. colorize(groups[i]) .. (groups[i + 1] and ", " or "")
+			groupstr = groupstr ..
+				colorize(groups[i]) .. (groups[i + 1] and ", " or "")
 		end
+
 		tooltip = tooltip .. S("Any item belonging to the group(s)") .. ": " .. groupstr
 	end
 
@@ -99,7 +103,8 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	if recipes_total > 1 then
 		formspec = formspec ..
 			"button[0," .. (iY + 3.3) .. ";2,1;alternate;" .. S("Alternate") .. "]" ..
-			"label[0," .. (iY + 2.8) .. ";" .. S("Recipe @1 of @2", recipe_num, recipes_total) .. "]"
+			"label[0," .. (iY + 2.8) .. ";" ..
+				S("Recipe @1 of @2", recipe_num, recipes_total) .. "]"
 	end
 
 	local recipe_type = recipes[recipe_num].type
@@ -123,8 +128,8 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	if recipe_type == "normal" and
 			width > craftgrid_limit or rows > craftgrid_limit then
 		formspec = formspec ..
-			"label[" .. xoffset .. "," .. (iY + 2) .. ";"
-				.. S("Recipe is too big to\nbe displayed (@1x@2)", width, rows) .. "]"
+			"label[" .. xoffset .. "," .. (iY + 2) .. ";" ..
+				S("Recipe is too big to\nbe displayed (@1x@2)", width, rows) .. "]"
 	else
 		for i, v in pairs(items) do
 			local X = (i - 1) % width + xoffset
@@ -418,7 +423,7 @@ end)
 
 function craftguide:on_use(itemstack, user)
 	if not datas.init_items then
-		craftguide:get_init_items()
+		self:get_init_items()
 	end
 
 	local player_name = user:get_player_name()
@@ -427,9 +432,10 @@ function craftguide:on_use(itemstack, user)
 	if progressive_mode or not data then
 		datas[player_name] = {filter = "", pagenum = 1, iX = DEFAULT_SIZE}
 		if progressive_mode then
-			craftguide:get_filter_items(datas[player_name], user)
+			self:get_filter_items(datas[player_name], user)
 		end
-		craftguide:get_formspec(player_name)
+
+		self:get_formspec(player_name)
 	else
 		show_formspec(player_name, "craftguide", data.formspec)
 	end
