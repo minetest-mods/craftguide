@@ -19,6 +19,8 @@ local DEFAULT_SIZE = 10
 local MIN_LIMIT, MAX_LIMIT = 9, 12
 DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
+local GRID_LIMIT = 5
+
 local group_stereotypes = {
 	wool	     = "wool:white",
 	dye	     = "dye:white",
@@ -123,19 +125,18 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
 	end
 
 	local rows = ceil(maxn(items) / width)
-	local btn_size, craftgrid_limit = 1, 5
 
-	if recipe_type == "normal" and
-			width > craftgrid_limit or rows > craftgrid_limit then
+	if recipe_type == "normal" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
 		formspec = formspec ..
 			"label[" .. xoffset .. "," .. (iY + 2) .. ";" ..
 				S("Recipe is too big to\nbe displayed (@1x@2)", width, rows) .. "]"
 	else
+		local btn_size = 1
 		for i, v in pairs(items) do
 			local X = (i - 1) % width + xoffset
 			local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
-			if recipe_type == "normal" and width > 3 or rows > 3 then
+			if recipe_type == "normal" and (width > 3 or rows > 3) then
 				btn_size = width > 3 and 3 / width or 3 / rows
 				X = btn_size * (i % width) + xoffset
 				Y = btn_size * floor((i - 1) / width) + (iY + 3) - min(2, rows)
@@ -199,8 +200,8 @@ function craftguide:get_formspec(player_name, is_fuel)
 
 	if not next(data.items) then
 		formspec = formspec ..
-			"label[" .. (xoffset - (even_num and 1.5 or 1)) .. ",2;"
-				.. S("No item to show") .. "]"
+			"label[" .. (xoffset - (even_num and 1.5 or 1)) .. ",2;" ..
+				S("No item to show") .. "]"
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
@@ -513,3 +514,26 @@ if rawget(_G, "sfinv_buttons") then
 end
 
 mt.register_alias("xdecor:crafting_guide", "craftguide:book")
+
+--[[ Custom recipes (>3x3) test code
+
+mt.register_craftitem("craftguide:custom_recipe_test", {
+	description = "Custom Recipe Test",
+})
+
+local cr = {}
+for x = 1, 6 do
+	cr[x] = {}
+	for i = 1, 10 - x do
+		cr[x][i] = {}
+		for j = 1, 10 - x do
+			cr[x][i][j] = "group:wood"
+		end
+	end
+
+	mt.register_craft({
+		output = "craftguide:custom_recipe_test",
+		recipe = cr[x]
+	})
+end
+]]
