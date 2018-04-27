@@ -343,8 +343,13 @@ function craftguide:get_filter_items(data, player)
 		if not data.items then
 			data.init_filter_items = filtered_list
 		end
-	elseif filter ~= "" and not datas.searches[filter] then
-		datas.searches[filter] = filtered_list
+	elseif filter ~= "" then
+		-- Cache the results only if searched 2 times
+		if datas.searches[filter] == nil then
+			datas.searches[filter] = false
+		else
+			datas.searches[filter] = filtered_list
+		end
 	end
 
 	data.items = filtered_list
