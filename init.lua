@@ -100,13 +100,14 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	return has_extras and tooltip .. "]" or ""
 end
 
-function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes)
+function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes, show_usage)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
 			"button[0," .. (iY + 3.3) .. ";2,1;alternate;" .. S("Alternate") .. "]" ..
 			"label[0," .. (iY + 2.8) .. ";" ..
-				S("Recipe @1 of @2", recipe_num, recipes_total) .. "]"
+				(show_usage and S("Usage") or S("Recipe")) .. " " ..
+				 S("@1 of @2", recipe_num, recipes_total) .. "]"
 	end
 
 	local recipe_type = recipes[recipe_num].type
@@ -228,9 +229,13 @@ function craftguide:get_formspec(player_name, is_fuel)
 				"image[" .. (xoffset - 2) .. "," ..
 					(iY + 2.18) .. ";1,1;craftguide_fire.png]"
 		else
+			local show_usage = data.show_usage
 			formspec = formspec ..
-				self:get_recipe(iY, xoffset, tooltip, data.item,
-						data.recipe_num, data.recipes_item)
+				self:get_recipe(iY, xoffset, tooltip,
+						data.item,
+						data.rnum,
+						(show_usage and data.usages or data.recipes_item),
+						show_usage)
 		end
 	end
 
@@ -355,19 +360,58 @@ function craftguide:get_filter_items(data, player)
 	data.items = filtered_list
 end
 
+function craftguide:get_item_usages(item)
+	local usages = {}
+	for name, def in pairs(reg_items) do
+		if not (def.groups.not_in_creative_inventory == 1) and
+		  (get_recipe(name).items) and def.description and def.description ~= "" then
+			local recipes = get_recipes(name)
+			for i = 1, #recipes do
+				local recipe = recipes[i]
+				local items = recipe.items
+
+				for j = 1, #items do
+					if items[j] == item then
+						usages[#usages + 1] = {
+							type = recipe.type,
+							items = items,
+							width = recipe.width,
+							output = recipe.output,
+						}
+						break
+					end
+				end
+			end
+		end
+	end
+
+	return usages
+end
+
 mt.register_on_player_receive_fields(function(player, formname, fields)
 	if formname ~= "craftguide" then return end
 	local player_name = player:get_player_name()
 	local data = datas[player_name]
 
 	if fields.clear then
-		data.filter, data.item, data.pagenum, data.recipe_num = "", nil, 1, 1
+		data.show_usage = nil
+		data.filter     = ""
+		data.item       = nil
+		data.pagenum    = 1
+		data.rnum       = 1
+
 		data.items = progressive_mode and data.init_filter_items or datas.init_items
 		craftguide:get_formspec(player_name)
 
 	elseif fields.alternate then
-		local recipe = data.recipes_item[data.recipe_num + 1]
-		data.recipe_num = recipe and data.recipe_num + 1 or 1
+		local num
+		if data.show_usage then
+			num = data.usages[data.rnum + 1]
+		else
+			num = data.recipes_item[data.rnum + 1]
+		end
+
+		data.rnum = num and data.rnum + 1 or 1
 		craftguide:get_formspec(player_name)
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
@@ -379,11 +423,13 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
+
 		if data.pagenum > data.pagemax then
 			data.pagenum = 1
 		elseif data.pagenum == 0 then
 			data.pagenum = data.pagemax
 		end
+
 		craftguide:get_formspec(player_name)
 
 	elseif (fields.size_inc and data.iX < MAX_LIMIT) or
@@ -402,12 +448,14 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			local recipes = get_recipes(item)
 			if not recipes and not is_fuel then return end
 
-			if item == data.item then
-				if data.recipes_item and #data.recipes_item >= 2 then
-					local recipe = data.recipes_item[data.recipe_num + 1]
-					data.recipe_num = recipe and data.recipe_num + 1 or 1
-					craftguide:get_formspec(player_name)
+			if item == data.item and not progressive_mode then
+				data.usages = craftguide:get_item_usages(item)
+				if next(data.usages) then
+					data.show_usage = true
+					data.rnum = 1
 				end
+
+				craftguide:get_formspec(player_name)
 			else
 				if progressive_mode then
 					local inv = player:get_inventory()
@@ -417,9 +465,11 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 					recipes = craftguide:recipe_in_inv(inv, item, recipes)
 				end
 
-				data.item = item
-				data.recipe_num = 1
+				data.item         = item
 				data.recipes_item = recipes
+				data.rnum         = 1
+				data.show_usage   = nil
+
 				craftguide:get_formspec(player_name, is_fuel)
 			end
 		end
