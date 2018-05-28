@@ -118,7 +118,7 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes, 
 		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
 		formspec = formspec ..
 			"image[" .. (xoffset - 0.8) .. "," .. (iY + 1.7)  ..
-				".5;0.5,0.5;craftguide_" .. icon .. ".png]"
+				";0.5,0.5;craftguide_" .. icon .. ".png]"
 	end
 
 	if width == 0 then
@@ -158,7 +158,7 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes, 
 	local output = recipes[recipe_num].output
 	return formspec ..
 		"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
-			".12;0.9,0.7;craftguide_arrow.png]" ..
+			";0.9,0.7;craftguide_arrow.png]" ..
 		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2.2) .. ";1,1;" ..
 			output .. ";" .. item .. ";]" .. tooltip
 end
@@ -189,10 +189,10 @@ function craftguide:get_formspec(player_name, is_fuel)
 			"button[" .. (data.iX * 0.48) .. ",-0.02;0.7,1;size_inc;+]" ..
 			"button[" .. ((data.iX * 0.48) + 0.5) ..
 				",-0.02;0.7,1;size_dec;-]" ..
-			"button[" .. (data.iX - 3.1) .. ".4,0;0.8,0.95;prev;<]" ..
-			"label[" .. (data.iX - 2.2) .. ".1,0.18;" ..
+			"button[" .. (data.iX - 3.1) .. ",0;0.8,0.95;prev;<]" ..
+			"label[" .. (data.iX - 2.2) .. ",0.18;" ..
 				colorize(data.pagenum) .. " / " .. data.pagemax .. "]" ..
-			"button[" .. (data.iX - 1.2) .. ".2,0;0.8,0.95;next;>]" ..
+			"button[" .. (data.iX - 1.2) .. ",0;0.8,0.95;next;>]" ..
 			"field[0.3,0.32;2.5,1;filter;;" ..
 				mt.formspec_escape(data.filter) .. "]"
 
@@ -222,7 +222,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 		if not data.recipes_item or (is_fuel and not get_recipe(data.item).items) then
 			formspec = formspec ..
 				"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
-					".12;0.9,0.7;craftguide_arrow.png]" ..
+					";0.9,0.7;craftguide_arrow.png]" ..
 				"item_image_button[" .. xoffset .. "," .. (iY + 2.2) ..
 					";1,1;" .. data.item .. ";" .. data.item .. ";]" ..
 				tooltip ..
@@ -448,7 +448,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			local recipes = get_recipes(item)
 			if not recipes and not is_fuel then return end
 
-			if item == data.item and not progressive_mode then
+			if not data.show_usage and item == data.item and not progressive_mode then
 				data.usages = craftguide:get_item_usages(item)
 				if next(data.usages) then
 					data.show_usage = true
