@@ -302,7 +302,7 @@ function craftguide:get_init_items()
 	local items_list, counter = {}, 0
 	for name, def in pairs(reg_items) do
 		local is_fuel = get_fueltime(name) > 0
-		if not (def.groups.not_in_creative_inventory == 1) and
+		if (not (def.groups.not_in_craft_guide == 1 or def.groups.not_in_creative_inventory == 1)) and
 		       (get_recipe(name).items or is_fuel) and
 			def.description and def.description ~= "" then
 
