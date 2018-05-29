@@ -2,7 +2,7 @@
 
 #### A Crafting Guide for Minetest that doesn't suck. ####
 
-#### `craftguide` is simply the most comprehensive mod of his category, with the cleanest code. ####
+#### `craftguide` is the most comprehensive mod of its category. ####
 #### Consult the [Minetest Wiki](http://wiki.minetest.net/Crafting_guide) for more details and comparisons. ####
 
 #### This crafting guide is usable with a blue book named *"Crafting Guide"*. ####
