@@ -101,7 +101,7 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	return has_extras and tooltip .. "]" or ""
 end
 
-function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes, show_usage)
+function craftguide:get_recipe(iY, xoffset, recipe_num, recipes, show_usage)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
@@ -161,9 +161,8 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes, 
 		"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
 			";0.9,0.7;craftguide_arrow.png]" ..
 		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2.2) .. ";1,1;" ..
-			output .. ";" ..
-			(show_usage and output or item) .. ";]" ..
-			tooltip
+			output .. ";" .. output .. ";]" ..
+			self:get_tooltip(output:match("%S+"))
 end
 
 function craftguide:get_formspec(player_name, is_fuel)
@@ -221,21 +220,19 @@ function craftguide:get_formspec(player_name, is_fuel)
 	end
 
 	if data.item and reg_items[data.item] then
-		local tooltip = self:get_tooltip(data.item)
 		if not data.recipes_item or (is_fuel and not get_recipe(data.item).items) then
 			formspec = formspec ..
 				"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
 					";0.9,0.7;craftguide_arrow.png]" ..
 				"item_image_button[" .. xoffset .. "," .. (iY + 2.2) ..
 					";1,1;" .. data.item .. ";" .. data.item .. ";]" ..
-				tooltip ..
+				self:get_tooltip(data.item) ..
 				"image[" .. (xoffset - 2) .. "," ..
 					(iY + 2.18) .. ";1,1;craftguide_fire.png]"
 		else
 			local show_usage = data.show_usage
 			formspec = formspec ..
-				self:get_recipe(iY, xoffset, tooltip,
-						data.item,
+				self:get_recipe(iY, xoffset,
 						data.rnum,
 						(show_usage and data.usages or data.recipes_item),
 						show_usage)
@@ -447,6 +444,8 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 		if item:find(":") then
 			if item:sub(-4) == "_inv" then
 				item = item:sub(1,-5)
+			elseif item:find("%s") then
+				item = item:match("%S*")
 			end
 
 			local is_fuel = get_fueltime(item) > 0
