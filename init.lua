@@ -84,17 +84,18 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 				colorize(groups[i]) .. (groups[i + 1] and ", " or "")
 		end
 
-		tooltip = tooltip .. S("Any item belonging to the group(s)") .. ": " .. groupstr
+		tooltip = tooltip ..
+			S("Any item belonging to the group(s)") .. ": " .. groupstr
 	end
 
 	if recipe_type == "cooking" then
-		tooltip = tooltip .. item_desc .. "\n"
-				.. S("Cooking time") .. ": " .. colorize(cooktime)
+		tooltip = tooltip .. item_desc .. "\n" ..
+			S("Cooking time") .. ": " .. colorize(cooktime)
 	end
 
 	if fueltime > 0 then
-		tooltip = tooltip .. item_desc .. "\n"
-				.. S("Burning time") .. ": " .. colorize(fueltime)
+		tooltip = tooltip .. item_desc .. "\n" ..
+			S("Burning time") .. ": " .. colorize(fueltime)
 	end
 
 	return has_extras and tooltip .. "]" or ""
@@ -160,7 +161,9 @@ function craftguide:get_recipe(iY, xoffset, tooltip, item, recipe_num, recipes, 
 		"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
 			";0.9,0.7;craftguide_arrow.png]" ..
 		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2.2) .. ";1,1;" ..
-			output .. ";" .. item .. ";]" .. tooltip
+			output .. ";" ..
+			(show_usage and output or item) .. ";]" ..
+			tooltip
 end
 
 function craftguide:get_formspec(player_name, is_fuel)
@@ -302,9 +305,10 @@ function craftguide:get_init_items()
 	local items_list, counter = {}, 0
 	for name, def in pairs(reg_items) do
 		local is_fuel = get_fueltime(name) > 0
-		if (not (def.groups.not_in_craft_guide == 1 or def.groups.not_in_creative_inventory == 1)) and
-		       (get_recipe(name).items or is_fuel) and
-			def.description and def.description ~= "" then
+		if (not (def.groups.not_in_craft_guide == 1 or
+			 def.groups.not_in_creative_inventory == 1)) and
+		        (get_recipe(name).items or is_fuel) and
+			 def.description and def.description ~= "" then
 
 			counter = counter + 1
 			items_list[counter] = name
@@ -363,8 +367,9 @@ end
 function craftguide:get_item_usages(item)
 	local usages = {}
 	for name, def in pairs(reg_items) do
-		if not (def.groups.not_in_creative_inventory == 1) and
-		  (get_recipe(name).items) and def.description and def.description ~= "" then
+		if not (def.groups.not_in_craft_guide == 1 or
+			def.groups.not_in_creative_inventory == 1) and
+		   get_recipe(name).items and def.description and def.description ~= "" then
 			local recipes = get_recipes(name)
 			for i = 1, #recipes do
 				local recipe = recipes[i]
