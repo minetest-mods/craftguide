@@ -1,5 +1,8 @@
 local craftguide, datas, mt = {}, {searches = {}}, minetest
+
 local progressive_mode = mt.settings:get_bool("craftguide_progressive_mode")
+local sfinv_only       = mt.settings:get_bool("craftguide_sfinv_only")
+
 local get_recipe, get_recipes = mt.get_craft_recipe, mt.get_all_craft_recipes
 local get_result, show_formspec = mt.get_craft_result, mt.show_formspec
 local reg_items = mt.registered_items
@@ -14,6 +17,7 @@ craftguide.intllib = S
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
+local unpack = unpack
 
 local DEFAULT_SIZE = 10
 local MIN_LIMIT, MAX_LIMIT = 9, 12
@@ -105,8 +109,9 @@ function craftguide:get_recipe(iY, xoffset, recipe_num, recipes, show_usage)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
-			"button[0," .. (iY + 3.3) .. ";2,1;alternate;" .. S("Alternate") .. "]" ..
-			"label[0," .. (iY + 2.8) .. ";" ..
+			"button[0," .. (iY + (sfinv_only and 3.8 or 3.3)) ..
+				";2,1;alternate;" .. S("Alternate") .. "]" ..
+			"label[0," .. (iY + (sfinv_only and 3.3 or 2.8)) .. ";" ..
 				(show_usage and S("Usage") or S("Recipe")) .. " " ..
 				 S("@1 of @2", recipe_num, recipes_total) .. "]"
 	end
@@ -118,7 +123,7 @@ function craftguide:get_recipe(iY, xoffset, recipe_num, recipes, show_usage)
 	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) then
 		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
 		formspec = formspec ..
-			"image[" .. (xoffset - 0.8) .. "," .. (iY + 1.7)  ..
+			"image[" .. (xoffset - 0.8) .. "," .. (iY + (sfinv_only and 2.2 or 1.7)) ..
 				";0.5,0.5;craftguide_" .. icon .. ".png]"
 	end
 
@@ -150,7 +155,8 @@ function craftguide:get_recipe(iY, xoffset, recipe_num, recipes, show_usage)
 			local tltip = self:get_tooltip(item_r, recipe_type, width, groups)
 
 			formspec = formspec ..
-				"item_image_button[" .. X .. "," .. (Y + 0.2) .. ";" ..
+				"item_image_button[" .. X .. "," ..
+					(Y + (sfinv_only and 0.7 or 0.2)) .. ";" ..
 					btn_size .. "," .. btn_size .. ";" .. item_r ..
 					";" .. item_r .. ";" .. label .. "]" .. tltip
 		end
@@ -158,16 +164,17 @@ function craftguide:get_recipe(iY, xoffset, recipe_num, recipes, show_usage)
 
 	local output = recipes[recipe_num].output
 	return formspec ..
-		"image[" .. (xoffset - 1) .. "," .. (iY + 2.35) ..
+		"image[" .. (xoffset - 1) .. "," .. (iY + (sfinv_only and 2.85 or 2.35)) ..
 			";0.9,0.7;craftguide_arrow.png]" ..
-		"item_image_button[" .. (xoffset - 2) .. "," .. (iY + 2.2) .. ";1,1;" ..
+		"item_image_button[" .. (xoffset - 2) .. "," ..
+				(iY + (sfinv_only and 2.7 or 2.2)) .. ";1,1;" ..
 			output .. ";" .. output .. ";]" ..
 			self:get_tooltip(output:match("%S+"))
 end
 
 function craftguide:get_formspec(player_name, is_fuel)
 	local data = datas[player_name]
-	local iY = data.iX - 5
+	local iY = sfinv_only and 4 or data.iX - 5
 	local ipp = data.iX * iY
 
 	if not data.items then
@@ -176,27 +183,31 @@ function craftguide:get_formspec(player_name, is_fuel)
 
 	data.pagemax = max(1, ceil(#data.items / ipp))
 
-	local formspec = "size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]" .. [[
-			background[1,1;1,1;craftguide_bg.png;true]
+	local formspec = ""
+	if not sfinv_only then
+		formspec = formspec ..
+			"size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]" ..
+			"background[1,1;1,1;craftguide_bg.png;true]" ..
+			"tooltip[size_inc;" .. S("Increase window size") .. "]" ..
+			"tooltip[size_dec;" .. S("Decrease window size") .. "]" ..
+			"button[" .. (data.iX * 0.48) .. ",-0.02;0.7,1;size_inc;+]" ..
+			"button[" .. ((data.iX * 0.48) + 0.5) .. ",-0.02;0.7,1;size_dec;-]"
+	end
+
+	formspec = formspec .. [[
 			button[2.4,0.23;0.8,0.5;search;?]
 			button[3.05,0.23;0.8,0.5;clear;X]
 			field_close_on_enter[filter;false]
 		]] ..
 			"tooltip[search;" .. S("Search") .. "]" ..
 			"tooltip[clear;" .. S("Reset") .. "]" ..
-			"tooltip[size_inc;" .. S("Increase window size") .. "]" ..
-			"tooltip[size_dec;" .. S("Decrease window size") .. "]" ..
 			"tooltip[prev;" .. S("Previous page") .. "]" ..
 			"tooltip[next;" .. S("Next page") .. "]" ..
-			"button[" .. (data.iX * 0.48) .. ",-0.02;0.7,1;size_inc;+]" ..
-			"button[" .. ((data.iX * 0.48) + 0.5) ..
-				",-0.02;0.7,1;size_dec;-]" ..
 			"button[" .. (data.iX - 3.1) .. ",0;0.8,0.95;prev;<]" ..
 			"label[" .. (data.iX - 2.2) .. ",0.18;" ..
 				colorize(data.pagenum) .. " / " .. data.pagemax .. "]" ..
 			"button[" .. (data.iX - 1.2) .. ",0;0.8,0.95;next;>]" ..
-			"field[0.3,0.32;2.5,1;filter;;" ..
-				mt.formspec_escape(data.filter) .. "]"
+			"field[0.3,0.32;2.5,1;filter;;" .. mt.formspec_escape(data.filter) .. "]"
 
 	local even_num = data.iX % 2 == 0
 	local xoffset = data.iX / 2 + (even_num and 0.5 or 0)
@@ -240,7 +251,12 @@ function craftguide:get_formspec(player_name, is_fuel)
 	end
 
 	data.formspec = formspec
-	show_formspec(player_name, "craftguide", formspec)
+
+	if sfinv_only then
+		return formspec
+	else
+		show_formspec(player_name, "craftguide", formspec)
+	end
 end
 
 local function player_has_item(T)
@@ -390,10 +406,31 @@ function craftguide:get_item_usages(item)
 	return usages
 end
 
-mt.register_on_player_receive_fields(function(player, formname, fields)
+local function get_fields(player, ...)
+	local args = {...}
+	local formname, fields
+
+	if #args == 1 then
+		formname = "craftguide"
+		fields = args[#args]
+	else
+		formname, fields = unpack(args)
+	end
+
 	if formname ~= "craftguide" then return end
 	local player_name = player:get_player_name()
 	local data = datas[player_name]
+
+	local show_fs = function(is_fuel)
+		local context = sfinv.get_or_create_context(player)
+		context.fuel = is_fuel
+
+		if sfinv_only then
+			sfinv.set_player_inventory_formspec(player, context)
+		else
+			craftguide:get_formspec(player_name, is_fuel)
+		end
+	end
 
 	if fields.clear then
 		data.show_usage = nil
@@ -403,7 +440,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 		data.rnum       = 1
 
 		data.items = progressive_mode and data.init_filter_items or datas.init_items
-		craftguide:get_formspec(player_name)
+		show_fs()
 
 	elseif fields.alternate then
 		local num
@@ -414,14 +451,14 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 		end
 
 		data.rnum = num and data.rnum + 1 or 1
-		craftguide:get_formspec(player_name)
+		show_fs()
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
 		data.filter = fields.filter:lower()
 		data.pagenum = 1
 		craftguide:get_filter_items(data, player)
-		craftguide:get_formspec(player_name)
+		show_fs()
 
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
@@ -432,13 +469,13 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 			data.pagenum = data.pagemax
 		end
 
-		craftguide:get_formspec(player_name)
+		show_fs()
 
 	elseif (fields.size_inc and data.iX < MAX_LIMIT) or
 			(fields.size_dec and data.iX > MIN_LIMIT) then
 		data.pagenum = 1
 		data.iX = data.iX - (fields.size_dec and 1 or -1)
-		craftguide:get_formspec(player_name)
+		show_fs()
 
 	else for item in pairs(fields) do
 		if item:find(":") then
@@ -459,7 +496,7 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 					data.rnum = 1
 				end
 
-				craftguide:get_formspec(player_name)
+				show_fs()
 			else
 				if progressive_mode then
 					local inv = player:get_inventory()
@@ -474,92 +511,126 @@ mt.register_on_player_receive_fields(function(player, formname, fields)
 				data.rnum         = 1
 				data.show_usage   = nil
 
-				craftguide:get_formspec(player_name, is_fuel)
+				show_fs(is_fuel)
 			end
 		end
 	     end
 	end
-end)
-
-function craftguide:on_use(itemstack, user)
-	if not datas.init_items then
-		self:get_init_items()
-	end
-
-	local player_name = user:get_player_name()
-	local data = datas[player_name]
-
-	if progressive_mode or not data then
-		datas[player_name] = {filter = "", pagenum = 1, iX = DEFAULT_SIZE}
-		if progressive_mode then
-			self:get_filter_items(datas[player_name], user)
-		end
-
-		self:get_formspec(player_name)
-	else
-		show_formspec(player_name, "craftguide", data.formspec)
-	end
 end
 
-mt.register_craftitem("craftguide:book", {
-	description = S("Crafting Guide"),
-	inventory_image = "craftguide_book.png",
-	wield_image = "craftguide_book.png",
-	stack_max = 1,
-	groups = {book = 1},
-	on_use = function(itemstack, user)
-		craftguide:on_use(itemstack, user)
+if sfinv_only then
+	sfinv.register_page("craftguide:craftguide", {
+		title = "Craft Guide",
+		get = function(self, player, context)
+			local player_name = player:get_player_name()
+			return sfinv.make_formspec(
+				player,
+				context,
+				craftguide:get_formspec(player_name, context.fuel)
+			)
+		end,
+		on_enter = function(self, player, context)
+			if not datas.init_items then
+				craftguide:get_init_items()
+			end
+
+			local player_name = player:get_player_name()
+			local data = datas[player_name]
+
+			if progressive_mode or not data then
+				datas[player_name] = {filter = "", pagenum = 1, iX = 8}
+				if progressive_mode then
+					craftguide:get_filter_items(datas[player_name], player)
+				end
+			end
+		end,
+		on_player_receive_fields = function(self, player, context, fields)
+			get_fields(player, fields)
+		end,
+	})
+else
+	mt.register_on_player_receive_fields(get_fields)
+
+	function craftguide:on_use(itemstack, user)
+		if not datas.init_items then
+			self:get_init_items()
+		end
+
+		local player_name = user:get_player_name()
+		local data = datas[player_name]
+
+		if progressive_mode or not data then
+			datas[player_name] = {filter = "", pagenum = 1, iX = DEFAULT_SIZE}
+			if progressive_mode then
+				self:get_filter_items(datas[player_name], user)
+			end
+
+			self:get_formspec(player_name)
+		else
+			show_formspec(player_name, "craftguide", data.formspec)
+		end
 	end
-})
 
-mt.register_node("craftguide:sign", {
-	description = S("Crafting Guide Sign"),
-	drawtype = "nodebox",
-	tiles = {"craftguide_sign.png"},
-	inventory_image = "craftguide_sign_inv.png",
-	wield_image = "craftguide_sign_inv.png",
-	paramtype = "light",
-	paramtype2 = "wallmounted",
-	sunlight_propagates = true,
-	groups = {wood = 1, oddly_breakable_by_hand = 1, flammable = 3},
-	node_box = {
-		type = "wallmounted",
-		wall_top    = {-0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125},
-		wall_bottom = {-0.4375, -0.5, -0.3125, 0.4375, -0.4375, 0.3125},
-		wall_side   = {-0.5, -0.3125, -0.4375, -0.4375, 0.3125, 0.4375}
-	},
-	on_construct = function(pos)
-		local meta = minetest.get_meta(pos)
-		meta:set_string("infotext", S("Crafting Guide Sign"))
-	end,
-	on_rightclick = function(pos, node, user, itemstack)
-		craftguide:on_use(itemstack, user)
-	end
-})
+	mt.register_craftitem("craftguide:book", {
+		description = S("Crafting Guide"),
+		inventory_image = "craftguide_book.png",
+		wield_image = "craftguide_book.png",
+		stack_max = 1,
+		groups = {book = 1},
+		on_use = function(itemstack, user)
+			craftguide:on_use(itemstack, user)
+		end
+	})
 
-mt.register_craft({
-	output = "craftguide:book",
-	type = "shapeless",
-	recipe = {"default:book"}
-})
+	mt.register_node("craftguide:sign", {
+		description = S("Crafting Guide Sign"),
+		drawtype = "nodebox",
+		tiles = {"craftguide_sign.png"},
+		inventory_image = "craftguide_sign_inv.png",
+		wield_image = "craftguide_sign_inv.png",
+		paramtype = "light",
+		paramtype2 = "wallmounted",
+		sunlight_propagates = true,
+		groups = {wood = 1, oddly_breakable_by_hand = 1, flammable = 3},
+		node_box = {
+			type = "wallmounted",
+			wall_top    = {-0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125},
+			wall_bottom = {-0.4375, -0.5, -0.3125, 0.4375, -0.4375, 0.3125},
+			wall_side   = {-0.5, -0.3125, -0.4375, -0.4375, 0.3125, 0.4375}
+		},
+		on_construct = function(pos)
+			local meta = minetest.get_meta(pos)
+			meta:set_string("infotext", S("Crafting Guide Sign"))
+		end,
+		on_rightclick = function(pos, node, user, itemstack)
+			craftguide:on_use(itemstack, user)
+		end
+	})
 
-mt.register_craft({
-	type = "fuel",
-	recipe = "craftguide:book",
-	burntime = 3
-})
+	mt.register_craft({
+		output = "craftguide:book",
+		type = "shapeless",
+		recipe = {"default:book"}
+	})
 
-mt.register_craft({
-	output = "craftguide:sign",
-	type = "shapeless",
-	recipe = {"default:sign_wall_wood"}
-})
+	mt.register_craft({
+		type = "fuel",
+		recipe = "craftguide:book",
+		burntime = 3
+	})
 
-mt.register_craft({
-	type = "fuel",
-	recipe = "craftguide:sign",
-	burntime = 10
-})
+	mt.register_craft({
+		output = "craftguide:sign",
+		type = "shapeless",
+		recipe = {"default:sign_wall_wood"}
+	})
+
+	mt.register_craft({
+		type = "fuel",
+		recipe = "craftguide:sign",
+		burntime = 10
+	})
+end
 
 if rawget(_G, "sfinv_buttons") then
 	sfinv_buttons.register_button("craftguide", {
@@ -571,8 +642,6 @@ if rawget(_G, "sfinv_buttons") then
 		image = "craftguide_book.png",
 	})
 end
-
-mt.register_alias("xdecor:crafting_guide", "craftguide:book")
 
 --[[ Custom recipes (>3x3) test code
 
