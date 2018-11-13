@@ -160,14 +160,13 @@ function craftguide:get_recipe(iY, xoffset, recipe_num, recipes, show_usage)
 		end
 	end
 
-	local output = recipes[recipe_num].output
+	local output = recipes[recipe_num].output:match("%S+")
 	return formspec ..
 		"image[" .. (xoffset - 1) .. "," .. (iY + (sfinv_only and 2.85 or 2.35)) ..
 			";0.9,0.7;craftguide_arrow.png]" ..
 		"item_image_button[" .. (xoffset - 2) .. "," ..
 				(iY + (sfinv_only and 2.7 or 2.2)) .. ";1,1;" ..
-			output .. ";" .. output .. ";]" ..
-			self:get_tooltip(output:match("%S+"))
+			output .. ";" .. output .. ";]" .. self:get_tooltip(output)
 end
 
 function craftguide:get_formspec(player_name, is_fuel)
