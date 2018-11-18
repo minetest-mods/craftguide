@@ -131,6 +131,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 				(icon == "shapeless" and "^[transformFX" or "") .. "]"
 	end
 
+	local cooktime = width
 	if recipe_type == "cooking" then
 		width = 1
 	elseif width == 0 then
@@ -157,7 +158,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 			local groups = extract_groups(v)
 			local label = groups and "\nG" or ""
 			local item_r = self:group_to_item(v)
-			local tltip = self:get_tooltip(item_r, recipe_type, width, groups)
+			local tltip = self:get_tooltip(item_r, recipe_type, cooktime, groups)
 
 			formspec = formspec ..
 				"item_image_button[" .. X .. "," ..
