@@ -127,8 +127,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		formspec = formspec ..
 			"image[" .. (xoffset + 0.2) .. "," ..
 				(iY + (sfinv_only and 2.2 or 1.7)) ..
-				";0.5,0.5;craftguide_" .. icon .. ".png" ..
-				(icon == "shapeless" and "^[transformFX" or "") .. "]"
+				";0.5,0.5;craftguide_" .. icon .. ".png]"
 	end
 
 	local cooktime = width
@@ -176,7 +175,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	formspec = formspec ..
 		"image[" .. (xoffset + 0.08) .. "," ..
 			(iY + (sfinv_only and 2.85 or 2.35)) ..
-			";0.9,0.7;craftguide_arrow.png^[transformFX]" ..
+			";0.9,0.7;craftguide_arrow.png]" ..
 
 		"item_image_button[" .. (xoffset + 1) .. "," ..
 				(iY + (sfinv_only and 2.7 or 2.2)) .. ";" ..
@@ -189,7 +188,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		formspec = formspec ..
 			"image[" .. (xoffset + 2) .. "," ..
 				(iY + (sfinv_only and 2.83 or 2.33)) ..
-				";0.6,0.4;craftguide_arrow.png^[transformFX]" ..
+				";0.6,0.4;craftguide_arrow.png]" ..
 
 			"image[" .. (xoffset + 2.6) .. "," ..
 				(iY + (sfinv_only and 2.68 or 2.18)) ..
@@ -264,7 +263,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 			formspec = formspec ..
 				"image[" .. (xoffset + 0.08) .. "," ..
 					(iY + (sfinv_only and 2.85 or 2.35)) ..
-					";0.9,0.7;craftguide_arrow.png^[transformFX]" ..
+					";0.9,0.7;craftguide_arrow.png]" ..
 
 				"item_image_button[" .. (xoffset - 1) .. "," ..
 					(iY + (sfinv_only and 2.7 or 2.2)) ..
