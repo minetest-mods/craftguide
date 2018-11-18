@@ -126,12 +126,13 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	end
 
 	local rows = ceil(maxn(items) / width)
-	local rightest = 0
+	local rightest, s_btn_size = 0
 
 	if recipe_type == "normal" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
 		formspec = formspec ..
-			"label[" .. (xoffset - 2.3) .. "," .. (iY + 2.2) .. ";" ..
-				S("Recipe is too big to\nbe displayed (@1x@2)", width, rows) .. "]"
+			"label[" .. ((iX / 2) - 2) .. "," .. (iY + 2.2) .. ";" ..
+				S("Recipe is too big to be displayed (@1x@2)", width, rows) .. "]"
+		return formspec
 	else
 		for i, v in pairs(items) do
 			local X = math.ceil((i - 1) % width + xoffset - width) -
@@ -140,7 +141,8 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 
 			if recipe_type == "normal" and (width > 3 or rows > 3) then
 				BUTTON_SIZE = width > 3 and 3 / width or 3 / rows
-				X = BUTTON_SIZE * (i % width) + xoffset - 3
+				s_btn_size = BUTTON_SIZE
+				X = BUTTON_SIZE * (i % width) + xoffset - 2.65
 				Y = BUTTON_SIZE * floor((i - 1) / width) + (iY + 3) - min(2, rows)
 			end
 
@@ -174,12 +176,15 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local output = recipes[recipe_num].output:match("%S+")
 	local output_is_fuel = get_fueltime(output) > 0
 
+	local arrow_X  = rightest + (s_btn_size or BUTTON_SIZE)
+	local output_X = arrow_X + 0.9
+
 	formspec = formspec ..
-		"image[" .. (rightest + 1.1) .. "," ..
+		"image[" .. arrow_X .. "," ..
 			(iY + (sfinv_only and 2.85 or 2.35)) ..
 			";0.9,0.7;craftguide_arrow.png]" ..
 
-		"item_image_button[" .. (rightest + 2) .. "," ..
+		"item_image_button[" .. output_X .. "," ..
 				(iY + (sfinv_only and 2.7 or 2.2)) .. ";" ..
 				BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
 				output .. ";" .. output .. ";]" ..
@@ -188,11 +193,11 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 
 	if output_is_fuel then
 		formspec = formspec ..
-			"image[" .. (rightest + 3) .. "," ..
+			"image[" .. (output_X + 1) .. "," ..
 				(iY + (sfinv_only and 2.83 or 2.33)) ..
 				";0.6,0.4;craftguide_arrow.png]" ..
 
-			"image[" .. (rightest + 3.6) .. "," ..
+			"image[" .. (output_X + 1.6) .. "," ..
 				(iY + (sfinv_only and 2.68 or 2.18)) ..
 				";0.6,0.6;craftguide_fire.png]"
 	end
