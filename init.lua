@@ -19,7 +19,7 @@ local remove, maxn, sort = table.remove, table.maxn, table.sort
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 
 local DEFAULT_SIZE = 10
-local MIN_LIMIT, MAX_LIMIT = 9, 12
+local MIN_LIMIT, MAX_LIMIT = 10, 12
 DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
 local GRID_LIMIT = 5
@@ -108,27 +108,15 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
-			"button[" .. (iX - (sfinv_only and 2 or 2.4)) .. "," ..
-				(iY + (sfinv_only and 3.9 or 3.3)) ..
-				";2,1;alternate;" .. S("Alternate") .. "]" ..
-
-			"label[" .. (iX - (sfinv_only and 2 or 2.4)) .. "," ..
-				(iY + (sfinv_only and 3.5 or 2.9)) .. ";" ..
-				(show_usage and S("Usage") or S("Recipe")) .. " " ..
+			"button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
+				(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
+				(show_usage and S("Usage") or S("Recipe")) .. ": " ..
 				S("@1 of @2", recipe_num, recipes_total) .. "]"
 	end
 
 	local recipe_type = recipes[recipe_num].type
 	local items = recipes[recipe_num].items
 	local width = recipes[recipe_num].width
-
-	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) then
-		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
-		formspec = formspec ..
-			"image[" .. (xoffset + 0.2) .. "," ..
-				(iY + (sfinv_only and 2.2 or 1.7)) ..
-				";0.5,0.5;craftguide_" .. icon .. ".png]"
-	end
 
 	local cooktime = width
 	if recipe_type == "cooking" then
@@ -138,6 +126,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	end
 
 	local rows = ceil(maxn(items) / width)
+	local rightest = 0
 
 	if recipe_type == "normal" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
 		formspec = formspec ..
@@ -145,13 +134,18 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 				S("Recipe is too big to\nbe displayed (@1x@2)", width, rows) .. "]"
 	else
 		for i, v in pairs(items) do
-			local X = (i - 1) % width + xoffset - width
+			local X = math.ceil((i - 1) % width + xoffset - width) -
+				 (sfinv_only and 0 or 0.2)
 			local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
 			if recipe_type == "normal" and (width > 3 or rows > 3) then
 				BUTTON_SIZE = width > 3 and 3 / width or 3 / rows
 				X = BUTTON_SIZE * (i % width) + xoffset - 3
 				Y = BUTTON_SIZE * floor((i - 1) / width) + (iY + 3) - min(2, rows)
+			end
+
+			if X > rightest then
+				rightest = X
 			end
 
 			local groups = extract_groups(v)
@@ -169,15 +163,23 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		BUTTON_SIZE = 1.1
 	end
 
+	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) then
+		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
+		formspec = formspec ..
+			"image[" .. (rightest + 1.2) .. "," ..
+				(iY + (sfinv_only and 2.2 or 1.7)) ..
+				";0.5,0.5;craftguide_" .. icon .. ".png]"
+	end
+
 	local output = recipes[recipe_num].output:match("%S+")
 	local output_is_fuel = get_fueltime(output) > 0
 
 	formspec = formspec ..
-		"image[" .. (xoffset + 0.08) .. "," ..
+		"image[" .. (rightest + 1.1) .. "," ..
 			(iY + (sfinv_only and 2.85 or 2.35)) ..
 			";0.9,0.7;craftguide_arrow.png]" ..
 
-		"item_image_button[" .. (xoffset + 1) .. "," ..
+		"item_image_button[" .. (rightest + 2) .. "," ..
 				(iY + (sfinv_only and 2.7 or 2.2)) .. ";" ..
 				BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
 				output .. ";" .. output .. ";]" ..
@@ -186,11 +188,11 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 
 	if output_is_fuel then
 		formspec = formspec ..
-			"image[" .. (xoffset + 2) .. "," ..
+			"image[" .. (rightest + 3) .. "," ..
 				(iY + (sfinv_only and 2.83 or 2.33)) ..
 				";0.6,0.4;craftguide_arrow.png]" ..
 
-			"image[" .. (xoffset + 2.6) .. "," ..
+			"image[" .. (rightest + 3.6) .. "," ..
 				(iY + (sfinv_only and 2.68 or 2.18)) ..
 				";0.6,0.6;craftguide_fire.png]"
 	end
@@ -260,19 +262,20 @@ function craftguide:get_formspec(player_name, is_fuel)
 
 	if data.item and reg_items[data.item] then
 		if not data.recipes_item or (is_fuel and not get_recipe(data.item).items) then
+			local X = math.floor(xoffset) - (sfinv_only and 0 or 0.2)
 			formspec = formspec ..
-				"image[" .. (xoffset + 0.08) .. "," ..
-					(iY + (sfinv_only and 2.85 or 2.35)) ..
-					";0.9,0.7;craftguide_arrow.png]" ..
-
-				"item_image_button[" .. (xoffset - 1) .. "," ..
+				"item_image_button[" .. X .. "," ..
 					(iY + (sfinv_only and 2.7 or 2.2)) ..
 					";" .. BUTTON_SIZE .. "," .. BUTTON_SIZE ..
 					";" .. data.item .. ";" .. data.item .. ";]" ..
 
+				"image[" .. (X + 1.1) .. "," ..
+					(iY + (sfinv_only and 2.85 or 2.35)) ..
+					";0.9,0.7;craftguide_arrow.png]" ..
+
 				self:get_tooltip(data.item) ..
 
-				"image[" .. (xoffset + 1) .. "," ..
+				"image[" .. (X + 2.1) .. "," ..
 					(iY + (sfinv_only and 2.68 or 2.18)) ..
 					";1.1,1.1;craftguide_fire.png]"
 		else
