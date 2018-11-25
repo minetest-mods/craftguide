@@ -110,7 +110,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		formspec = formspec ..
 			"button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
 				(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
-				(show_usage and S("Usage") or S("Recipe")) .. ": " ..
+				(show_usage and S("Usage") or S("Recipe")) .. " " ..
 				S("@1 of @2", recipe_num, recipes_total) .. "]"
 	end
 
@@ -135,7 +135,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		return formspec
 	else
 		for i, v in pairs(items) do
-			local X = math.ceil((i - 1) % width + xoffset - width) -
+			local X = ceil((i - 1) % width + xoffset - width) -
 				 (sfinv_only and 0 or 0.2)
 			local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
@@ -223,25 +223,28 @@ function craftguide:get_formspec(player_name, is_fuel)
 			"background[1,1;1,1;craftguide_bg.png;true]" ..
 			"tooltip[size_inc;" .. S("Increase window size") .. "]" ..
 			"tooltip[size_dec;" .. S("Decrease window size") .. "]" ..
-			"button[" .. (data.iX * 0.48) .. ",0;0.7,1;size_inc;+]" ..
-			"button[" .. ((data.iX * 0.48) + 0.5) .. ",0;0.7,1;size_dec;-]"
+			"image_button[" .. (data.iX * 0.47) ..
+				",0.12;0.8,0.8;craftguide_zoomin_icon.png;size_inc;]" ..
+			"image_button[" .. ((data.iX * 0.47) + 0.6) ..
+				",0.12;0.8,0.8;craftguide_zoomout_icon.png;size_dec;]"
 	end
 
 	formspec = formspec .. [[
-			button[2.4,0.23;0.8,0.5;search;?]
-			button[3.05,0.23;0.8,0.5;clear;X]
+			image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
+			image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
 			field_close_on_enter[filter;false]
 		]] ..
 			"tooltip[search;" .. S("Search") .. "]" ..
 			"tooltip[clear;" .. S("Reset") .. "]" ..
 			"tooltip[prev;" .. S("Previous page") .. "]" ..
 			"tooltip[next;" .. S("Next page") .. "]" ..
-			"button[" .. (data.iX - (sfinv_only and 2.6 or 3.1)) ..
-				",0.03;0.8,0.95;prev;<]" ..
-			"label[" .. (data.iX - (sfinv_only and 1.7 or 2.2)) .. ",0.21;" ..
+			"image_button[" .. (data.iX - (sfinv_only and 2.6 or 3.1)) ..
+				",0.12;0.8,0.8;craftguide_prev_icon.png;prev;]" ..
+			"label[" .. (data.iX - (sfinv_only and 1.7 or 2.2)) .. ",0.22;" ..
 				colorize(data.pagenum) .. " / " .. data.pagemax .. "]" ..
-			"button[" .. (data.iX - (sfinv_only and 0.7 or 1.2) -
-				(data.iX >= 11 and 0.08 or 0)) .. ",0.03;0.8,0.95;next;>]" ..
+			"image_button[" .. (data.iX - (sfinv_only and 0.7 or 1.2) -
+				(data.iX >= 11 and 0.08 or 0)) ..
+				",0.12;0.8,0.8;craftguide_next_icon.png;next;]" ..
 			"field[0.3,0.32;2.5,1;filter;;" .. mt.formspec_escape(data.filter) .. "]"
 
 	local xoffset = data.iX / 2.15
@@ -267,7 +270,7 @@ function craftguide:get_formspec(player_name, is_fuel)
 
 	if data.item and reg_items[data.item] then
 		if not data.recipes_item or (is_fuel and not get_recipe(data.item).items) then
-			local X = math.floor(xoffset) - (sfinv_only and 0 or 0.2)
+			local X = floor(xoffset) - (sfinv_only and 0 or 0.2)
 			formspec = formspec ..
 				"item_image_button[" .. X .. "," ..
 					(iY + (sfinv_only and 2.7 or 2.2)) ..

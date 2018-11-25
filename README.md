@@ -12,4 +12,4 @@ The progressive mode can be enabled with `craftguide_progressive_mode = true` in
 `craftguide` is also integrated in `sfinv` (Minetest Game inventory) when you enable it with
 `craftguide_sfinv_only = true` in `minetest.conf`.
 
-![Preview2](http://i.imgur.com/3q7rVSo.png)
+![Preview2](https://i.imgur.com/bToFH38.png)
