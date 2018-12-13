@@ -16,6 +16,7 @@ craftguide.intllib = S
 -- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
 local remove, maxn, sort = table.remove, table.maxn, table.sort
+local vector_add, vector_mul = vector.add, vector.multiply
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 
 local DEFAULT_SIZE = 10
@@ -380,6 +381,10 @@ function craftguide:get_init_items()
 	datas.init_items = items_list
 end
 
+minetest.register_on_mods_loaded(function()
+	craftguide:get_init_items()
+end)
+
 function craftguide:get_filter_items(data, player)
 	local filter = data.filter
 	if datas.searches[filter] then
@@ -454,6 +459,16 @@ function craftguide:get_item_usages(item)
 	return usages
 end
 
+local show_fs = function(player, player_name, is_fuel)
+	if sfinv_only then
+		local context = sfinv.get_or_create_context(player)
+		context.fuel = is_fuel
+		sfinv.set_player_inventory_formspec(player, context)
+	else
+		craftguide:get_formspec(player_name, is_fuel)
+	end
+end
+
 local function get_fields(player, ...)
 	local args, formname, fields = {...}
 	if sfinv_only then
@@ -466,16 +481,6 @@ local function get_fields(player, ...)
 	local player_name = player:get_player_name()
 	local data = datas[player_name]
 
-	local show_fs = function(is_fuel)
-		if sfinv_only then
-			local context = sfinv.get_or_create_context(player)
-			context.fuel = is_fuel
-			sfinv.set_player_inventory_formspec(player, context)
-		else
-			craftguide:get_formspec(player_name, is_fuel)
-		end
-	end
-
 	if fields.clear then
 		data.show_usage = nil
 		data.filter     = ""
@@ -484,7 +489,7 @@ local function get_fields(player, ...)
 		data.rnum       = 1
 
 		data.items = progressive_mode and data.init_filter_items or datas.init_items
-		show_fs()
+		show_fs(player, player_name)
 
 	elseif fields.alternate then
 		local num
@@ -495,14 +500,16 @@ local function get_fields(player, ...)
 		end
 
 		data.rnum = num and data.rnum + 1 or 1
-		show_fs()
+
+		show_fs(player, player_name)
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
 		data.filter = fields.filter:lower()
 		data.pagenum = 1
 		craftguide:get_filter_items(data, player)
-		show_fs()
+
+		show_fs(player, player_name)
 
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
@@ -513,13 +520,14 @@ local function get_fields(player, ...)
 			data.pagenum = data.pagemax
 		end
 
-		show_fs()
+		show_fs(player, player_name)
 
 	elseif (fields.size_inc and data.iX < MAX_LIMIT) or
 			(fields.size_dec and data.iX > MIN_LIMIT) then
 		data.pagenum = 1
 		data.iX = data.iX - (fields.size_dec and 1 or -1)
-		show_fs()
+
+		show_fs(player, player_name)
 
 	else for item in pairs(fields) do
 		if item:find(":") then
@@ -540,7 +548,7 @@ local function get_fields(player, ...)
 					data.rnum = 1
 				end
 
-				show_fs()
+				show_fs(player, player_name)
 			else
 				if progressive_mode then
 					local inv = player:get_inventory()
@@ -555,10 +563,17 @@ local function get_fields(player, ...)
 				data.rnum         = 1
 				data.show_usage   = nil
 
-				show_fs(is_fuel)
+				show_fs(player, player_name, is_fuel)
 			end
 		end
 	     end
+	end
+end
+
+local function init_datas(user, name)
+	datas[name] = {filter = "", pagenum = 1, iX = sfinv_only and 8 or DEFAULT_SIZE}
+	if progressive_mode then
+		craftguide:get_filter_items(datas[name], user)
 	end
 end
 
@@ -574,18 +589,11 @@ if sfinv_only then
 			)
 		end,
 		on_enter = function(self, player, context)
-			if not datas.init_items then
-				craftguide:get_init_items()
-			end
-
 			local player_name = player:get_player_name()
 			local data = datas[player_name]
 
 			if progressive_mode or not data then
-				datas[player_name] = {filter = "", pagenum = 1, iX = 8}
-				if progressive_mode then
-					craftguide:get_filter_items(datas[player_name], player)
-				end
+				init_datas(player, player_name)
 			end
 		end,
 		on_player_receive_fields = function(self, player, context, fields)
@@ -596,19 +604,11 @@ else
 	mt.register_on_player_receive_fields(get_fields)
 
 	function craftguide:on_use(itemstack, user)
-		if not datas.init_items then
-			self:get_init_items()
-		end
-
 		local player_name = user:get_player_name()
 		local data = datas[player_name]
 
 		if progressive_mode or not data then
-			datas[player_name] = {filter = "", pagenum = 1, iX = DEFAULT_SIZE}
-			if progressive_mode then
-				self:get_filter_items(datas[player_name], user)
-			end
-
+			init_datas(user, player_name)
 			self:get_formspec(player_name)
 		else
 			show_formspec(player_name, "craftguide", data.formspec)
@@ -684,6 +684,56 @@ if rawget(_G, "sfinv_buttons") then
 			craftguide:on_use(nil, player)
 		end,
 		image = "craftguide_book.png",
+	})
+end
+
+if not progressive_mode then
+	minetest.register_chatcommand("craft", {
+		description = S("Show recipe(s) of the pointed node"),
+		func = function(name)
+			local player = minetest.get_player_by_name(name)
+			local ppos   = player:get_pos()
+			local dir    = player:get_look_dir()
+			local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
+			local node_name
+
+			for i = 1, 10 do
+				local look_at = vector_add(eye_h, vector_mul(dir, i))
+				local node = minetest.get_node(look_at)
+
+				if node.name ~= "air" then
+					node_name = node.name
+					break
+				end
+			end
+
+			if not node_name then
+				return false, colorize("[craftguide] ") .. S("No node pointed")
+			elseif not datas[name] then
+				init_datas(player, name)
+			end
+
+			local data    = datas[name]
+			local is_fuel = get_fueltime(node_name) > 0
+			local recipes = get_recipes(node_name)
+
+			if not recipes and not is_fuel then
+				return false, colorize("[craftguide] ") ..
+					S("No recipe for this node:") .. " " ..
+					colorize(node_name)
+			end
+
+			data.show_usage   = nil
+			data.filter       = ""
+			data.item         = node_name
+			data.pagenum      = 1
+			data.rnum         = 1
+			data.recipes_item = recipes
+			data.items        = progressive_mode and data.init_filter_items or
+					    datas.init_items
+
+			return true, show_fs(player, name, is_fuel)
+		end,
 	})
 end
 
