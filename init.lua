@@ -1,4 +1,4 @@
-local craftguide = {
+craftguide = {
 	custom_crafts = {},
 	craft_types = {},
 }
