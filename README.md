@@ -20,9 +20,8 @@ Use the command `/craft` to show the recipe(s) of the pointed node.
 #### Registering a custom crafting type ####
 ```Lua
 craftguide.register_craft_type("digging", {
-	description = S("Digging"),
-	icon  = "default_tool_steelpick.png",
-	width = 1,
+	description = "Digging",
+	icon = "default_tool_steelpick.png",
 })
 ```
 
@@ -30,6 +29,7 @@ craftguide.register_craft_type("digging", {
 ```Lua
 craftguide.register_craft({
 	type   = "digging",
+	width  = 1,
 	output = "default:cobble 2",
 	items  = {"default:stone"},
 })

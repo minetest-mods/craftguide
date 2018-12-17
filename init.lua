@@ -55,8 +55,7 @@ end
 
 craftguide.register_craft_type("digging", {
 	description = S("Digging"),
-	icon  = "default_tool_steelpick.png",
-	width = 1,
+	icon = "default_tool_steelpick.png",
 })
 
 function craftguide.register_craft(def)
@@ -65,6 +64,7 @@ end
 
 craftguide.register_craft({
 	type   = "digging",
+	width  = 1,
 	output = "default:cobble",
 	items  = {"default:stone"},
 })
@@ -476,8 +476,8 @@ local function add_custom_recipes(item, recipes)
 		local craft = craftguide.custom_crafts[j]
 		if craft.output:match("%S*") == item then
 			recipes[#recipes + 1] = {
-				width  = craftguide.craft_types[craft.type].width,
 				type   = craft.type,
+				width  = craft.width,
 				items  = craft.items,
 				output = craft.output,
 			}
