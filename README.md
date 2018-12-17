@@ -30,7 +30,7 @@ craftguide.register_craft_type("digging", {
 ```Lua
 craftguide.register_craft({
 	type   = "digging",
-	output = "default:cobble",
+	output = "default:cobble 2",
 	items  = {"default:stone"},
 })
 ```

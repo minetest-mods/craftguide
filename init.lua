@@ -221,7 +221,7 @@ local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 				"item_image_button[" .. X .. "," ..
 					(Y + (sfinv_only and 0.7 or 0.2)) .. ";" ..
 					BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" .. item_r ..
-					";" .. item_r .. ";" .. label .. "]" .. tltip
+					";" .. item_r:match("%S*") .. ";" .. label .. "]" .. tltip
 		end
 
 		BUTTON_SIZE = 1.1
