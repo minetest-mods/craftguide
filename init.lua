@@ -190,7 +190,7 @@ local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local rows = ceil(maxn(items) / width)
 	local rightest, s_btn_size = 0
 
-	if recipe_type ~= "fuel" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
+	if recipe_type ~= "cooking" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
 		formspec = formspec ..
 			"label[" .. ((iX / 2) - 2) .. "," .. (iY + 2.2) .. ";" ..
 				S("Recipe is too big to be displayed (@1x@2)", width, rows) .. "]"
@@ -201,7 +201,7 @@ local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 				 (sfinv_only and 0 or 0.2)
 			local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
-			if recipe_type ~= "fuel" and (width > 3 or rows > 3) then
+			if recipe_type ~= "cooking" and (width > 3 or rows > 3) then
 				BUTTON_SIZE = width > 3 and 3 / width or 3 / rows
 				s_btn_size = BUTTON_SIZE
 				X = BUTTON_SIZE * (i % width) + xoffset - 2.65
