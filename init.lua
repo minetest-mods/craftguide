@@ -110,39 +110,7 @@ local function item_in_inv(inv, item)
 	return inv:contains_item("main", item)
 end
 
-local show_fs = function(player, player_name)
-	if sfinv_only then
-		local context = sfinv.get_or_create_context(player)
-		sfinv.set_player_inventory_formspec(player, context)
-	else
-		craftguide:get_formspec(player_name)
-	end
-end
-
-local function init_datas(user, name)
-	datas[name] = {filter = "", pagenum = 1, iX = sfinv_only and 8 or DEFAULT_SIZE}
-	if progressive_mode then
-		craftguide:get_filter_items(datas[name], user)
-	end
-end
-
-local function add_custom_recipes(item, recipes)
-	for j = 1, #craftguide.custom_crafts do
-		local craft = craftguide.custom_crafts[j]
-		if craft.output:match("%S*") == item then
-			recipes[#recipes + 1] = {
-				width  = craftguide.craft_types[craft.type].width,
-				type   = craft.type,
-				items  = craft.items,
-				output = craft.output,
-			}
-		end
-	end
-
-	return recipes
-end
-
-function craftguide:group_to_item(item)
+local function group_to_item(item)
 	if item:sub(1,6) == "group:" then
 		local itemsub = item:sub(7)
 		if group_stereotypes[itemsub] then
@@ -161,7 +129,7 @@ function craftguide:group_to_item(item)
 	return item:sub(1,6) == "group:" and "" or item
 end
 
-function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
+local function get_tooltip(item, recipe_type, cooktime, groups)
 	local tooltip, item_desc = "tooltip[" .. item .. ";", ""
 	local fueltime = get_fueltime(item)
 	local has_extras = groups or recipe_type == "cooking" or fueltime > 0
@@ -198,7 +166,7 @@ function craftguide:get_tooltip(item, recipe_type, cooktime, groups)
 	return has_extras and tooltip .. "]" or ""
 end
 
-function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
+local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local formspec, recipes_total = "", #recipes
 	if recipes_total > 1 then
 		formspec = formspec ..
@@ -246,8 +214,8 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 
 			local groups = extract_groups(v)
 			local label = groups and "\nG" or ""
-			local item_r = self:group_to_item(v)
-			local tltip = self:get_tooltip(item_r, recipe_type, cooktime, groups)
+			local item_r = group_to_item(v)
+			local tltip = get_tooltip(item_r, recipe_type, cooktime, groups)
 
 			formspec = formspec ..
 				"item_image_button[" .. X .. "," ..
@@ -259,7 +227,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		BUTTON_SIZE = 1.1
 	end
 
-	local custom_recipe = self.craft_types[recipe_type]
+	local custom_recipe = craftguide.craft_types[recipe_type]
 	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) or
 			custom_recipe then
 		local icon   = recipe_type == "cooking" and "furnace" or "shapeless"
@@ -293,7 +261,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 				BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
 				output .. ";" .. output_s .. ";]" ..
 
-		self:get_tooltip(output_s)
+		get_tooltip(output_s)
 
 	if output_is_fuel then
 		formspec = formspec ..
@@ -309,7 +277,7 @@ function craftguide:get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	return formspec
 end
 
-function craftguide:get_formspec(player_name)
+local function get_formspec(player_name)
 	local data = datas[player_name]
 	local iY = sfinv_only and 4 or data.iX - 5
 	local ipp = data.iX * iY
@@ -385,7 +353,7 @@ function craftguide:get_formspec(player_name)
 					(iY + (sfinv_only and 2.85 or 2.35)) ..
 					";0.9,0.7;craftguide_arrow.png]" ..
 
-				self:get_tooltip(data.item) ..
+				get_tooltip(data.item) ..
 
 				"image[" .. (X + 2.1) .. "," ..
 					(iY + (sfinv_only and 2.68 or 2.18)) ..
@@ -393,7 +361,7 @@ function craftguide:get_formspec(player_name)
 		else
 			local show_usage = data.show_usage
 			formspec = formspec ..
-				self:get_recipe(data.iX,
+				_get_recipe(data.iX,
 						iY,
 						xoffset,
 						data.rnum,
@@ -411,7 +379,16 @@ function craftguide:get_formspec(player_name)
 	end
 end
 
-function craftguide:recipe_in_inv(inv, item_name, recipes_f)
+local show_fs = function(player, player_name)
+	if sfinv_only then
+		local context = sfinv.get_or_create_context(player)
+		sfinv.set_player_inventory_formspec(player, context)
+	else
+		get_formspec(player_name)
+	end
+end
+
+local function recipe_in_inv(inv, item_name, recipes_f)
 	local recipes = recipes_f or get_recipes(item_name) or {}
 	local show_item_recipes = {}
 
@@ -442,50 +419,7 @@ function craftguide:recipe_in_inv(inv, item_name, recipes_f)
 	return recipes, in_table(show_item_recipes)
 end
 
-function craftguide:get_init_items()
-	local items_list, c = {}, 0
-	local function list(name)
-		c = c + 1
-		items_list[c] = name
-	end
-
-	for name, def in pairs(reg_items) do
-		local is_fuel = get_fueltime(name) > 0
-		if (not (def.groups.not_in_craft_guide == 1 or
-			 def.groups.not_in_creative_inventory == 1)) and
-		        (get_recipe(name).items or is_fuel) and
-			 def.description and def.description ~= "" then
-				list(name)
-		end
-	end
-
-	for i = 1, #self.custom_crafts do
-		local craft  = self.custom_crafts[i]
-		local output = craft.output:match("%S*")
-		local listed
-
-		for j = 1, #items_list do
-			local listed_item = items_list[j]
-			if output == listed_item then
-				listed = true
-				break
-			end
-		end
-
-		if not listed then
-			list(output)
-		end
-	end
-
-	sort(items_list)
-	datas.init_items = items_list
-end
-
-mt.register_on_mods_loaded(function()
-	craftguide:get_init_items()
-end)
-
-function craftguide:get_filter_items(data, player)
+local function get_filter_items(data, player)
 	local filter = data.filter
 	if datas.searches[filter] then
 		data.items = datas.searches[filter]
@@ -506,7 +440,7 @@ function craftguide:get_filter_items(data, player)
 				filtered_list[counter] = item
 			end
 		elseif progressive_mode then
-			local _, has_item = self:recipe_in_inv(inv, item)
+			local _, has_item = recipe_in_inv(inv, item)
 			if has_item then
 				counter = counter + 1
 				filtered_list[counter] = item
@@ -530,7 +464,73 @@ function craftguide:get_filter_items(data, player)
 	data.items = filtered_list
 end
 
-function craftguide:get_item_usages(item)
+local function init_datas(user, name)
+	datas[name] = {filter = "", pagenum = 1, iX = sfinv_only and 8 or DEFAULT_SIZE}
+	if progressive_mode then
+		get_filter_items(datas[name], user)
+	end
+end
+
+local function add_custom_recipes(item, recipes)
+	for j = 1, #craftguide.custom_crafts do
+		local craft = craftguide.custom_crafts[j]
+		if craft.output:match("%S*") == item then
+			recipes[#recipes + 1] = {
+				width  = craftguide.craft_types[craft.type].width,
+				type   = craft.type,
+				items  = craft.items,
+				output = craft.output,
+			}
+		end
+	end
+
+	return recipes
+end
+
+local function get_init_items()
+	local items_list, c = {}, 0
+	local function list(name)
+		c = c + 1
+		items_list[c] = name
+	end
+
+	for name, def in pairs(reg_items) do
+		local is_fuel = get_fueltime(name) > 0
+		if (not (def.groups.not_in_craft_guide == 1 or
+			 def.groups.not_in_creative_inventory == 1)) and
+		        (get_recipe(name).items or is_fuel) and
+			 def.description and def.description ~= "" then
+				list(name)
+		end
+	end
+
+	for i = 1, #craftguide.custom_crafts do
+		local craft  = craftguide.custom_crafts[i]
+		local output = craft.output:match("%S*")
+		local listed
+
+		for j = 1, #items_list do
+			local listed_item = items_list[j]
+			if output == listed_item then
+				listed = true
+				break
+			end
+		end
+
+		if not listed then
+			list(output)
+		end
+	end
+
+	sort(items_list)
+	datas.init_items = items_list
+end
+
+mt.register_on_mods_loaded(function()
+	get_init_items()
+end)
+
+local function get_item_usages(item)
 	local usages = {}
 	for name, def in pairs(reg_items) do
 		if not (def.groups.not_in_craft_guide == 1 or
@@ -591,7 +591,7 @@ local function get_fields(player, ...)
 			fields.filter ~= "" then
 		data.filter = fields.filter:lower()
 		data.pagenum = 1
-		craftguide:get_filter_items(data, player)
+		get_filter_items(data, player)
 		show_fs(player, player_name)
 
 	elseif fields.prev or fields.next then
@@ -625,7 +625,7 @@ local function get_fields(player, ...)
 			if not next(recipes) and not is_fuel then return end
 
 			if not data.show_usage and item == data.item and not progressive_mode then
-				data.usages = craftguide:get_item_usages(item)
+				data.usages = get_item_usages(item)
 				if next(data.usages) then
 					data.show_usage = true
 					data.rnum = 1
@@ -635,8 +635,8 @@ local function get_fields(player, ...)
 			else
 				if progressive_mode then
 					local inv = player:get_inventory()
-					local recipes, has_item =
-						craftguide:recipe_in_inv(inv, item, recipes)
+					local has_item
+					recipes, has_item = recipe_in_inv(inv, item, recipes)
 					if not has_item then return end
 				end
 
@@ -661,7 +661,7 @@ if sfinv_only then
 			return sfinv.make_formspec(
 				player,
 				context,
-				craftguide:get_formspec(player_name)
+				get_formspec(player_name)
 			)
 		end,
 		on_enter = function(self, player, context)
@@ -679,13 +679,13 @@ if sfinv_only then
 else
 	mt.register_on_player_receive_fields(get_fields)
 
-	function craftguide:on_use(itemstack, user)
+	local function on_use(itemstack, user)
 		local player_name = user:get_player_name()
 		local data = datas[player_name]
 
 		if progressive_mode or not data then
 			init_datas(user, player_name)
-			self:get_formspec(player_name)
+			get_formspec(player_name)
 		else
 			show_formspec(player_name, "craftguide", data.formspec)
 		end
@@ -698,7 +698,7 @@ else
 		stack_max = 1,
 		groups = {book = 1},
 		on_use = function(itemstack, user)
-			craftguide:on_use(itemstack, user)
+			on_use(itemstack, user)
 		end
 	})
 
@@ -723,7 +723,7 @@ else
 			meta:set_string("infotext", S("Crafting Guide Sign"))
 		end,
 		on_rightclick = function(pos, node, user, itemstack)
-			craftguide:on_use(itemstack, user)
+			on_use(itemstack, user)
 		end
 	})
 
@@ -750,17 +750,17 @@ else
 		recipe = "craftguide:sign",
 		burntime = 10
 	})
-end
 
-if rawget(_G, "sfinv_buttons") then
-	sfinv_buttons.register_button("craftguide", {
-		title = S("Crafting Guide"),
-		tooltip = S("Shows a list of available crafting recipes, cooking recipes and fuels"),
-		action = function(player)
-			craftguide:on_use(nil, player)
-		end,
-		image = "craftguide_book.png",
-	})
+	if rawget(_G, "sfinv_buttons") then
+		sfinv_buttons.register_button("craftguide", {
+			title = S("Crafting Guide"),
+			tooltip = S("Shows a list of available crafting recipes, cooking recipes and fuels"),
+			action = function(player)
+				on_use(nil, player)
+			end,
+			image = "craftguide_book.png",
+		})
+	end
 end
 
 if not progressive_mode then
