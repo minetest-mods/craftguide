@@ -50,7 +50,16 @@ local function extract_groups(str)
 	return str:sub(7):split(",")
 end
 
+local function __func()
+	return debug.getinfo(2, "n").name
+end
+
 function craftguide.register_craft_type(name, def)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(name, func .. "'name' field missing")
+	assert(def.description, func .. "'description' field missing")
+	assert(def.icon, func .. "'icon' field missing")
+
 	if not craftguide.craft_types[name] then
 		craftguide.craft_types[name] = def
 	end
@@ -62,6 +71,12 @@ craftguide.register_craft_type("digging", {
 })
 
 function craftguide.register_craft(def)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(def.type,  func .. "'type' field missing")
+	assert(def.width, func .. "'width' field missing")
+	assert(def.output,  func .. "'output' field missing")
+	assert(def.items,  func .. "'items' field missing")
+
 	craftguide.custom_crafts[#craftguide.custom_crafts + 1] = def
 end
 
