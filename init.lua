@@ -43,7 +43,10 @@ local group_stereotypes = {
 }
 
 local function extract_groups(str)
-	if str:sub(1,6) ~= "group:" then return end
+	if str:sub(1,6) ~= "group:" then
+		return
+	end
+
 	return str:sub(7):split(",")
 end
 
@@ -552,7 +555,10 @@ local function get_fields(player, ...)
 		formname, fields = args[1], args[2]
 	end
 
-	if not sfinv_only and formname ~= "craftguide" then return end
+	if not sfinv_only and formname ~= "craftguide" then
+		return
+	end
+
 	local player_name = player:get_player_name()
 	local data = datas[player_name]
 
@@ -561,14 +567,18 @@ local function get_fields(player, ...)
 		show_fs(player, player_name)
 
 	elseif fields.alternate then
-		local num
-		if data.show_usage then
-			num = data.usages[data.rnum + 1]
-		else
-			num = data.recipes_item[data.rnum + 1]
+		if (data.usages and #data.usages == 1) or #data.recipes_item == 1 then
+			return
 		end
 
-		data.rnum = num and data.rnum + 1 or 1
+		local next_i
+		if data.show_usage then
+			next_i = data.usages[data.rnum + 1]
+		else
+			next_i = data.recipes_item[data.rnum + 1]
+		end
+
+		data.rnum = next_i and data.rnum + 1 or 1
 		show_fs(player, player_name)
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
@@ -607,7 +617,9 @@ local function get_fields(player, ...)
 			recipes = add_custom_recipes(item, recipes)
 
 			local no_recipes = not next(recipes)
-			if no_recipes and not is_fuel then return end
+			if no_recipes and not is_fuel then
+				return
+			end
 
 			if item ~= data.item then
 				data.show_usage = nil
@@ -634,7 +646,10 @@ local function get_fields(player, ...)
 				local inv = player:get_inventory()
 				local has_item
 				recipes, has_item = recipe_in_inv(inv, item, recipes)
-				if not has_item then return end
+
+				if not has_item then
+					return
+				end
 			end
 
 			data.item         = item
