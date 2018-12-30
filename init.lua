@@ -83,7 +83,7 @@ local function reset_datas(data)
 	data.item       = nil
 	data.pagenum    = 1
 	data.rnum       = 1
-	data.fuel       = nil
+	data.items      = progressive_mode and data.init_filter_items or datas.init_items
 end
 
 local function in_table(T)
@@ -166,13 +166,15 @@ local function get_tooltip(item, recipe_type, cooktime, groups)
 	return has_extras and tooltip .. "]" or ""
 end
 
-local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
+local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local fs, recipes_total = {}, #recipes
-	if recipes_total > 1 then
-		fs[#fs + 1] = "button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
-			(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
-			(show_usage and S("Usage") or S("Recipe")) .. " " ..
-			S("@1 of @2", recipe_num, recipes_total) .. "]"
+	fs[#fs + 1] = "button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
+		(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
+		(show_usage and S("Usage") or S("Recipe")) .. " " ..
+		S("@1 of @2", recipe_num, recipes_total) .. "]"
+
+	if not recipes[1] then
+		return ""
 	end
 
 	local recipe_type = recipes[recipe_num].type
@@ -226,8 +228,9 @@ local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	end
 
 	local custom_recipe = craftguide.craft_types[recipe_type]
-	if recipe_type == "cooking" or (recipe_type == "normal" and width == 0) or
-			custom_recipe then
+	if recipe_type == "cooking" or custom_recipe or
+			(recipe_type == "normal" and width == 0) then
+
 		local icon   = recipe_type == "cooking" and "furnace" or "shapeless"
 		local coords = (rightest + 1.2) .. "," ..
 			       (iY + (sfinv_only and 2.2 or 1.7)) ..
@@ -242,9 +245,8 @@ local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 			 recipe_type:gsub("^%l", string.upper)) .. "]"
 	end
 
-	local output   = recipes[recipe_num].output
+	local output = recipes[recipe_num].output
 	local output_s = output:match("%S+")
-	local output_is_fuel = get_fueltime(output) > 0
 
 	local arrow_X  = rightest + (s_btn_size or BUTTON_SIZE)
 	local output_X = arrow_X + 0.9
@@ -253,13 +255,20 @@ local function _get_recipe(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		(iY + (sfinv_only and 2.85 or 2.35)) ..
 		";0.9,0.7;craftguide_arrow.png]"
 
-	fs[#fs + 1] = "item_image_button[" .. output_X .. "," ..
-		(iY + (sfinv_only and 2.7 or 2.2)) .. ";" ..
-		BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
-		output .. ";" .. output_s .. ";]"
+	if output == "BURN" then
+		fs[#fs + 1] = "image[" .. output_X .. "," ..
+			(iY + (sfinv_only and 2.68 or 2.18)) ..
+			";1.1,1.1;craftguide_fire.png]"
+	else
+		fs[#fs + 1] = "item_image_button[" .. output_X .. "," ..
+			(iY + (sfinv_only and 2.7 or 2.2)) .. ";" ..
+			BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
+			output .. ";" .. output_s .. ";]"
+	end
 
 	fs[#fs + 1] = get_tooltip(output_s)
 
+	local output_is_fuel = get_fueltime(output) > 0
 	if output_is_fuel then
 		fs[#fs + 1] = "image[" .. (output_X + 1) .. "," ..
 			(iY + (sfinv_only and 2.83 or 2.33)) ..
@@ -336,32 +345,13 @@ local function get_formspec(player_name)
 	end
 
 	if data.item and reg_items[data.item] then
-		if not data.recipes_item or (data.fuel and not get_recipe(data.item).items) then
-			local X = floor(xoffset) - (sfinv_only and 0 or 0.2)
-
-			fs[#fs + 1] = "item_image_button[" .. X .. "," ..
-				(iY + (sfinv_only and 2.7 or 2.2)) ..
-				";" .. BUTTON_SIZE .. "," .. BUTTON_SIZE ..
-				";" .. data.item .. ";" .. data.item .. ";]"
-
-			fs[#fs + 1] = "image[" .. (X + 1.1) .. "," ..
-				(iY + (sfinv_only and 2.85 or 2.35)) ..
-				";0.9,0.7;craftguide_arrow.png]"
-
-			fs[#fs + 1] = get_tooltip(data.item)
-
-			fs[#fs + 1] = "image[" .. (X + 2.1) .. "," ..
-				(iY + (sfinv_only and 2.68 or 2.18)) ..
-				";1.1,1.1;craftguide_fire.png]"
-		else
-			local usage = data.show_usage
-			fs[#fs + 1] = _get_recipe(data.iX,
-						  iY,
-						  xoffset,
-						  data.rnum,
-						  (usage and data.usages or data.recipes_item),
-						  usage)
-		end
+		local usage = data.show_usage
+		fs[#fs + 1] = get_recipe_fs(data.iX,
+					    iY,
+					    xoffset,
+					    data.rnum,
+					    (usage and data.usages or data.recipes_item),
+					    usage)
 	end
 
 	fs = concat(fs)
@@ -568,7 +558,6 @@ local function get_fields(player, ...)
 
 	if fields.clear then
 		reset_datas(data)
-		data.items = progressive_mode and data.init_filter_items or datas.init_items
 		show_fs(player, player_name)
 
 	elseif fields.alternate then
@@ -591,7 +580,6 @@ local function get_fields(player, ...)
 
 	elseif fields.prev or fields.next then
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
-
 		if data.pagenum > data.pagemax then
 			data.pagenum = 1
 		elseif data.pagenum == 0 then
@@ -617,32 +605,44 @@ local function get_fields(player, ...)
 			local is_fuel = get_fueltime(item) > 0
 			local recipes = get_recipes(item) or {}
 			recipes = add_custom_recipes(item, recipes)
-			if not next(recipes) and not is_fuel then return end
 
-			if not data.show_usage and item == data.item and not progressive_mode then
+			local no_recipes = not next(recipes)
+			if no_recipes and not is_fuel then return end
+
+			if item ~= data.item then
+				data.show_usage = nil
+			end
+
+			if not progressive_mode and (is_fuel and no_recipes) or
+					(not data.show_usage and item == data.item) then
 				data.usages = get_item_usages(item)
+
+				if is_fuel then
+					data.usages[#data.usages + 1] = {
+						width = 1,
+						type = "normal",
+						items = {item},
+						output = "BURN",
+					}
+				end
+
 				if next(data.usages) then
 					data.show_usage = true
-					data.rnum = 1
 				end
 
-				show_fs(player, player_name)
-			else
-				if progressive_mode then
-					local inv = player:get_inventory()
-					local has_item
-					recipes, has_item = recipe_in_inv(inv, item, recipes)
-					if not has_item then return end
-				end
-
-				data.item          = item
-				data.recipes_item  = recipes
-				data.rnum          = 1
-				data.show_usage    = nil
-				data.fuel          = is_fuel
-
-				show_fs(player, player_name)
+			elseif progressive_mode then
+				local inv = player:get_inventory()
+				local has_item
+				recipes, has_item = recipe_in_inv(inv, item, recipes)
+				if not has_item then return end
 			end
+
+			data.item         = item
+			data.recipes_item = recipes
+			data.rnum         = 1
+			data.show_usage   = data.show_usage
+
+			show_fs(player, player_name)
 		end
 	     end
 	end
@@ -784,25 +784,39 @@ if not progressive_mode then
 				init_datas(player, name)
 			end
 
-			local data    = datas[name]
+			local data = datas[name]
+			reset_datas(data)
+
 			local is_fuel = get_fueltime(node_name) > 0
 			local recipes = get_recipes(node_name) or {}
 			recipes = add_custom_recipes(node_name, recipes)
+			local no_recipes = not next(recipes)
 
-			if not next(recipes) and not is_fuel then
+			if no_recipes and not is_fuel then
 				return false, colorize("[craftguide] ") ..
 					S("No recipe for this node:") .. " " ..
 					colorize(node_name)
 			end
 
-			data.show_usage   = nil
-			data.filter       = ""
+			if is_fuel and no_recipes then
+				data.usages = get_item_usages(node_name)
+				if is_fuel then
+					data.usages[#data.usages + 1] = {
+						width = 1,
+						type = "normal",
+						items = {node_name},
+						output = "BURN",
+					}
+				end
+
+				if next(data.usages) then
+					data.show_usage = true
+				end
+			end
+
+			data.show_usage   = data.show_usage
 			data.item         = node_name
-			data.pagenum      = 1
-			data.rnum         = 1
 			data.recipes_item = recipes
-			data.items        = datas.init_items
-			data.fuel         = is_fuel
 
 			return true, show_fs(player, name)
 		end,
