@@ -72,8 +72,14 @@ craftguide.register_craft({
 	items  = {"default:stone"},
 })
 
-local function colorize(str)
-	return mt.colorize("#FFFF00", str)
+local color_codes = {
+	red = "#FF0000",
+	yellow = "#FFFF00",
+}
+
+local function colorize(str, color)
+	color = color or "yellow"
+	return mt.colorize(color_codes[color], str)
 end
 
 local function get_fueltime(item)
@@ -794,7 +800,7 @@ if not progressive_mode then
 			end
 
 			if not node_name then
-				return false, colorize("[craftguide] ") .. S("No node pointed")
+				return false, colorize("[craftguide] ", "red") .. S("No node pointed")
 			elseif not datas[name] then
 				init_datas(player, name)
 			end
@@ -808,7 +814,7 @@ if not progressive_mode then
 			local no_recipes = not next(recipes)
 
 			if no_recipes and not is_fuel then
-				return false, colorize("[craftguide] ") ..
+				return false, colorize("[craftguide] ", "red") ..
 					S("No recipe for this node:") .. " " ..
 					colorize(node_name)
 			end
