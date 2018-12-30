@@ -89,7 +89,7 @@ end
 local function reset_datas(data)
 	data.show_usage = nil
 	data.filter     = ""
-	data.item       = nil
+	data.input      = nil
 	data.pagenum    = 1
 	data.rnum       = 1
 	data.items      = progressive_mode and data.init_filter_items or datas.init_items
@@ -176,15 +176,16 @@ local function get_tooltip(item, recipe_type, cooktime, groups)
 end
 
 local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
-	local fs, recipes_total = {}, #recipes
-	fs[#fs + 1] = "button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
-		(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
-		(show_usage and S("Usage") or S("Recipe")) .. " " ..
-		S("@1 of @2", recipe_num, recipes_total) .. "]"
-
 	if not recipes[1] then
 		return ""
 	end
+
+	local fs = {}
+
+	fs[#fs + 1] = "button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
+		(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
+		(show_usage and S("Usage") or S("Recipe")) .. " " ..
+		S("@1 of @2", recipe_num,  #recipes) .. "]"
 
 	local recipe_type = recipes[recipe_num].type
 	local items = recipes[recipe_num].items
@@ -343,7 +344,10 @@ local function get_formspec(player_name)
 	local first_item = (data.pagenum - 1) * ipp
 	for i = first_item, first_item + ipp - 1 do
 		local name = data.items[i + 1]
-		if not name then break end
+		if not name then
+			break
+		end
+
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
 
@@ -353,7 +357,7 @@ local function get_formspec(player_name)
 			name .. ";" .. name .. "_inv;]"
 	end
 
-	if data.item and reg_items[data.item] then
+	if data.input and reg_items[data.input] then
 		local usage = data.show_usage
 		fs[#fs + 1] = get_recipe_fs(data.iX,
 					    iY,
@@ -627,12 +631,12 @@ local function get_fields(player, ...)
 				return
 			end
 
-			if item ~= data.item then
+			if item ~= data.input then
 				data.show_usage = nil
 			end
 
 			if not progressive_mode and (is_fuel and no_recipes) or
-					(not data.show_usage and item == data.item) then
+					(not data.show_usage and item == data.input) then
 				data.usages = get_item_usages(item)
 
 				if is_fuel then
@@ -658,7 +662,7 @@ local function get_fields(player, ...)
 				end
 			end
 
-			data.item         = item
+			data.input        = item
 			data.recipes_item = recipes
 			data.rnum         = 1
 			data.show_usage   = data.show_usage
@@ -836,7 +840,7 @@ if not progressive_mode then
 			end
 
 			data.show_usage   = data.show_usage
-			data.item         = node_name
+			data.input        = node_name
 			data.recipes_item = recipes
 
 			return true, show_fs(player, name)
