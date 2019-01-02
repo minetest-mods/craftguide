@@ -592,7 +592,7 @@ local function get_fields(player, ...)
 		show_fs(player, player_name)
 
 	elseif fields.alternate then
-		if (data.usages and #data.usages == 1) or #data.recipes_item == 1 then
+		if #(data.show_usage and data.usages or data.recipes_item) == 1 then
 			return
 		end
 
