@@ -24,6 +24,7 @@ craftguide.intllib = S
 local remove, maxn, sort, concat = table.remove, table.maxn, table.sort, table.concat
 local vector_add, vector_mul = vector.add, vector.multiply
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
+local fmt = string.format
 
 local DEFAULT_SIZE = 10
 local MIN_LIMIT, MAX_LIMIT = 10, 12
@@ -74,7 +75,7 @@ function craftguide.register_craft(def)
 	local func = "craftguide." .. __func() .. "(): "
 	assert(def.type,  func .. "'type' field missing")
 	assert(def.width, func .. "'width' field missing")
-	assert(def.output,  func .. "'output' field missing")
+	assert(def.output, func .. "'output' field missing")
 	assert(def.items,  func .. "'items' field missing")
 
 	craftguide.custom_crafts[#craftguide.custom_crafts + 1] = def
@@ -102,7 +103,7 @@ local function get_fueltime(item)
 end
 
 local function reset_datas(data)
-	data.show_usage = false
+	data.show_usage = nil
 	data.filter     = ""
 	data.input      = nil
 	data.pagenum    = 1
@@ -197,10 +198,16 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 
 	local fs = {}
 
-	fs[#fs + 1] = "button[" .. (iX - (sfinv_only and 2.2 or 2.6)) .. "," ..
-		(iY + (sfinv_only and 3.9 or 3.3)) .. ";2.2,1;alternate;" ..
-		(show_usage and S("Usage") or S("Recipe")) .. " " ..
-		S("@1 of @2", recipe_num,  #recipes) .. "]"
+	fs[#fs + 1] = fmt("button[%f,%f;%f,%f;%s;%s %u %s %u]",
+		iX - (sfinv_only and 2.2 or 2.6),
+		iY + (sfinv_only and 3.9 or 3.3),
+		2.2,
+		1,
+		"alternate",
+		show_usage and S("Usage") or S("Recipe"),
+		recipe_num,
+		S("of"),
+		#recipes)
 
 	local recipe_type = recipes[recipe_num].type
 	local items = recipes[recipe_num].items
@@ -217,8 +224,10 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local rightest, s_btn_size = 0
 
 	if recipe_type ~= "cooking" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
-		fs[#fs + 1] = "label[" .. ((iX / 2) - 2) .. "," .. (iY + 2.2) .. ";" ..
-			S("Recipe is too big to be displayed (@1x@2)", width, rows) .. "]"
+		fs[#fs + 1] = fmt("label[%f,%f;%s]",
+			(iX / 2) - 2,
+			iY + 2.2,
+			S("Recipe is too big to be displayed (@1x@2)", width, rows))
 
 		return concat(fs)
 	else
@@ -241,12 +250,18 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 			local groups = extract_groups(v)
 			local label = groups and "\nG" or ""
 			local item_r = group_to_item(v)
-			local tltip = get_tooltip(item_r, recipe_type, cooktime, groups)
+			local tltp = get_tooltip(item_r, recipe_type, cooktime, groups)
 
-			fs[#fs + 1] = "item_image_button[" .. X .. "," ..
-				(Y + (sfinv_only and 0.7 or 0.2)) .. ";" ..
-				BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" .. item_r ..
-				";" .. item_r:match("%S*") .. ";" .. label .. "]" .. tltip
+			fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
+				X,
+				Y + (sfinv_only and 0.7 or 0.2),
+				BUTTON_SIZE,
+				BUTTON_SIZE,
+				item_r,
+				item_r:match("%S*"),
+				label)
+
+			fs[#fs + 1] = tltp
 		end
 
 		BUTTON_SIZE = 1.1
@@ -256,18 +271,23 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	if recipe_type == "cooking" or custom_recipe or
 			(recipe_type == "normal" and width == 0) then
 
-		local icon   = recipe_type == "cooking" and "furnace" or "shapeless"
-		local coords = (rightest + 1.2) .. "," ..
-			       (iY + (sfinv_only and 2.2 or 1.7)) ..
-			       ";0.5,0.5;"
+		local icon = recipe_type == "cooking" and "furnace" or "shapeless"
 
-		fs[#fs + 1] = "image[" .. coords ..
-			(custom_recipe and custom_recipe.icon or
-			 "craftguide_" .. icon .. ".png^[resize:16x16") .. "]"
+		fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+			rightest + 1.2,
+			iY + (sfinv_only and 2.2 or 1.7),
+			0.5,
+			0.5,
+			custom_recipe and custom_recipe.icon or
+				"craftguide_" .. icon .. ".png^[resize:16x16")
 
-		fs[#fs + 1] = "tooltip[" .. coords ..
-			(custom_recipe and custom_recipe.description or
-			 recipe_type:gsub("^%l", string.upper)) .. "]"
+		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
+			rightest + 1.2,
+			iY + (sfinv_only and 2.2 or 1.7),
+			0.5,
+			0.5,
+			custom_recipe and custom_recipe.description or
+				recipe_type:gsub("^%l", string.upper))
 	end
 
 	local output = recipes[recipe_num].output
@@ -276,32 +296,47 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local arrow_X  = rightest + (s_btn_size or BUTTON_SIZE)
 	local output_X = arrow_X + 0.9
 
-	fs[#fs + 1] = "image[" .. arrow_X .. "," ..
-		(iY + (sfinv_only and 2.85 or 2.35)) ..
-		";0.9,0.7;craftguide_arrow.png]"
+	fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+		arrow_X,
+		iY + (sfinv_only and 2.85 or 2.35),
+		0.9,
+		0.7,
+		"craftguide_arrow.png")
 
 	if output == "BURN" then
-		fs[#fs + 1] = "image[" .. output_X .. "," ..
-			(iY + (sfinv_only and 2.68 or 2.18)) ..
-			";1.1,1.1;craftguide_fire.png]"
+		fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+			output_X,
+			iY + (sfinv_only and 2.68 or 2.18),
+			1.1,
+			1.1,
+			"craftguide_fire.png")
 	else
-		fs[#fs + 1] = "item_image_button[" .. output_X .. "," ..
-			(iY + (sfinv_only and 2.7 or 2.2)) .. ";" ..
-			BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
-			output .. ";" .. output_s .. ";]"
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;]",
+			output_X,
+			iY + (sfinv_only and 2.7 or 2.2),
+			BUTTON_SIZE,
+			BUTTON_SIZE,
+			output,
+			output_s)
 	end
 
 	fs[#fs + 1] = get_tooltip(output_s)
 
 	local output_is_fuel = get_fueltime(output) > 0
 	if output_is_fuel then
-		fs[#fs + 1] = "image[" .. (output_X + 1) .. "," ..
-			(iY + (sfinv_only and 2.83 or 2.33)) ..
-			";0.6,0.4;craftguide_arrow.png]"
+		fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+			output_X + 1,
+			iY + (sfinv_only and 2.83 or 2.33),
+			0.6,
+			0.4,
+			"craftguide_arrow.png")
 
-		fs[#fs + 1] = "image[" .. (output_X + 1.6) .. "," ..
-			(iY + (sfinv_only and 2.68 or 2.18)) ..
-			";0.6,0.6;craftguide_fire.png]"
+		fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+			output_X + 1.6,
+			iY + (sfinv_only and 2.68 or 2.18),
+			0.6,
+			0.6,
+			"craftguide_fire.png")
 	end
 
 	return concat(fs)
@@ -321,7 +356,6 @@ local function get_formspec(player_name)
 	local fs = {}
 	if not sfinv_only then
 		fs[#fs + 1] = "size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]"
-		fs[#fs + 1] = "background[1,1;1,1;craftguide_bg.png;true]"
 		fs[#fs + 1] = "tooltip[size_inc;" .. S("Increase window size") .. "]"
 		fs[#fs + 1] = "tooltip[size_dec;" .. S("Decrease window size") .. "]"
 		fs[#fs + 1] = "image_button[" .. (data.iX * 0.47) ..
@@ -331,6 +365,7 @@ local function get_formspec(player_name)
 	end
 
 	fs[#fs + 1] = [[
+		"background[1,1;1,1;craftguide_bg.png;true]"
 		image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
 		image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
 		field_close_on_enter[filter;false]
@@ -342,8 +377,8 @@ local function get_formspec(player_name)
 	fs[#fs + 1] = "tooltip[next;" .. S("Next page") .. "]"
 	fs[#fs + 1] = "image_button[" .. (data.iX - (sfinv_only and 2.6 or 3.1)) ..
 			",0.12;0.8,0.8;craftguide_prev_icon.png;prev;]"
-	fs[#fs + 1] = "label[" .. (data.iX - (sfinv_only and 1.7 or 2.2)) .. ",0.22;" ..
-			colorize(data.pagenum) .. " / " .. data.pagemax .. "]"
+	fs[#fs + 1] = "label[" .. (data.iX - (sfinv_only and 1.7 or 2.2)) ..
+			",0.22;" .. colorize(data.pagenum) .. " / " .. data.pagemax .. "]"
 	fs[#fs + 1] = "image_button[" .. (data.iX - (sfinv_only and 0.7 or 1.2) -
 			(data.iX >= 11 and 0.08 or 0)) ..
 			",0.12;0.8,0.8;craftguide_next_icon.png;next;]"
@@ -352,8 +387,10 @@ local function get_formspec(player_name)
 	local xoffset = data.iX / 2.15
 
 	if not next(data.items) then
-		fs[#fs + 1] = "label[" .. ((data.iX / 2) - 1) ..
-				",2;" .. S("No item to show") .. "]"
+		fs[#fs + 1] = fmt("label[%f,%f;%s]",
+			(data.iX / 2) - 1,
+			2,
+			S("No item to show"))
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
@@ -366,10 +403,13 @@ local function get_formspec(player_name)
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
 
-		fs[#fs + 1] = "item_image_button[" ..
-			(X - (sfinv_only and 0 or (X * 0.05))) .. "," ..
-			Y .. ";" .. BUTTON_SIZE .. "," .. BUTTON_SIZE .. ";" ..
-			name .. ";" .. name .. "_inv;]"
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;]",
+			X - (sfinv_only and 0 or (X * 0.05)),
+			Y,
+			BUTTON_SIZE,
+			BUTTON_SIZE,
+			name,
+			name)
 	end
 
 	if data.input and reg_items[data.input] then
@@ -417,6 +457,7 @@ local function recipe_in_inv(inv, item_name, recipes_f)
 					end
 				end
 			end
+
 			if not group_in_inv and not item_in_inv(inv, item) then
 				show_item_recipes[i] = false
 			end
@@ -631,9 +672,7 @@ local function get_fields(player, ...)
 
 	else for item in pairs(fields) do
 		if item:find(":") then
-			if item:sub(-4) == "_inv" then
-				item = item:sub(1,-5)
-			elseif item:find("%s") then
+			if item:find("%s") then
 				item = item:match("%S*")
 			end
 
@@ -647,12 +686,12 @@ local function get_fields(player, ...)
 			end
 
 			if item ~= data.input then
-				data.show_usage = false
+				data.show_usage = nil
 			else
 				data.show_usage = not data.show_usage
 			end
 
-			if not progressive_mode and (is_fuel and no_recipes) then
+			if not progressive_mode and is_fuel and no_recipes then
 				data.show_usage = true
 			end
 
@@ -669,7 +708,7 @@ local function get_fields(player, ...)
 				end
 
 				if not next(data.usages) then
-					data.show_usage = false
+					data.show_usage = nil
 				end
 
 			elseif progressive_mode then
@@ -695,6 +734,7 @@ end
 if sfinv_only then
 	sfinv.register_page("craftguide:craftguide", {
 		title = "Craft Guide",
+
 		get = function(self, player, context)
 			local player_name = player:get_player_name()
 			return sfinv.make_formspec(
@@ -703,6 +743,7 @@ if sfinv_only then
 				get_formspec(player_name)
 			)
 		end,
+
 		on_enter = function(self, player, context)
 			local player_name = player:get_player_name()
 			local data = datas[player_name]
@@ -711,6 +752,7 @@ if sfinv_only then
 				init_datas(player, player_name)
 			end
 		end,
+
 		on_player_receive_fields = function(self, player, context, fields)
 			get_fields(player, fields)
 		end,
@@ -757,10 +799,12 @@ else
 			wall_bottom = {-0.4375, -0.5, -0.3125, 0.4375, -0.4375, 0.3125},
 			wall_side   = {-0.5, -0.3125, -0.4375, -0.4375, 0.3125, 0.4375}
 		},
+
 		on_construct = function(pos)
 			local meta = mt.get_meta(pos)
 			meta:set_string("infotext", S("Crafting Guide Sign"))
 		end,
+
 		on_rightclick = function(pos, node, user, itemstack)
 			on_use(itemstack, user)
 		end
@@ -794,10 +838,10 @@ else
 		sfinv_buttons.register_button("craftguide", {
 			title = S("Crafting Guide"),
 			tooltip = S("Shows a list of available crafting recipes, cooking recipes and fuels"),
+			image = "craftguide_book.png",
 			action = function(player)
 				on_use(nil, player)
 			end,
-			image = "craftguide_book.png",
 		})
 	end
 end
@@ -823,7 +867,8 @@ if not progressive_mode then
 			end
 
 			if not node_name then
-				return false, colorize("[craftguide] ", "red") .. S("No node pointed")
+				return false, colorize("[craftguide] ", "red") ..
+						S("No node pointed")
 			elseif not datas[name] then
 				init_datas(player, name)
 			end
@@ -858,7 +903,7 @@ if not progressive_mode then
 				end
 			end
 
-			data.input        = node_name
+			data.input = node_name
 			data.recipes_item = recipes
 
 			return true, show_fs(player, name)
