@@ -102,7 +102,7 @@ local function get_fueltime(item)
 end
 
 local function reset_datas(data)
-	data.show_usage = nil
+	data.show_usage = false
 	data.filter     = ""
 	data.input      = nil
 	data.pagenum    = 1
@@ -592,7 +592,7 @@ local function get_fields(player, ...)
 		show_fs(player, player_name)
 
 	elseif fields.alternate then
-		if (data.usages and #data.usages == 1) or #data.recipes_item == 1 then
+		if #(data.show_usage and data.usages or data.recipes_item) == 1 then
 			return
 		end
 
@@ -647,11 +647,16 @@ local function get_fields(player, ...)
 			end
 
 			if item ~= data.input then
-				data.show_usage = nil
+				data.show_usage = false
+			else
+				data.show_usage = not data.show_usage
 			end
 
-			if not progressive_mode and (is_fuel and no_recipes) or
-					(not data.show_usage and item == data.input) then
+			if not progressive_mode and (is_fuel and no_recipes) then
+				data.show_usage = true
+			end
+
+			if data.show_usage then
 				data.usages = get_item_usages(item)
 
 				if is_fuel then
@@ -663,8 +668,8 @@ local function get_fields(player, ...)
 					}
 				end
 
-				if next(data.usages) then
-					data.show_usage = true
+				if not next(data.usages) then
+					data.show_usage = false
 				end
 
 			elseif progressive_mode then
@@ -680,7 +685,6 @@ local function get_fields(player, ...)
 			data.input        = item
 			data.recipes_item = recipes
 			data.rnum         = 1
-			data.show_usage   = data.show_usage
 
 			show_fs(player, player_name)
 		end
@@ -854,7 +858,6 @@ if not progressive_mode then
 				end
 			end
 
-			data.show_usage   = data.show_usage
 			data.input        = node_name
 			data.recipes_item = recipes
 
