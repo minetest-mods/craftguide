@@ -365,7 +365,7 @@ local function get_formspec(player_name)
 	end
 
 	fs[#fs + 1] = [[
-		"background[1,1;1,1;craftguide_bg.png;true]"
+		background[1,1;1,1;craftguide_bg.png;true]
 		image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
 		image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
 		field_close_on_enter[filter;false]
