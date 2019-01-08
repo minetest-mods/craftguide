@@ -4,7 +4,9 @@ craftguide = {
 }
 
 local mt = minetest
-local datas = {searches = {}}
+local player_data = {}
+local init_items = {}
+local searches = {}
 
 local progressive_mode = mt.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only       = mt.settings:get_bool("craftguide_sfinv_only")
@@ -119,13 +121,13 @@ local function get_fueltime(item)
 	return get_result({method = "fuel", width = 1, items = {item}}).time
 end
 
-local function reset_datas(data)
+local function reset_data(data)
 	data.show_usage = nil
 	data.filter     = ""
 	data.input      = nil
 	data.pagenum    = 1
 	data.rnum       = 1
-	data.items      = progressive_mode and data.init_filter_items or datas.init_items
+	data.items      = progressive_mode and data.init_filter_items or init_items
 end
 
 local function in_table(T)
@@ -379,12 +381,12 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 end
 
 local function get_formspec(player_name)
-	local data = datas[player_name]
+	local data = player_data[player_name]
 	local iY = sfinv_only and 4 or data.iX - 5
 	local ipp = data.iX * iY
 
 	if not data.items then
-		data.items = datas.init_items
+		data.items = init_items
 	end
 
 	data.pagemax = max(1, ceil(#data.items / ipp))
@@ -511,12 +513,12 @@ end
 
 local function get_filter_items(data, player)
 	local filter = data.filter
-	if datas.searches[filter] then
-		data.items = datas.searches[filter]
+	if searches[filter] then
+		data.items = searches[filter]
 		return
 	end
 
-	local items_list = progressive_mode and data.init_filter_items or datas.init_items
+	local items_list = progressive_mode and data.init_filter_items or init_items
 	local inv = player:get_inventory()
 	local filtered_list, counter = {}, 0
 
@@ -544,26 +546,25 @@ local function get_filter_items(data, player)
 		end
 	elseif filter ~= "" then
 		-- Cache the results only if searched 2 times
-		if datas.searches[filter] == nil then
-			datas.searches[filter] = false
+		if searches[filter] == nil then
+			searches[filter] = false
 		else
-			datas.searches[filter] = filtered_list
+			searches[filter] = filtered_list
 		end
 	end
 
 	data.items = filtered_list
 end
 
-local function init_datas(user, name)
-	datas[name] = {filter = "", pagenum = 1, iX = sfinv_only and 8 or DEFAULT_SIZE}
+local function init_data(user, name)
+	player_data[name] = {filter = "", pagenum = 1, iX = sfinv_only and 8 or DEFAULT_SIZE}
 	if progressive_mode then
-		get_filter_items(datas[name], user)
+		get_filter_items(player_data[name], user)
 	end
 end
 
 local function get_init_items()
-	local items_list, c = {}, 0
-
+	local c = 0
 	for name, def in pairs(reg_items) do
 		local is_fuel = get_fueltime(name) > 0
 		if not (def.groups.not_in_craft_guide == 1 or
@@ -571,12 +572,10 @@ local function get_init_items()
 				(get_recipe(name).items or is_fuel) and
 				def.description and def.description ~= "" then
 			c = c + 1
-			items_list[c] = name
+			init_items[c] = name
 		end
 	end
-
-	sort(items_list)
-	datas.init_items = items_list
+	sort(init_items)
 end
 
 mt.register_on_mods_loaded(get_init_items)
@@ -629,10 +628,10 @@ local function get_fields(player, ...)
 	end
 
 	local player_name = player:get_player_name()
-	local data = datas[player_name]
+	local data = player_data[player_name]
 
 	if fields.clear then
-		reset_datas(data)
+		reset_data(data)
 		show_fs(player, player_name)
 
 	elseif fields.alternate then
@@ -744,10 +743,10 @@ if sfinv_only then
 
 		on_enter = function(self, player, context)
 			local player_name = player:get_player_name()
-			local data = datas[player_name]
+			local data = player_data[player_name]
 
 			if progressive_mode or not data then
-				init_datas(player, player_name)
+				init_data(player, player_name)
 			end
 		end,
 
@@ -760,10 +759,10 @@ else
 
 	local function on_use(itemstack, user)
 		local player_name = user:get_player_name()
-		local data = datas[player_name]
+		local data = player_data[player_name]
 
 		if progressive_mode or not data then
-			init_datas(user, player_name)
+			init_data(user, player_name)
 			get_formspec(player_name)
 		else
 			show_formspec(player_name, "craftguide", data.formspec)
@@ -867,12 +866,12 @@ if not progressive_mode then
 			if not node_name then
 				return false, colorize("[craftguide] ", "red") ..
 						S("No node pointed")
-			elseif not datas[name] then
-				init_datas(player, name)
+			elseif not player_data[name] then
+				init_data(player, name)
 			end
 
-			local data = datas[name]
-			reset_datas(data)
+			local data = player_data[name]
+			reset_data(data)
 
 			local is_fuel = get_fueltime(node_name) > 0
 			local recipes = get_recipes(node_name)
