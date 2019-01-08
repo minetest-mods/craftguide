@@ -9,15 +9,12 @@ local datas = {searches = {}}
 local progressive_mode = mt.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only       = mt.settings:get_bool("craftguide_sfinv_only")
 
-local get_recipe, get_recipes = mt.get_craft_recipe, mt.get_all_craft_recipes
-local get_result, show_formspec = mt.get_craft_result, mt.show_formspec
 local reg_items = mt.registered_items
-
-craftguide.path = mt.get_modpath("craftguide")
+local get_result = mt.get_craft_result
+local show_formspec = mt.show_formspec
 
 -- Intllib
-local S = dofile(craftguide.path .. "/intllib.lua")
-craftguide.intllib = S
+local S = dofile(mt.get_modpath("craftguide") .. "/intllib.lua")
 
 -- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
@@ -34,22 +31,14 @@ local GRID_LIMIT = 5
 local BUTTON_SIZE = 1.1
 
 local group_stereotypes = {
-	wool	     = "wool:white",
-	dye	     = "dye:white",
+	wool         = "wool:white",
+	dye          = "dye:white",
 	water_bucket = "bucket:bucket_water",
-	vessel	     = "vessels:glass_bottle",
-	coal	     = "default:coal_lump",
-	flower	     = "flowers:dandelion_yellow",
+	vessel       = "vessels:glass_bottle",
+	coal         = "default:coal_lump",
+	flower       = "flowers:dandelion_yellow",
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
-
-local function extract_groups(str)
-	if str:sub(1,6) ~= "group:" then
-		return
-	end
-
-	return str:sub(7):split(",")
-end
 
 local function __func()
 	return debug.getinfo(2, "n").name
@@ -88,6 +77,34 @@ craftguide.register_craft({
 	items  = {"default:stone"},
 })
 
+local function get_recipe(output)
+	local recipe = mt.get_craft_recipe(output)
+	if recipe.items then
+		return recipe
+	end
+
+	for i = 1, #craftguide.custom_crafts do
+		local custom_craft = craftguide.custom_crafts[i]
+		if custom_craft.output:match("%S*") == output then
+			return custom_craft
+		end
+	end
+
+	return {}
+end
+
+local function get_recipes(output)
+	local recipes = mt.get_all_craft_recipes(output) or {}
+	for i = 1, #craftguide.custom_crafts do
+		local custom_craft = craftguide.custom_crafts[i]
+		if custom_craft.output:match("%S*") == output then
+			recipes[#recipes + 1] = custom_craft
+		end
+	end
+
+	return recipes
+end
+
 local color_codes = {
 	red = "#FF0000",
 	yellow = "#FFFF00",
@@ -120,11 +137,11 @@ local function in_table(T)
 end
 
 local function group_to_items(group)
-	local items_with_group, counter = {}, 0
+	local items_with_group, c = {}, 0
 	for name, def in pairs(reg_items) do
 		if def.groups[group:sub(7)] then
-			counter = counter + 1
-			items_with_group[counter] = name
+			c = c + 1
+			items_with_group[c] = name
 		end
 	end
 
@@ -135,23 +152,38 @@ local function item_in_inv(inv, item)
 	return inv:contains_item("main", item)
 end
 
-local function group_to_item(item)
-	if item:sub(1,6) == "group:" then
-		local itemsub = item:sub(7)
-		if group_stereotypes[itemsub] then
-			item = group_stereotypes[itemsub]
-		elseif reg_items["default:" .. itemsub] then
-			item = item:gsub("group:", "default:")
-		else
-			for name, def in pairs(reg_items) do
-				if def.groups[item:match("[^,:]+$")] then
-					item = name
-				end
-			end
+local function extract_groups(str)
+	return str:sub(7):split(",")
+end
+
+local function item_has_groups(item_groups, groups)
+	for i = 1, #groups do
+		local group = groups[i]
+		if not item_groups[group] then
+			return
 		end
 	end
 
-	return item:sub(1,6) == "group:" and "" or item
+	return true
+end
+
+local function groups_to_item(groups)
+	if #groups == 1 then
+		local group = groups[1]
+		if group_stereotypes[group] then
+			return group_stereotypes[group]
+		elseif reg_items["default:" .. group] then
+			return "default:" .. group
+		end
+	end
+
+	for name, def in pairs(reg_items) do
+		if item_has_groups(def.groups, groups) then
+			return name
+		end
+	end
+
+	return ""
 end
 
 local function get_tooltip(item, recipe_type, cooktime, groups)
@@ -223,49 +255,53 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local rows = ceil(maxn(items) / width)
 	local rightest, s_btn_size = 0
 
-	if recipe_type ~= "cooking" and (width > GRID_LIMIT or rows > GRID_LIMIT) then
+	if width > GRID_LIMIT or rows > GRID_LIMIT then
 		fs[#fs + 1] = fmt("label[%f,%f;%s]",
 			(iX / 2) - 2,
 			iY + 2.2,
 			S("Recipe is too big to be displayed (@1x@2)", width, rows))
 
 		return concat(fs)
-	else
-		for i, v in pairs(items) do
-			local X = ceil((i - 1) % width + xoffset - width) -
-				 (sfinv_only and 0 or 0.2)
-			local Y = ceil(i / width + (iY + 2) - min(2, rows))
+	end
 
-			if recipe_type ~= "cooking" and (width > 3 or rows > 3) then
-				BUTTON_SIZE = width > 3 and 3 / width or 3 / rows
-				s_btn_size = BUTTON_SIZE
-				X = BUTTON_SIZE * (i % width) + xoffset - 2.65
-				Y = BUTTON_SIZE * floor((i - 1) / width) + (iY + 3) - min(2, rows)
-			end
+	for i, item in pairs(items) do
+		local X = ceil((i - 1) % width + xoffset - width) -
+			(sfinv_only and 0 or 0.2)
+		local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
-			if X > rightest then
-				rightest = X
-			end
-
-			local groups = extract_groups(v)
-			local label = groups and "\nG" or ""
-			local item_r = group_to_item(v)
-			local tltp = get_tooltip(item_r, recipe_type, cooktime, groups)
-
-			fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-				X,
-				Y + (sfinv_only and 0.7 or 0.2),
-				BUTTON_SIZE,
-				BUTTON_SIZE,
-				item_r,
-				item_r:match("%S*"),
-				label)
-
-			fs[#fs + 1] = tltp
+		if width > 3 or rows > 3 then
+			BUTTON_SIZE = width > 3 and 3 / width or 3 / rows
+			s_btn_size = BUTTON_SIZE
+			X = BUTTON_SIZE * (i % width) + xoffset - 2.65
+			Y = BUTTON_SIZE * floor((i - 1) / width) + (iY + 3) - min(2, rows)
 		end
 
-		BUTTON_SIZE = 1.1
+		if X > rightest then
+			rightest = X
+		end
+
+		local groups
+		if item:sub(1,6) == "group:" then
+			groups = extract_groups(item)
+			item = groups_to_item(groups)
+		end
+
+		local label = groups and "\nG" or ""
+		local tltp = get_tooltip(item, recipe_type, cooktime, groups)
+
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
+			X,
+			Y + (sfinv_only and 0.7 or 0.2),
+			BUTTON_SIZE,
+			BUTTON_SIZE,
+			item,
+			item:match("%S*"),
+			label)
+
+		fs[#fs + 1] = tltp
 	end
+
+	BUTTON_SIZE = 1.1
 
 	local custom_recipe = craftguide.craft_types[recipe_type]
 	if recipe_type == "cooking" or custom_recipe or
@@ -442,7 +478,7 @@ local show_fs = function(player, player_name)
 end
 
 local function recipe_in_inv(inv, item_name, recipes_f)
-	local recipes = recipes_f or get_recipes(item_name) or {}
+	local recipes = recipes_f or get_recipes(item_name)
 	local show_item_recipes = {}
 
 	for i = 1, #recipes do
@@ -525,54 +561,17 @@ local function init_datas(user, name)
 	end
 end
 
-local function add_custom_recipes(item, recipes)
-	for j = 1, #craftguide.custom_crafts do
-		local craft = craftguide.custom_crafts[j]
-		if craft.output:match("%S*") == item then
-			recipes[#recipes + 1] = {
-				type   = craft.type,
-				width  = craft.width,
-				items  = craft.items,
-				output = craft.output,
-			}
-		end
-	end
-
-	return recipes
-end
-
 local function get_init_items()
 	local items_list, c = {}, 0
-	local function list(name)
-		c = c + 1
-		items_list[c] = name
-	end
 
 	for name, def in pairs(reg_items) do
 		local is_fuel = get_fueltime(name) > 0
-		if (not (def.groups.not_in_craft_guide == 1 or
-			 def.groups.not_in_creative_inventory == 1)) and
-		        (get_recipe(name).items or is_fuel) and
-			 def.description and def.description ~= "" then
-				list(name)
-		end
-	end
-
-	for i = 1, #craftguide.custom_crafts do
-		local craft  = craftguide.custom_crafts[i]
-		local output = craft.output:match("%S*")
-		local listed
-
-		for j = 1, #items_list do
-			local listed_item = items_list[j]
-			if output == listed_item then
-				listed = true
-				break
-			end
-		end
-
-		if not listed then
-			list(output)
+		if not (def.groups.not_in_craft_guide == 1 or
+				def.groups.not_in_creative_inventory == 1) and
+				(get_recipe(name).items or is_fuel) and
+				def.description and def.description ~= "" then
+			c = c + 1
+			items_list[c] = name
 		end
 	end
 
@@ -580,31 +579,35 @@ local function get_init_items()
 	datas.init_items = items_list
 end
 
-mt.register_on_mods_loaded(function()
-	get_init_items()
-end)
+mt.register_on_mods_loaded(get_init_items)
+
+local function item_in_recipe(item, recipe)
+	local item_groups = reg_items[item].groups
+	for _, recipe_item in pairs(recipe.items) do
+		if recipe_item == item then
+			return true
+		elseif recipe_item:sub(1,6) == "group:" then
+			local groups = extract_groups(recipe_item)
+			if item_has_groups(item_groups, groups) then
+				return true
+			end
+		end
+	end
+end
 
 local function get_item_usages(item)
 	local usages = {}
 	for name, def in pairs(reg_items) do
 		if not (def.groups.not_in_craft_guide == 1 or
-			def.groups.not_in_creative_inventory == 1) and
-		   get_recipe(name).items and def.description and def.description ~= "" then
+				def.groups.not_in_creative_inventory == 1) and
+				get_recipe(name).items and
+				def.description and def.description ~= "" then
+
 			local recipes = get_recipes(name)
 			for i = 1, #recipes do
 				local recipe = recipes[i]
-				local items = recipe.items
-
-				for j = 1, #items do
-					if items[j] == item then
-						usages[#usages + 1] = {
-							type = recipe.type,
-							items = items,
-							width = recipe.width,
-							output = recipe.output,
-						}
-						break
-					end
+				if item_in_recipe(item, recipe) then
+					usages[#usages + 1] = recipe
 				end
 			end
 		end
@@ -672,13 +675,8 @@ local function get_fields(player, ...)
 
 	else for item in pairs(fields) do
 		if item:find(":") then
-			if item:find("%s") then
-				item = item:match("%S*")
-			end
-
 			local is_fuel = get_fueltime(item) > 0
-			local recipes = get_recipes(item) or {}
-			recipes = add_custom_recipes(item, recipes)
+			local recipes = get_recipes(item)
 
 			local no_recipes = not next(recipes)
 			if no_recipes and not is_fuel then
@@ -877,8 +875,7 @@ if not progressive_mode then
 			reset_datas(data)
 
 			local is_fuel = get_fueltime(node_name) > 0
-			local recipes = get_recipes(node_name) or {}
-			recipes = add_custom_recipes(node_name, recipes)
+			local recipes = get_recipes(node_name)
 			local no_recipes = not next(recipes)
 
 			if no_recipes and not is_fuel then
