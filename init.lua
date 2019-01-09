@@ -30,7 +30,6 @@ local MIN_LIMIT, MAX_LIMIT = 10, 12
 DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
 local GRID_LIMIT = 5
-local BUTTON_SIZE = 1.1
 
 local group_stereotypes = {
 	wool         = "wool:white",
@@ -255,7 +254,7 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	end
 
 	local rows = ceil(maxn(items) / width)
-	local rightest, s_btn_size = 0
+	local rightest, btn_size, s_btn_size = 0, 1.1
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
 		fs[#fs + 1] = fmt("label[%f,%f;%s]",
@@ -272,10 +271,10 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
 		if width > 3 or rows > 3 then
-			BUTTON_SIZE = width > 3 and 3 / width or 3 / rows
-			s_btn_size = BUTTON_SIZE
-			X = BUTTON_SIZE * (i % width) + xoffset - 2.65
-			Y = BUTTON_SIZE * floor((i - 1) / width) + (iY + 3) - min(2, rows)
+			btn_size = width > 3 and 3 / width or 3 / rows
+			s_btn_size = btn_size
+			X = btn_size * (i % width) + xoffset - 2.65
+			Y = btn_size * floor((i - 1) / width) + (iY + 3) - min(2, rows)
 		end
 
 		if X > rightest then
@@ -294,16 +293,14 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 			X,
 			Y + (sfinv_only and 0.7 or 0.2),
-			BUTTON_SIZE,
-			BUTTON_SIZE,
+			btn_size,
+			btn_size,
 			item,
 			item:match("%S*"),
 			label)
 
 		fs[#fs + 1] = tltp
 	end
-
-	BUTTON_SIZE = 1.1
 
 	local custom_recipe = craftguide.craft_types[recipe_type]
 	if recipe_type == "cooking" or custom_recipe or
@@ -331,7 +328,7 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	local output = recipes[recipe_num].output
 	local output_s = output:match("%S+")
 
-	local arrow_X  = rightest + (s_btn_size or BUTTON_SIZE)
+	local arrow_X  = rightest + (s_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
 	fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
@@ -352,8 +349,8 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;]",
 			output_X,
 			iY + (sfinv_only and 2.7 or 2.2),
-			BUTTON_SIZE,
-			BUTTON_SIZE,
+			1.1,
+			1.1,
 			output,
 			output_s)
 	end
@@ -444,8 +441,8 @@ local function get_formspec(player_name)
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;]",
 			X - (sfinv_only and 0 or (X * 0.05)),
 			Y,
-			BUTTON_SIZE,
-			BUTTON_SIZE,
+			1.1,
+			1.1,
 			name,
 			name)
 	end
