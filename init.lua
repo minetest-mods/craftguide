@@ -517,7 +517,7 @@ local function get_filter_items(data, player)
 
 	local items_list = progressive_mode and data.init_filter_items or init_items
 	local inv = player:get_inventory()
-	local filtered_list, counter = {}, 0
+	local filtered_list, c = {}, 0
 
 	for i = 1, #items_list do
 		local item = items_list[i]
@@ -525,14 +525,14 @@ local function get_filter_items(data, player)
 
 		if filter ~= "" then
 			if item:find(filter, 1, true) or item_desc:find(filter, 1, true) then
-				counter = counter + 1
-				filtered_list[counter] = item
+				c = c + 1
+				filtered_list[c] = item
 			end
 		elseif progressive_mode then
 			local _, has_item = recipe_in_inv(inv, item)
 			if has_item then
-				counter = counter + 1
-				filtered_list[counter] = item
+				c = c + 1
+				filtered_list[c] = item
 			end
 		end
 	end
@@ -572,6 +572,7 @@ local function get_init_items()
 			init_items[c] = name
 		end
 	end
+
 	sort(init_items)
 end
 
@@ -648,7 +649,12 @@ local function get_fields(player, ...)
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
-		data.filter = fields.filter:lower()
+		local fltr = fields.filter:lower()
+		if data.filter == fltr then
+			return
+		end
+
+		data.filter = fltr
 		data.pagenum = 1
 		get_filter_items(data, player)
 		show_fs(player, player_name)
