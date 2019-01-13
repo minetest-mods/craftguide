@@ -391,6 +391,7 @@ local function get_formspec(player_name)
 	local fs = {}
 	if not sfinv_only then
 		fs[#fs + 1] = "size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]"
+		fs[#fs + 1] = "no_prepend[]"
 		fs[#fs + 1] = "tooltip[size_inc;" .. S("Increase window size") .. "]"
 		fs[#fs + 1] = "tooltip[size_dec;" .. S("Decrease window size") .. "]"
 		fs[#fs + 1] = "image_button[" .. (data.iX * 0.47) ..
