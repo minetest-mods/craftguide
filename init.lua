@@ -344,7 +344,7 @@ local function get_recipe_fs(iX, iY, xoffset, recipe_num, recipes, show_usage)
 	return concat(fs)
 end
 
-local function get_formspec(player_name)
+local function make_formspec(player_name)
 	local data = player_data[player_name]
 	local iY = sfinv_only and 4 or data.iX - 5
 	local ipp = data.iX * iY
@@ -435,7 +435,7 @@ local show_fs = function(player, player_name)
 		local context = sfinv.get_or_create_context(player)
 		sfinv.set_player_inventory_formspec(player, context)
 	else
-		get_formspec(player_name)
+		make_formspec(player_name)
 		local data = player_data[player_name]
 		show_formspec(player_name, "craftguide", data.formspec)
 	end
@@ -747,7 +747,7 @@ if sfinv_only then
 			return sfinv.make_formspec(
 				player,
 				context,
-				get_formspec(player_name)
+				make_formspec(player_name)
 			)
 		end,
 
@@ -776,12 +776,12 @@ else
 
 		if not data then
 			init_data(user, player_name)
-			get_formspec(player_name)
+			make_formspec(player_name)
 			data = player_data[player_name]
 		elseif progressive_mode then
 			data.progressive_items = get_progressive_items(user)
 			filter_items(data)
-			get_formspec(player_name)
+			make_formspec(player_name)
 		end
 
 		show_formspec(player_name, "craftguide", data.formspec)
