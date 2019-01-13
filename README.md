@@ -1,7 +1,7 @@
-## ![Preview1](http://i.imgur.com/fIPNYkb.png) Crafting Guide ##
+# ![Preview1](http://i.imgur.com/fIPNYkb.png) Crafting Guide
 
-#### `craftguide` is the most comprehensive crafting guide on Minetest. ####
-#### Consult the [Minetest Wiki](http://wiki.minetest.net/Crafting_guide) for more details. ####
+#### `craftguide` is the most comprehensive crafting guide on Minetest.
+#### Consult the [Minetest Wiki](http://wiki.minetest.net/Crafting_guide) for more details.
 
 This crafting guide is a blue book named *"Crafting Guide"* or a wooden sign.
 
@@ -14,10 +14,16 @@ The progressive mode can be enabled with `craftguide_progressive_mode = true` in
 
 Use the command `/craft` to show the recipe(s) of the pointed node.
 
+![Preview2](https://i.imgur.com/bToFH38.png)
+
 ---
 
-`craftguide` has an API to register **custom recipes**. Demos:
-#### Registering a custom crafting type ####
+## API
+
+### Custom recipes
+
+#### Registering a custom crafting type
+
 ```Lua
 craftguide.register_craft_type("digging", {
 	description = "Digging",
@@ -25,7 +31,8 @@ craftguide.register_craft_type("digging", {
 })
 ```
 
-#### Registering a custom crafting recipe ####
+#### Registering a custom crafting recipe
+
 ```Lua
 craftguide.register_craft({
 	type   = "digging",
@@ -35,4 +42,27 @@ craftguide.register_craft({
 })
 ```
 
-![Preview2](https://i.imgur.com/bToFH38.png)
+### Progressive mode
+
+#### `craftguide.progressive_filter_recipes(recipes, player)`
+
+This function is used to filter recipes when progressive mode is enabled. It can
+be overridden to change the recipes that are normally displayed.
+
+The function should return the recipes to be displayed, given the available
+recipes and an `ObjectRef` to the craft guide user. Each recipe is a table of
+the form returned by `minetest.get_craft_recipe`.
+
+Example function to hide recipes for items from a mod called "secretstuff":
+
+```lua
+function craftguide.progressive_filter_recipes(recipes, player)
+	local filtered = {}
+	for _, recipe in ipairs(recipes) do
+		if recipe.output:sub(1, 12) ~= "secretstuff:" then
+			filtered[#filtered + 1] = recipe
+		end
+	end
+	return filtered
+end
+```
