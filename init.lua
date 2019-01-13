@@ -523,11 +523,12 @@ local function get_inv_items(player)
 end
 
 local function progressive_show_recipe(recipe, inv_items)
+	local inv_items_size = #inv_items
 	for _, item in pairs(recipe.items) do
 		local item_in_inv
 		if item:sub(1,6) == "group:" then
 			local groups = extract_groups(item)
-			for i = 1, #inv_items do
+			for i = 1, inv_items_size do
 				local item_def = reg_items[inv_items[i]]
 				if item_def then
 					local item_groups = item_def.groups
@@ -537,7 +538,7 @@ local function progressive_show_recipe(recipe, inv_items)
 				end
 			end
 		else
-			for i = 1, #inv_items do
+			for i = 1, inv_items_size do
 				if inv_items[i] == item then
 					item_in_inv = true
 				end
@@ -659,7 +660,7 @@ local function get_fields(player, ...)
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
 		local fltr = fields.filter:lower()
-		if data.filter == fltr then
+		if not progressive_mode and data.filter == fltr then
 			return
 		end
 
