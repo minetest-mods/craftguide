@@ -355,6 +355,7 @@ local function make_formspec(player_name)
 	if not sfinv_only then
 		fs[#fs + 1] = "size[" .. (data.iX - 0.35) .. "," .. (iY + 4) .. ";]"
 		fs[#fs + 1] = "no_prepend[]"
+		fs[#fs + 1] = "background[1,1;1,1;craftguide_bg.png;true]"
 		fs[#fs + 1] = "tooltip[size_inc;" .. S("Increase window size") .. "]"
 		fs[#fs + 1] = "tooltip[size_dec;" .. S("Decrease window size") .. "]"
 		fs[#fs + 1] = "image_button[" .. (data.iX * 0.47) ..
@@ -364,7 +365,6 @@ local function make_formspec(player_name)
 	end
 
 	fs[#fs + 1] = [[
-		background[1,1;1,1;craftguide_bg.png;true]
 		image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
 		image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
 		field_close_on_enter[filter;false]
