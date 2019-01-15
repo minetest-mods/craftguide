@@ -402,7 +402,7 @@ local function make_formspec(player_name)
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;]",
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
 			X - (sfinv_only and 0 or (X * 0.05)),
 			Y,
 			1.1,
@@ -687,8 +687,13 @@ local function get_fields(player, ...)
 
 	else for item in pairs(fields) do
 		if item:find(":") then
+			if item:sub(-4) == "_inv" then
+				item = item:sub(1,-5)
+			end
+
 			local is_fuel = get_fueltime(item) > 0
 			local recipes = get_recipes(item)
+
 			if progressive_mode then
 				recipes = craftguide.progressive_filter_recipes(recipes, player)
 			end
