@@ -813,7 +813,7 @@ else
 		paramtype = "light",
 		paramtype2 = "wallmounted",
 		sunlight_propagates = true,
-		groups = {wood = 1, oddly_breakable_by_hand = 1, flammable = 3},
+		groups = {oddly_breakable_by_hand = 1, flammable = 3},
 		node_box = {
 			type = "wallmounted",
 			wall_top    = {-0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125},
