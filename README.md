@@ -44,25 +44,31 @@ craftguide.register_craft({
 
 ### Progressive mode
 
-#### `craftguide.progressive_filter_recipes(recipes, player)`
+#### `craftguide.add_progressive_filter(function(recipes, player))`
 
-This function is used to filter recipes when progressive mode is enabled. It can
-be overridden to change the recipes that are normally displayed.
-
-The function should return the recipes to be displayed, given the available
-recipes and an `ObjectRef` to the craft guide user. Each recipe is a table of
-the form returned by `minetest.get_craft_recipe`.
+This function adds a recipe filter when progressive mode is enabled.
+The default `craftguide` filter will still be used.
 
 Example function to hide recipes for items from a mod called "secretstuff":
 
 ```lua
-function craftguide.progressive_filter_recipes(recipes, player)
+craftguide.add_progressive_filter(function(recipes)
 	local filtered = {}
 	for _, recipe in ipairs(recipes) do
-		if recipe.output:sub(1, 12) ~= "secretstuff:" then
+		if recipe.output:sub(1,12) ~= "secretstuff:" then
 			filtered[#filtered + 1] = recipe
 		end
 	end
+
 	return filtered
-end
+end)
 ```
+
+#### `craftguide.set_progressive_filter(function(recipes, player))`
+
+This function sets an unique recipes filter when progressive mode is enabled.
+The default `craftguide` progressive filter will be overridden.
+
+#### `craftguide.get_progressive_filters()`
+
+This function returns all progressive filters that are applied to recipes in progressive mode.

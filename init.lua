@@ -553,7 +553,7 @@ local function progressive_show_recipe(recipe, inv_items)
 	return true
 end
 
-function craftguide.progressive_filter_recipes(recipes, player)
+local function progressive_default_filter(recipes, player)
 	local inv_items = get_inv_items(player)
 	if #inv_items == 0 then
 		return {}
@@ -570,12 +570,35 @@ function craftguide.progressive_filter_recipes(recipes, player)
 	return filtered
 end
 
+local progressive_filters = {progressive_default_filter}
+
+function craftguide.add_progressive_filter(func)
+	progressive_filters[#progressive_filters + 1] = func
+end
+
+function craftguide.set_progressive_filter(func)
+	progressive_filters = {func}
+end
+
+function craftguide.get_progressive_filters()
+	return progressive_filters
+end
+
+local function apply_progressive_filters(recipes, player)
+	for i = 1, #progressive_filters do
+		local func = progressive_filters[i]
+		recipes = func(recipes, player)
+	end
+
+	return recipes
+end
+
 local function get_progressive_items(player)
 	local items = {}
 	for i = 1, #init_items do
 		local item = init_items[i]
 		local recipes = get_recipes(item)
-		recipes = craftguide.progressive_filter_recipes(recipes, player)
+		recipes = apply_progressive_filters(recipes, player)
 
 		if #recipes > 0 then
 			items[#items + 1] = item
@@ -695,7 +718,7 @@ local function get_fields(player, ...)
 			local recipes = get_recipes(item)
 
 			if progressive_mode then
-				recipes = craftguide.progressive_filter_recipes(recipes, player)
+				recipes = apply_progressive_filters(recipes, player)
 			end
 
 			local no_recipes = not next(recipes)
@@ -725,8 +748,9 @@ local function get_fields(player, ...)
 					}
 				end
 
-				if progressive_mode then
-					data.usages = craftguide.progressive_filter_recipes(data.usages, player)
+				if progressive_mode and next(data.usages) then
+					data.usages =
+						apply_progressive_filters(data.usages, player)
 				end
 
 				if not next(data.usages) then
@@ -933,7 +957,7 @@ end
 
 --[[ Custom recipes (>3x3) test code
 
-mt.register_craftitem("craftguide:custom_recipe_test", {
+mt.register_craftitem(":secretstuff:custom_recipe_test", {
 	description = "Custom Recipe Test",
 })
 
@@ -943,12 +967,12 @@ for x = 1, 6 do
 	for i = 1, 10 - x do
 		cr[x][i] = {}
 		for j = 1, 10 - x do
-			cr[x][i][j] = "group:wood"
+			cr[x][i][j] = "group:sand"
 		end
 	end
 
 	mt.register_craft({
-		output = "craftguide:custom_recipe_test",
+		output = "secretstuff:custom_recipe_test",
 		recipe = cr[x]
 	})
 end
