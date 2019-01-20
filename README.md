@@ -66,7 +66,7 @@ end)
 
 #### `craftguide.set_progressive_filter(function(recipes, player))`
 
-This function sets an unique recipes filter when progressive mode is enabled.
+This function sets an unique recipe filter when progressive mode is enabled.
 The default `craftguide` progressive filter will be overridden.
 
 #### `craftguide.get_progressive_filters()`

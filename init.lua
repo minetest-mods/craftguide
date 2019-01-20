@@ -63,10 +63,10 @@ craftguide.register_craft_type("digging", {
 
 function craftguide.register_craft(def)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(def.type,  func .. "'type' field missing")
+	assert(def.type, func .. "'type' field missing")
 	assert(def.width, func .. "'width' field missing")
 	assert(def.output, func .. "'output' field missing")
-	assert(def.items,  func .. "'items' field missing")
+	assert(def.items, func .. "'items' field missing")
 
 	craftguide.custom_crafts[#craftguide.custom_crafts + 1] = def
 end
@@ -570,14 +570,23 @@ local function progressive_default_filter(recipes, player)
 	return filtered
 end
 
-local progressive_filters = {progressive_default_filter}
+local progressive_filters = {{
+	name = "Default filter",
+	func = progressive_default_filter,
+}}
 
-function craftguide.add_progressive_filter(func)
-	progressive_filters[#progressive_filters + 1] = func
+function craftguide.add_progressive_filter(name, func)
+	progressive_filters[#progressive_filters + 1] = {
+		name = name,
+		func = func,
+	}
 end
 
-function craftguide.set_progressive_filter(func)
-	progressive_filters = {func}
+function craftguide.set_progressive_filter(name, func)
+	progressive_filters = {{
+		name = name,
+		func = func,
+	}}
 end
 
 function craftguide.get_progressive_filters()
@@ -586,7 +595,7 @@ end
 
 local function apply_progressive_filters(recipes, player)
 	for i = 1, #progressive_filters do
-		local func = progressive_filters[i]
+		local func = progressive_filters[i].func
 		recipes = func(recipes, player)
 	end
 
