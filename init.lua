@@ -911,6 +911,13 @@ if not progressive_mode then
 	})
 end
 
+mt.register_on_leaveplayer(function(player)
+	if player then
+		local name = player:get_player_name()
+		player_data[name] = nil
+	end
+end)
+
 --[[ Custom recipes (>3x3) test code
 
 mt.register_craftitem(":secretstuff:custom_recipe_test", {
