@@ -44,7 +44,7 @@ craftguide.register_craft({
 
 ### Progressive mode
 
-#### `craftguide.add_progressive_filter(function(recipes, player))`
+#### `craftguide.add_progressive_filter(name, function(recipes, player))`
 
 This function adds a recipe filter when progressive mode is enabled.
 The default `craftguide` filter will still be used.
@@ -52,7 +52,7 @@ The default `craftguide` filter will still be used.
 Example function to hide recipes for items from a mod called "secretstuff":
 
 ```lua
-craftguide.add_progressive_filter(function(recipes)
+craftguide.add_progressive_filter("Hide secretstuff", function(recipes)
 	local filtered = {}
 	for _, recipe in ipairs(recipes) do
 		if recipe.output:sub(1,12) ~= "secretstuff:" then
@@ -64,7 +64,7 @@ craftguide.add_progressive_filter(function(recipes)
 end)
 ```
 
-#### `craftguide.set_progressive_filter(function(recipes, player))`
+#### `craftguide.set_progressive_filter(name, function(recipes, player))`
 
 This function sets an unique recipe filter when progressive mode is enabled.
 The default `craftguide` progressive filter will be overridden.
