@@ -33,6 +33,10 @@ DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
 local GRID_LIMIT = 5
 
+local fmt_label   = "label[%f,%f;%s]"
+local fmt_image   = "image[%f,%f;%f,%f;%s]"
+local fmt_tooltip = "tooltip[%f,%f;%f,%f;%s]"
+
 local group_stereotypes = {
 	wool         = "wool:white",
 	dye          = "dye:white",
@@ -187,7 +191,7 @@ local function get_recipe_fs(data, iY)
 	local rightest, btn_size, s_btn_size = 0, 1.1
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
-		fs[#fs + 1] = fmt("label[%f,%f;%s]",
+		fs[#fs + 1] = fmt(fmt_label,
 			(data.iX / 2) - 2,
 			iY + 2.2,
 			S("Recipe is too big to be displayed (@1x@2)", width, rows))
@@ -244,7 +248,7 @@ local function get_recipe_fs(data, iY)
 			icon = "craftguide_" .. icon .. ".png^[resize:16x16"
 		end
 
-		fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+		fs[#fs + 1] = fmt(fmt_image,
 			rightest + 1.2,
 			iY + (sfinv_only and 2.2 or 1.7),
 			0.5,
@@ -254,7 +258,7 @@ local function get_recipe_fs(data, iY)
 		local tooltip = custom_recipe and custom_recipe.description or
 				shapeless and S("Shapeless") or S("Cooking")
 
-		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
+		fs[#fs + 1] = fmt(fmt_tooltip,
 			rightest + 1.2,
 			iY + (sfinv_only and 2.2 or 1.7),
 			0.5,
@@ -265,7 +269,7 @@ local function get_recipe_fs(data, iY)
 	local arrow_X  = rightest + (s_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
-	fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+	fs[#fs + 1] = fmt(fmt_image,
 		arrow_X,
 		iY + (sfinv_only and 2.85 or 2.35),
 		0.9,
@@ -273,7 +277,7 @@ local function get_recipe_fs(data, iY)
 		"craftguide_arrow.png")
 
 	if recipe.type == "fuel" then
-		fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+		fs[#fs + 1] = fmt(fmt_image,
 			output_X,
 			iY + (sfinv_only and 2.68 or 2.18),
 			1.1,
@@ -294,14 +298,14 @@ local function get_recipe_fs(data, iY)
 		if burntime then
 			fs[#fs + 1] = get_tooltip(output_name, nil, nil, burntime)
 
-			fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+			fs[#fs + 1] = fmt(fmt_image,
 				output_X + 1,
 				iY + (sfinv_only and 2.83 or 2.33),
 				0.6,
 				0.4,
 				"craftguide_arrow.png")
 
-			fs[#fs + 1] = fmt("image[%f,%f;%f,%f;%s]",
+			fs[#fs + 1] = fmt(fmt_image,
 				output_X + 1.6,
 				iY + (sfinv_only and 2.68 or 2.18),
 				0.6,
@@ -364,7 +368,7 @@ local function make_formspec(player_name)
 	fs[#fs + 1] = "field[0.3,0.32;2.5,1;filter;;" .. mt.formspec_escape(data.filter) .. "]"
 
 	if #data.items == 0 then
-		fs[#fs + 1] = fmt("label[%f,%f;%s]",
+		fs[#fs + 1] = fmt(fmt_label,
 			(data.iX / 2) - 1,
 			2,
 			S("No item to show"))
