@@ -6,10 +6,10 @@
 This crafting guide is a blue book named *"Crafting Guide"* or a wooden sign.
 
 This crafting guide features a **progressive mode**.
-The progressive mode is a Terraria-like system that only shows recipes you can craft from items in inventory.
-The progressive mode can be enabled with `craftguide_progressive_mode = true` in `minetest.conf`.
+The progressive mode is a Terraria-like system that only shows recipes you can craft
+from items you ever had in your inventory. To enable it: `craftguide_progressive_mode = true` in `minetest.conf`.
 
-`craftguide` is also integrated in `sfinv` (Minetest Game inventory) when you enable it with
+`craftguide` is also integrated in `sfinv` (Minetest Game inventory). To enable it:
 `craftguide_sfinv_only = true` in `minetest.conf`.
 
 Use the command `/craft` to show the recipe(s) of the pointed node.
@@ -48,6 +48,10 @@ craftguide.register_craft({
 
 This function adds a recipe filter when progressive mode is enabled.
 The default `craftguide` filter will still be used.
+
+The function should return the recipes to be displayed, given the available
+recipes and an `ObjectRef` to the user. Each recipe is a table of the form
+returned by `minetest.get_craft_recipe`.
 
 Example function to hide recipes for items from a mod called "secretstuff":
 
