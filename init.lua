@@ -11,7 +11,7 @@ local fuel_cache = {}
 local searches = {}
 
 local progressive_mode = mt.settings:get_bool("craftguide_progressive_mode")
-local sfinv_only       = mt.settings:get_bool("craftguide_sfinv_only")
+local sfinv_only = mt.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
 local reg_items = mt.registered_items
 local get_result = mt.get_craft_result
