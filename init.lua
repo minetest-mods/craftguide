@@ -795,9 +795,7 @@ if sfinv_only then
 			local name = player:get_player_name()
 			local data = player_data[name]
 
-			if not data then
-				init_data(player, name)
-			elseif progressive_mode then
+			if progressive_mode then
 				data.p_items = get_progressive_items(player, name)
 				filter_items(data)
 			end
@@ -818,16 +816,12 @@ else
 		local name = user:get_player_name()
 		local data = player_data[name]
 
-		if not data then
-			init_data(user, name)
-			data = player_data[name]
-			data.formspec = make_formspec(name)
-		elseif progressive_mode then
+		if progressive_mode then
 			data.p_items = get_progressive_items(user, name)
 			filter_items(data)
-			data.formspec = make_formspec(name)
 		end
 
+		data.formspec = make_formspec(name)
 		show_formspec(name, "craftguide", data.formspec)
 	end
 
@@ -928,8 +922,6 @@ if not progressive_mode then
 			if not node_name then
 				return false, mt.colorize("red", "[craftguide] ") ..
 						S("No node pointed")
-			elseif not player_data[name] then
-				init_data(player, name)
 			end
 
 			local data = player_data[name]
@@ -962,6 +954,11 @@ if not progressive_mode then
 end
 
 mt.register_on_mods_loaded(get_init_items)
+
+mt.register_on_joinplayer(function(player)
+	local name = player:get_player_name()
+	init_data(player, name)
+end)
 
 local function save_meta(player, data)
 	local meta = player:get_meta()
