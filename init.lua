@@ -633,16 +633,8 @@ local function init_data(player, name)
 	if progressive_mode then
 		local meta = player:get_meta()
 		player_data[name].inv_items = deserialize(meta:get_string("inv_items"))
+
 		p_items = get_progressive_items(player, name)
-
-		if p_items then
-			local old_items = deserialize(meta:get_string("p_items"))
-			if old_items then
-				p_items = table_merge(p_items, old_items)
-				p_items = table_clean(p_items)
-			end
-		end
-
 		player_data[name].p_items = p_items
 	end
 
@@ -962,7 +954,6 @@ end)
 
 local function save_meta(player, data)
 	local meta = player:get_meta()
-	meta:set_string("p_items", serialize(data.p_items))
 	meta:set_string("inv_items", serialize(data.inv_items))
 end
 
