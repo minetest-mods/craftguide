@@ -627,18 +627,13 @@ local function init_data(player, name)
 		filter  = "",
 		pagenum = 1,
 		iX      = sfinv_only and 8 or DEFAULT_SIZE,
+		items   = init_items,
 	}
 
-	local p_items
 	if progressive_mode then
 		local meta = player:get_meta()
 		player_data[name].inv_items = deserialize(meta:get_string("inv_items"))
-
-		p_items = get_progressive_items(player, name)
-		player_data[name].p_items = p_items
 	end
-
-	player_data[name].items = p_items or init_items
 end
 
 local function reset_data(data)
