@@ -66,7 +66,6 @@ local function table_clean(t)
 		end
 	end
 
-	sort(ct)
 	return ct
 end
 
@@ -106,6 +105,50 @@ craftguide.register_craft({
 	output = "default:cobble",
 	items  = {"default:stone"},
 })
+
+local recipe_filters = {}
+
+function craftguide.add_recipe_filter(name, func)
+	recipe_filters[name] = func
+end
+
+function craftguide.remove_recipe_filter(name)
+	recipe_filters[name] = nil
+end
+
+function craftguide.set_recipe_filter(name, func)
+	recipe_filters = {[name] = func}
+end
+
+function craftguide.get_recipe_filters()
+	return recipe_filters
+end
+
+local function apply_recipe_filters(recipes, player)
+	for _, filter in pairs(recipe_filters) do
+		recipes = filter(recipes, player)
+	end
+
+	return recipes
+end
+
+local function get_filtered_items(player)
+	local items = {}
+
+	for i = 1, #init_items do
+		local item = init_items[i]
+		local recipes = recipes_cache[item]
+
+		if recipes then
+			recipes = apply_recipe_filters(recipes, player)
+			if #recipes > 0 then
+				items[#items + 1] = item
+			end
+		end
+	end
+
+	return items
+end
 
 local function cache_recipes(output)
 	local recipes = mt.get_all_craft_recipes(output) or {}
@@ -427,24 +470,21 @@ local show_fs = function(player, name)
 	if sfinv_only then
 		sfinv.set_player_inventory_formspec(player)
 	else
-		local data = player_data[name]
-		data.formspec = make_formspec(name)
-		show_formspec(name, "craftguide", data.formspec)
+		show_formspec(name, "craftguide", make_formspec(name))
 	end
 end
 
-local function filter_items(data)
+local function search(data)
 	local filter = data.filter
 	if searches[filter] then
 		data.items = searches[filter]
 		return
 	end
 
-	local items_list = progressive_mode and data.p_items or init_items
 	local filtered_list, c = {}, 0
 
-	for i = 1, #items_list do
-		local item = items_list[i]
+	for i = 1, #data.items_raw do
+		local item = data.items_raw[i]
 		local item_desc = reg_items[item].description:lower()
 
 		if item:find(filter, 1, true) or item_desc:find(filter, 1, true) then
@@ -453,7 +493,7 @@ local function filter_items(data)
 		end
 	end
 
-	if not progressive_mode then
+	if not next(recipe_filters) then
 		-- Cache the results only if searched 2 times
 		if searches[filter] == nil then
 			searches[filter] = false
@@ -499,9 +539,8 @@ end
 
 local function get_inv_items(player)
 	local inv = player:get_inventory()
-	local stacks = inv:get_list("main")
-	local craftlist = inv:get_list("craft")
-	stacks = table_merge(stacks, craftlist)
+	local main, craft = inv:get_list("main"), inv:get_list("craft")
+	local stacks = table_merge(main, craft)
 
 	local inv_items = {}
 	for i = 1, #stacks do
@@ -536,104 +575,14 @@ local function item_in_inv(item, inv_items)
 	end
 end
 
-local function progressive_default_filter(recipes, player)
-	local name = player:get_player_name()
-	local data = player_data[name]
-	local inv_items = get_inv_items(player)
-
-	if data.inv_items then
-		inv_items = table_merge(data.inv_items, inv_items)
-	end
-
-	if #inv_items == 0 then
-		return {}
-	end
-
-	data.inv_items = inv_items
-
-	local filtered = {}
-	for i = 1, #recipes do
-		local recipe = recipes[i]
-		local recipe_in_inv = true
-
-		for _, item in pairs(recipe.items) do
-			if not item_in_inv(item, inv_items) then
-				recipe_in_inv = false
-			end
-		end
-
-		if recipe_in_inv then
-			filtered[#filtered + 1] = recipe
-		end
-	end
-
-	return filtered
-end
-
-local progressive_filters = {{
-	name = "Default filter",
-	func = progressive_default_filter,
-}}
-
-function craftguide.add_progressive_filter(name, func)
-	progressive_filters[#progressive_filters + 1] = {
-		name = name,
-		func = func,
-	}
-end
-
-function craftguide.set_progressive_filter(name, func)
-	progressive_filters = {{
-		name = name,
-		func = func,
-	}}
-end
-
-function craftguide.get_progressive_filters()
-	return progressive_filters
-end
-
-local function apply_progressive_filters(recipes, player)
-	for i = 1, #progressive_filters do
-		local func = progressive_filters[i].func
-		recipes = func(recipes, player)
-	end
-
-	return recipes
-end
-
-local function get_progressive_items(player, name)
-	local data = player_data[name]
-	local items = data and data.p_items or {}
-
-	for i = 1, #init_items do
-		local item = init_items[i]
-		local recipes = recipes_cache[item]
-
-		if recipes then
-			recipes = apply_progressive_filters(recipes, player)
-			if #recipes > 0 then
-				items[#items + 1] = item
-			end
-		end
-	end
-
-	items = table_clean(items)
-	return items
-end
-
 local function init_data(player, name)
 	player_data[name] = {
 		filter  = "",
 		pagenum = 1,
 		iX      = sfinv_only and 8 or DEFAULT_SIZE,
 		items   = init_items,
+		items_raw = init_items,
 	}
-
-	if progressive_mode then
-		local meta = player:get_meta()
-		player_data[name].inv_items = deserialize(meta:get_string("inv_items"))
-	end
 end
 
 local function reset_data(data)
@@ -642,7 +591,7 @@ local function reset_data(data)
 	data.query_item  = nil
 	data.show_usages = nil
 	data.recipes     = nil
-	data.items       = progressive_mode and data.p_items or init_items
+	data.items       = data.items_raw
 end
 
 local function get_init_items()
@@ -681,13 +630,13 @@ local function on_receive_fields(player, fields)
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
 		local fltr = fields.filter:lower()
-		if not progressive_mode and data.filter == fltr then
+		if data.filter == fltr then
 			return
 		end
 
 		data.filter = fltr
 		data.pagenum = 1
-		filter_items(data)
+		search(data)
 		show_fs(player, name)
 
 	elseif fields.prev or fields.next then
@@ -728,8 +677,8 @@ local function on_receive_fields(player, fields)
 		local is_fuel = fuel_cache[item]
 		local recipes = recipes_cache[item]
 
-		if progressive_mode and recipes then
-			recipes = apply_progressive_filters(recipes, player)
+		if recipes then
+			recipes = apply_recipe_filters(recipes, player)
 		end
 
 		local no_recipes = not recipes or #recipes == 0
@@ -748,11 +697,7 @@ local function on_receive_fields(player, fields)
 		end
 
 		if data.show_usages then
-			recipes = get_item_usages(item)
-
-			if progressive_mode then
-				recipes = apply_progressive_filters(recipes, player)
-			end
+			recipes = apply_recipe_filters(get_item_usages(item), player)
 
 			if #recipes == 0 then
 				return
@@ -782,9 +727,9 @@ if sfinv_only then
 			local name = player:get_player_name()
 			local data = player_data[name]
 
-			if progressive_mode then
-				data.p_items = get_progressive_items(player, name)
-				filter_items(data)
+			if next(recipe_filters) then
+				data.items_raw = get_filtered_items(player)
+				search(data)
 			end
 		end,
 
@@ -803,13 +748,12 @@ else
 		local name = user:get_player_name()
 		local data = player_data[name]
 
-		if progressive_mode then
-			data.p_items = get_progressive_items(user, name)
-			filter_items(data)
+		if next(recipe_filters) then
+			data.items_raw = get_filtered_items(user)
+			search(data)
 		end
 
-		data.formspec = make_formspec(name)
-		show_formspec(name, "craftguide", data.formspec)
+		show_formspec(name, "craftguide", make_formspec(name))
 	end
 
 	mt.register_craftitem("craftguide:book", {
@@ -886,7 +830,7 @@ else
 	end
 end
 
-if not progressive_mode then
+if not next(recipe_filters) then
 	mt.register_chatcommand("craft", {
 		description = S("Show recipe(s) of the pointed node"),
 		func = function(name)
@@ -947,29 +891,64 @@ mt.register_on_joinplayer(function(player)
 	init_data(player, name)
 end)
 
-local function save_meta(player, data)
-	local meta = player:get_meta()
-	meta:set_string("inv_items", serialize(data.inv_items))
-end
-
 mt.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
-	if progressive_mode then
-		save_meta(player, player_data[name])
-	end
-
 	player_data[name] = nil
 end)
 
 if progressive_mode then
+	local function recipe_in_inv(recipe, inv_items)
+		for _, item in pairs(recipe.items) do
+			if not item_in_inv(item, inv_items) then
+				return
+			end
+		end
+
+		return true
+	end
+
+	local function progressive_filter(recipes, player)
+		local name = player:get_player_name()
+		local discovered = player_data[name].inv_items
+		local inv_items = get_inv_items(player)
+		discovered = table_clean(table_merge(discovered, inv_items))
+
+		if #discovered == 0 then
+			return {}
+		end
+
+		local filtered = {}
+		for i = 1, #recipes do
+			local recipe = recipes[i]
+			if recipe_in_inv(recipe, discovered) then
+				filtered[#filtered + 1] = recipe
+			end
+		end
+
+		return filtered
+	end
+
+	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
+
+	mt.register_on_joinplayer(function(player)
+		local meta = player:get_meta()
+		local inv_items = deserialize(meta:get_string("inv_items")) or {}
+		local name = player:get_player_name()
+		player_data[name].inv_items = inv_items
+	end)
+
+	local function save_meta(player)
+		local meta = player:get_meta()
+		local name = player:get_player_name()
+		meta:set_string("inv_items", serialize(player_data[name].inv_items))
+	end
+
+	mt.register_on_leaveplayer(save_meta)
+
 	mt.register_on_shutdown(function()
 		local players = mt.get_connected_players()
 		for i = 1, #players do
-			local player = players[i]
-			if player then
-				local name = player:get_player_name()
-				save_meta(player, player_data[name])
-			end
+			save_meta(players[i])
 		end
 	end)
 end

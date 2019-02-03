@@ -42,21 +42,22 @@ craftguide.register_craft({
 })
 ```
 
-### Progressive mode
+### Recipe filters
 
-#### `craftguide.add_progressive_filter(name, function(recipes, player))`
+Recipe filters can be used to filter the recipes shown to players. Progressive
+mode is implemented as a recipe filter.
 
-This function adds a recipe filter when progressive mode is enabled.
-The default `craftguide` filter will still be used.
+#### `craftguide.add_recipe_filter(name, function(recipes, player))`
 
-The function should return the recipes to be displayed, given the available
-recipes and an `ObjectRef` to the user. Each recipe is a table of the form
-returned by `minetest.get_craft_recipe`.
+Adds a recipe filter with the given name. The filter function should return the
+recipes to be displayed, given the available recipes and an `ObjectRef` to the
+user. Each recipe is a table of the form returned by
+`minetest.get_craft_recipe`.
 
 Example function to hide recipes for items from a mod called "secretstuff":
 
 ```lua
-craftguide.add_progressive_filter("Hide secretstuff", function(recipes)
+craftguide.add_recipe_filter("Hide secretstuff", function(recipes)
 	local filtered = {}
 	for _, recipe in ipairs(recipes) do
 		if recipe.output:sub(1,12) ~= "secretstuff:" then
@@ -68,11 +69,14 @@ craftguide.add_progressive_filter("Hide secretstuff", function(recipes)
 end)
 ```
 
-#### `craftguide.set_progressive_filter(name, function(recipes, player))`
+#### `craftguide.remove_recipe_filter(name)`
 
-This function sets an unique recipe filter when progressive mode is enabled.
-The default `craftguide` progressive filter will be overridden.
+Removes the recipe filter with the given name.
 
-#### `craftguide.get_progressive_filters()`
+#### `craftguide.set_recipe_filter(name, function(recipe, player))`
 
-This function returns all progressive filters that are applied to recipes in progressive mode.
+Removes all recipe filters and adds a new one.
+
+#### `craftguide.get_recipe_filters()`
+
+Returns a map of recipe filters, indexed by name.
