@@ -600,6 +600,7 @@ end
 local function reset_data(data)
 	data.filter      = ""
 	data.pagenum     = 1
+	data.rnum        = 1
 	data.query_item  = nil
 	data.show_usages = nil
 	data.recipes     = nil
@@ -657,6 +658,7 @@ local function on_receive_fields(player, fields)
 		end
 
 		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
+
 		if data.pagenum > data.pagemax then
 			data.pagenum = 1
 		elseif data.pagenum == 0 then
@@ -710,15 +712,14 @@ local function on_receive_fields(player, fields)
 
 		if data.show_usages then
 			recipes = apply_recipe_filters(get_item_usages(item), player)
-
 			if #recipes == 0 then
 				return
 			end
 		end
 
 		data.query_item = item
-		data.recipes = recipes
-		data.rnum = 1
+		data.recipes    = recipes
+		data.rnum       = 1
 
 		show_fs(player, name)
 	end
@@ -842,60 +843,6 @@ else
 	end
 end
 
-if not next(recipe_filters) then
-	mt.register_chatcommand("craft", {
-		description = S("Show recipe(s) of the pointed node"),
-		func = function(name)
-			local player = mt.get_player_by_name(name)
-			local ppos   = player:get_pos()
-			local dir    = player:get_look_dir()
-			local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
-			local node_name
-
-			for i = 1, 10 do
-				local look_at = vector_add(eye_h, vector_mul(dir, i))
-				local node = mt.get_node(look_at)
-
-				if node.name ~= "air" then
-					node_name = node.name
-					break
-				end
-			end
-
-			if not node_name then
-				return false, mt.colorize("red", "[craftguide] ") ..
-						S("No node pointed")
-			end
-
-			local data = player_data[name]
-			reset_data(data)
-
-			local recipes = recipes_cache[node_name]
-			local no_recipes = not next(recipes)
-			local is_fuel = fuel_cache[node_name]
-
-			if no_recipes and not is_fuel then
-				return false, mt.colorize("red", "[craftguide] ") ..
-					S("No recipe for this node:") .. " " ..
-					mt.colorize("yellow", node_name)
-			end
-
-			if is_fuel and no_recipes then
-				recipes = get_item_usages(node_name)
-
-				if #recipes > 0 then
-					data.show_usages = true
-				end
-			end
-
-			data.query_item = node_name
-			data.recipes = recipes
-
-			return true, show_fs(player, name)
-		end,
-	})
-end
-
 mt.register_on_mods_loaded(get_init_items)
 
 mt.register_on_joinplayer(function(player)
@@ -963,6 +910,56 @@ if progressive_mode then
 			save_meta(players[i])
 		end
 	end)
+else
+	mt.register_chatcommand("craft", {
+		description = S("Show recipe(s) of the pointed node"),
+		func = function(name)
+			local player = mt.get_player_by_name(name)
+			local ppos   = player:get_pos()
+			local dir    = player:get_look_dir()
+			local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
+			local node_name
+
+			for i = 1, 10 do
+				local look_at = vector_add(eye_h, vector_mul(dir, i))
+				local node = mt.get_node(look_at)
+
+				if node.name ~= "air" then
+					node_name = node.name
+					break
+				end
+			end
+
+			if not node_name then
+				return false, mt.colorize("red", "[craftguide] ") ..
+						S("No node pointed")
+			end
+
+			local data = player_data[name]
+			reset_data(data)
+
+			local recipes = recipes_cache[node_name]
+			local is_fuel = fuel_cache[node_name]
+
+			if not recipes then
+				if is_fuel then
+					recipes = get_item_usages(node_name)
+					if #recipes > 0 then
+						data.show_usages = true
+					end
+				else
+					return false, mt.colorize("red", "[craftguide] ") ..
+						S("No recipe for this node:") .. " " ..
+						mt.colorize("yellow", node_name)
+				end
+			end
+
+			data.query_item = node_name
+			data.recipes    = recipes
+
+			return true, show_fs(player, name)
+		end,
+	})
 end
 
 --[[ Custom recipes (>3x3) test code
