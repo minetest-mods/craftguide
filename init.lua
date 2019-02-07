@@ -133,7 +133,7 @@ local function apply_recipe_filters(recipes, player)
 end
 
 local function get_filtered_items(player)
-	local items = {}
+	local items, c = {}, 0
 
 	for i = 1, #init_items do
 		local item = init_items[i]
@@ -142,7 +142,8 @@ local function get_filtered_items(player)
 		if recipes then
 			recipes = apply_recipe_filters(recipes, player)
 			if #recipes > 0 then
-				items[#items + 1] = item
+				c = c + 1
+				items[c] = item
 			end
 		end
 	end
@@ -152,11 +153,13 @@ end
 
 local function cache_recipes(output)
 	local recipes = mt.get_all_craft_recipes(output) or {}
+	local c = 0
 
 	for i = 1, #craftguide.custom_crafts do
 		local custom_craft = craftguide.custom_crafts[i]
 		if custom_craft.output:match("%S*") == output then
-			recipes[#recipes + 1] = custom_craft
+			c = c + 1
+			recipes[c] = custom_craft
 		end
 	end
 
@@ -499,9 +502,9 @@ local function search(data)
 
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
-		local item_desc = reg_items[item].description:lower()
+		local desc = reg_items[item].description:lower()
 
-		if item:find(filter, 1, true) or item_desc:find(filter, 1, true) then
+		if (item .. desc):find(filter, 1, true) then
 			c = c + 1
 			filtered_list[c] = item
 		end
@@ -534,13 +537,14 @@ local function item_in_recipe(item, recipe)
 end
 
 local function get_item_usages(item)
-	local usages = {}
+	local usages, c = {}, 0
 
 	for _, recipes in pairs(recipes_cache) do
 	for i = 1, #recipes do
 		local recipe = recipes[i]
 		if item_in_recipe(item, recipe) then
-			usages[#usages + 1] = recipe
+			c = c + 1
+			usages[c] = recipe
 		end
 	end
 	end
@@ -556,14 +560,15 @@ local function get_inv_items(player)
 	local inv = player:get_inventory()
 	local main, craft = inv:get_list("main"), inv:get_list("craft")
 	local stacks = table_merge(main, craft)
+	local inv_items, c = {}, 0
 
-	local inv_items = {}
 	for i = 1, #stacks do
 		local stack = stacks[i]
 		if not stack:is_empty() then
 			local name = stack:get_name()
 			if reg_items[name] then
-				inv_items[#inv_items + 1] = name
+				c = c + 1
+				inv_items[c] = name
 			end
 		end
 	end
@@ -880,11 +885,12 @@ if progressive_mode then
 			return {}
 		end
 
-		local filtered = {}
+		local filtered, c = {}, 0
 		for i = 1, #recipes do
 			local recipe = recipes[i]
 			if recipe_in_inv(recipe, discovered) then
-				filtered[#filtered + 1] = recipe
+				c = c + 1
+				filtered[c] = recipe
 			end
 		end
 
