@@ -56,13 +56,13 @@ local function table_merge(t, t2)
 	return t
 end
 
-local function table_clean(t)
+local function clean_items(items)
 	local hash, ct = {}, {}
-	for i = 1, #t do
-		local v = t[i]
-		if not hash[v] then
-			ct[#ct + 1] = v
-			hash[v] = true
+	for i = 1, #items do
+		local item = items[i]
+		if not hash[item] and reg_items[item] then
+			ct[#ct + 1] = item
+			hash[item] = true
 		end
 	end
 
@@ -410,9 +410,6 @@ local function make_formspec(name)
 		fs[#fs + 1] = [[
 			no_prepend[]
 			background[1,1;1,1;craftguide_bg.png;true]
-			image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
-			image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
-			field_close_on_enter[filter;false]
 		]]
 
 		fs[#fs + 1] = "tooltip[size_inc;" .. S("Increase window size") .. "]"
@@ -423,6 +420,12 @@ local function make_formspec(name)
 		fs[#fs + 1] = "image_button[" .. ((data.iX * 0.47) + 0.6) ..
 				",0.12;0.8,0.8;craftguide_zoomout_icon.png;size_dec;]"
 	end
+
+	fs[#fs + 1] = [[
+		image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
+		image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
+		field_close_on_enter[filter;false]
+	]]
 
 	fs[#fs + 1] = "tooltip[search;" .. S("Search") .. "]"
 	fs[#fs + 1] = "tooltip[clear;" .. S("Reset") .. "]"
@@ -587,7 +590,7 @@ local function item_in_inv(item, inv_items)
 	end
 end
 
-local function init_data(player, name)
+local function init_data(name)
 	player_data[name] = {
 		filter  = "",
 		pagenum = 1,
@@ -725,6 +728,18 @@ local function on_receive_fields(player, fields)
 	end
 end
 
+mt.register_on_mods_loaded(get_init_items)
+
+mt.register_on_joinplayer(function(player)
+	local name = player:get_player_name()
+	init_data(name)
+end)
+
+mt.register_on_leaveplayer(function(player)
+	local name = player:get_player_name()
+	player_data[name] = nil
+end)
+
 if sfinv_only then
 	sfinv.register_page("craftguide:craftguide", {
 		title = "Craft Guide",
@@ -737,10 +752,9 @@ if sfinv_only then
 		end,
 
 		on_enter = function(self, player, context)
-			local name = player:get_player_name()
-			local data = player_data[name]
-
 			if next(recipe_filters) then
+				local name = player:get_player_name()
+				local data = player_data[name]
 				data.items_raw = get_filtered_items(player)
 				search(data)
 			end
@@ -759,9 +773,9 @@ else
 
 	local function on_use(user)
 		local name = user:get_player_name()
-		local data = player_data[name]
 
 		if next(recipe_filters) then
+			local data = player_data[name]
 			data.items_raw = get_filtered_items(user)
 			search(data)
 		end
@@ -809,8 +823,9 @@ else
 
 	mt.register_craft({
 		output = "craftguide:book",
-		type = "shapeless",
-		recipe = {"default:book"}
+		recipe = {
+			{"default:book"}
+		}
 	})
 
 	mt.register_craft({
@@ -821,8 +836,9 @@ else
 
 	mt.register_craft({
 		output = "craftguide:sign",
-		type = "shapeless",
-		recipe = {"default:sign_wall_wood"}
+		recipe = {
+			{"default:sign_wall_wood"}
+		}
 	})
 
 	mt.register_craft({
@@ -843,18 +859,6 @@ else
 	end
 end
 
-mt.register_on_mods_loaded(get_init_items)
-
-mt.register_on_joinplayer(function(player)
-	local name = player:get_player_name()
-	init_data(player, name)
-end)
-
-mt.register_on_leaveplayer(function(player)
-	local name = player:get_player_name()
-	player_data[name] = nil
-end)
-
 if progressive_mode then
 	local function recipe_in_inv(recipe, inv_items)
 		for _, item in pairs(recipe.items) do
@@ -870,7 +874,7 @@ if progressive_mode then
 		local name = player:get_player_name()
 		local discovered = player_data[name].inv_items
 		local inv_items = get_inv_items(player)
-		discovered = table_clean(table_merge(discovered, inv_items))
+		discovered = clean_items(table_merge(discovered, inv_items))
 
 		if #discovered == 0 then
 			return {}
@@ -910,57 +914,61 @@ if progressive_mode then
 			save_meta(players[i])
 		end
 	end)
-else
-	mt.register_chatcommand("craft", {
-		description = S("Show recipe(s) of the pointed node"),
-		func = function(name)
-			local player = mt.get_player_by_name(name)
-			local ppos   = player:get_pos()
-			local dir    = player:get_look_dir()
-			local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
-			local node_name
-
-			for i = 1, 10 do
-				local look_at = vector_add(eye_h, vector_mul(dir, i))
-				local node = mt.get_node(look_at)
-
-				if node.name ~= "air" then
-					node_name = node.name
-					break
-				end
-			end
-
-			if not node_name then
-				return false, mt.colorize("red", "[craftguide] ") ..
-						S("No node pointed")
-			end
-
-			local data = player_data[name]
-			reset_data(data)
-
-			local recipes = recipes_cache[node_name]
-			local is_fuel = fuel_cache[node_name]
-
-			if not recipes then
-				if is_fuel then
-					recipes = get_item_usages(node_name)
-					if #recipes > 0 then
-						data.show_usages = true
-					end
-				else
-					return false, mt.colorize("red", "[craftguide] ") ..
-						S("No recipe for this node:") .. " " ..
-						mt.colorize("yellow", node_name)
-				end
-			end
-
-			data.query_item = node_name
-			data.recipes    = recipes
-
-			return true, show_fs(player, name)
-		end,
-	})
 end
+
+mt.register_chatcommand("craft", {
+	description = S("Show recipe(s) of the pointed node"),
+	func = function(name)
+		local player = mt.get_player_by_name(name)
+		local ppos   = player:get_pos()
+		local dir    = player:get_look_dir()
+		local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
+		local node_name
+
+		for i = 1, 10 do
+			local look_at = vector_add(eye_h, vector_mul(dir, i))
+			local node = mt.get_node(look_at)
+
+			if node.name ~= "air" then
+				node_name = node.name
+				break
+			end
+		end
+
+		if not node_name then
+			return false, mt.colorize("red", "[craftguide] ") ..
+					S("No node pointed")
+		end
+
+		local data = player_data[name]
+		reset_data(data)
+
+		local recipes = recipes_cache[node_name]
+		local is_fuel = fuel_cache[node_name]
+
+		if recipes then
+			recipes = apply_recipe_filters(recipes, player)
+		end
+
+		if not recipes or #recipes == 0 then
+			if is_fuel then
+				recipes = get_item_usages(node_name)
+				if #recipes > 0 then
+					data.show_usages = true
+				end
+			else
+				return false, mt.colorize("red", "[craftguide] ") ..
+					S("No recipe for this node:") .. " " ..
+					mt.colorize("yellow", node_name)
+			end
+		end
+
+		data.query_item = node_name
+		data.recipes    = recipes
+
+		return true, show_fs(player, name)
+	end,
+})
 
 --[[ Custom recipes (>3x3) test code
 
