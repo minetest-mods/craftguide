@@ -590,7 +590,7 @@ local function item_in_inv(item, inv_items)
 	end
 end
 
-local function init_data(player, name)
+local function init_data(name)
 	player_data[name] = {
 		filter  = "",
 		pagenum = 1,
@@ -732,7 +732,7 @@ mt.register_on_mods_loaded(get_init_items)
 
 mt.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
-	init_data(player, name)
+	init_data(name)
 end)
 
 mt.register_on_leaveplayer(function(player)
@@ -752,10 +752,9 @@ if sfinv_only then
 		end,
 
 		on_enter = function(self, player, context)
-			local name = player:get_player_name()
-			local data = player_data[name]
-
 			if next(recipe_filters) then
+				local name = player:get_player_name()
+				local data = player_data[name]
 				data.items_raw = get_filtered_items(player)
 				search(data)
 			end
@@ -774,9 +773,9 @@ else
 
 	local function on_use(user)
 		local name = user:get_player_name()
-		local data = player_data[name]
 
 		if next(recipe_filters) then
+			local data = player_data[name]
 			data.items_raw = get_filtered_items(user)
 			search(data)
 		end
@@ -824,8 +823,9 @@ else
 
 	mt.register_craft({
 		output = "craftguide:book",
-		type = "shapeless",
-		recipe = {"default:book"}
+		recipe = {
+			{"default:book"}
+		}
 	})
 
 	mt.register_craft({
@@ -836,8 +836,9 @@ else
 
 	mt.register_craft({
 		output = "craftguide:sign",
-		type = "shapeless",
-		recipe = {"default:sign_wall_wood"}
+		recipe = {
+			{"default:sign_wall_wood"}
+		}
 	})
 
 	mt.register_craft({
