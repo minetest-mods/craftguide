@@ -13,6 +13,7 @@ local searches = {}
 local progressive_mode = mt.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = mt.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
+local colorize = mt.colorize
 local fs_esc = mt.formspec_escape
 local reg_items = mt.registered_items
 local get_result = mt.get_craft_result
@@ -290,7 +291,7 @@ local function get_tooltip(item, groups, cooktime, burntime)
 	if groups then
 		local groupstr = {}
 		for i = 1, #groups do
-			groupstr[#groupstr + 1] = mt.colorize("yellow", groups[i])
+			groupstr[#groupstr + 1] = colorize("yellow", groups[i])
 		end
 
 		groupstr = concat(groupstr, ", ")
@@ -300,13 +301,13 @@ local function get_tooltip(item, groups, cooktime, burntime)
 	end
 
 	if cooktime then
-		tooltip = tooltip .. "\n" .. S("Cooking time: @1",
-			mt.colorize("yellow", cooktime))
+		tooltip = tooltip .. "\n" ..
+			S("Cooking time: @1", colorize("yellow", cooktime))
 	end
 
 	if burntime then
-		tooltip = tooltip .. "\n" .. S("Burning time: @1",
-			mt.colorize("yellow", burntime))
+		tooltip = tooltip .. "\n" ..
+			S("Burning time: @1", colorize("yellow", burntime))
 	end
 
 	return "tooltip[" .. item .. ";" .. fs_esc(tooltip) .. "]"
@@ -510,7 +511,7 @@ local function make_formspec(name)
 	fs[#fs + 1] = fmt(fmt_label,
 			data.iX - (sfinv_only and 1.7 or 2.2),
 			0.22,
-			mt.colorize("yellow", data.pagenum) .. " / " .. data.pagemax)
+			colorize("yellow", data.pagenum) .. " / " .. data.pagemax)
 
 	fs[#fs + 1] = "image_button[" .. (data.iX -
 			(sfinv_only and 0.7 or 1.2) - (data.iX >= 11 and 0.08 or 0)) ..
@@ -954,7 +955,7 @@ mt.register_chatcommand("craft", {
 			end
 		end
 
-		local red = mt.colorize("red", "[craftguide] ")
+		local red = colorize("red", "[craftguide] ")
 
 		if not node_name then
 			return false, red .. S("No node pointed")
@@ -971,7 +972,7 @@ mt.register_chatcommand("craft", {
 		end
 
 		if not recipes or #recipes == 0 then
-			local ylw = mt.colorize("yellow", node_name)
+			local ylw = colorize("yellow", node_name)
 			local msg = red .. "%s: " .. ylw
 
 			if is_fuel then
