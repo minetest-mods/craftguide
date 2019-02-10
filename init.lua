@@ -941,9 +941,10 @@ mt.register_chatcommand("craft", {
 			end
 		end
 
+		local red = mt.colorize("red", "[craftguide] ")
+
 		if not node_name then
-			return false, mt.colorize("red", "[craftguide] ") ..
-					S("No node pointed")
+			return false, red .. S("No node pointed")
 		end
 
 		local data = player_data[name]
@@ -957,15 +958,18 @@ mt.register_chatcommand("craft", {
 		end
 
 		if not recipes or #recipes == 0 then
+			local ylw = mt.colorize("yellow", node_name)
+			local msg = red .. "%s: " .. ylw
+
 			if is_fuel then
 				recipes = get_item_usages(node_name)
 				if #recipes > 0 then
 					data.show_usages = true
 				end
+			elseif recipes_cache[node_name] then
+				return false, fmt(msg, S("You don't know a recipe for this node"))
 			else
-				return false, mt.colorize("red", "[craftguide] ") ..
-					S("No recipe for this node:") .. " " ..
-					mt.colorize("yellow", node_name)
+				return false, fmt(msg, S("No recipe for this node"))	
 			end
 		end
 
