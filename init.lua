@@ -520,10 +520,15 @@ local function make_formspec(name)
 	fs[#fs + 1] = "field[0.3,0.32;2.5,1;filter;;" .. fs_esc(data.filter) .. "]"
 
 	if #data.items == 0 then
-		fs[#fs + 1] = fmt(fmt_label,
-			(data.iX / 2) - 1,
-			2,
-			fs_esc(S("No item to show")))
+		local no_item = S("No item to show")
+		local pos = (data.iX / 2) - 1
+
+		if next(recipe_filters) and #init_items > 0 and data.filter == "" then
+			no_item = S("Collect items to reveal more recipes")
+			pos = pos - 1
+		end
+
+		fs[#fs + 1] = fmt(fmt_label, pos, 2, fs_esc(no_item))
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
