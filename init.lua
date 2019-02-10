@@ -49,6 +49,8 @@ local group_stereotypes = {
 }
 
 local function table_merge(t, t2)
+	t, t2 = t or {}, t2 or {}
+
 	for i = 1, #t2 do
 		t[#t + 1] = t2[i]
 	end
@@ -132,12 +134,65 @@ local function apply_recipe_filters(recipes, player)
 	return recipes
 end
 
+local function item_has_groups(item_groups, groups)
+	for i = 1, #groups do
+		local group = groups[i]
+		if not item_groups[group] then
+			return
+		end
+	end
+
+	return true
+end
+
+local function extract_groups(str)
+	return str:sub(7):split(",")
+end
+
+local function item_in_recipe(item, recipe)
+	local item_groups = reg_items[item].groups
+	for _, recipe_item in pairs(recipe.items) do
+		if recipe_item == item then
+			return true
+		elseif recipe_item:sub(1,6) == "group:" then
+			local groups = extract_groups(recipe_item)
+			if item_has_groups(item_groups, groups) then
+				return true
+			end
+		end
+	end
+end
+
+local function get_item_usages(item)
+	local usages, c = {}, 0
+
+	for _, recipes in pairs(recipes_cache) do
+	for i = 1, #recipes do
+		local recipe = recipes[i]
+		if item_in_recipe(item, recipe) then
+			c = c + 1
+			usages[c] = recipe
+		end
+	end
+	end
+
+	if fuel_cache[item] then
+		usages[#usages + 1] = {type = "fuel", width = 1, items = {item}}
+	end
+
+	return usages
+end
+
 local function get_filtered_items(player)
 	local items, c = {}, 0
 
 	for i = 1, #init_items do
 		local item = init_items[i]
 		local recipes = recipes_cache[item]
+
+		if fuel_cache[item] then
+			recipes = table_merge(get_item_usages(item), recipes)
+		end
 
 		if recipes then
 			recipes = apply_recipe_filters(recipes, player)
@@ -179,21 +234,6 @@ local function cache_fuel(item)
 		fuel_cache[item] = burntime
 		return true
 	end
-end
-
-local function extract_groups(str)
-	return str:sub(7):split(",")
-end
-
-local function item_has_groups(item_groups, groups)
-	for i = 1, #groups do
-		local group = groups[i]
-		if not item_groups[group] then
-			return
-		end
-	end
-
-	return true
 end
 
 local function groups_to_item(groups)
@@ -522,40 +562,6 @@ local function search(data)
 	data.items = filtered_list
 end
 
-local function item_in_recipe(item, recipe)
-	local item_groups = reg_items[item].groups
-	for _, recipe_item in pairs(recipe.items) do
-		if recipe_item == item then
-			return true
-		elseif recipe_item:sub(1,6) == "group:" then
-			local groups = extract_groups(recipe_item)
-			if item_has_groups(item_groups, groups) then
-				return true
-			end
-		end
-	end
-end
-
-local function get_item_usages(item)
-	local usages, c = {}, 0
-
-	for _, recipes in pairs(recipes_cache) do
-	for i = 1, #recipes do
-		local recipe = recipes[i]
-		if item_in_recipe(item, recipe) then
-			c = c + 1
-			usages[c] = recipe
-		end
-	end
-	end
-
-	if fuel_cache[item] then
-		usages[#usages + 1] = {type = "fuel", width = 1, items = {item}}
-	end
-
-	return usages
-end
-
 local function get_inv_items(player)
 	local inv = player:get_inventory()
 	local main, craft = inv:get_list("main"), inv:get_list("craft")
@@ -574,25 +580,6 @@ local function get_inv_items(player)
 	end
 
 	return inv_items
-end
-
-local function item_in_inv(item, inv_items)
-	local inv_items_size = #inv_items
-	if item:sub(1,6) == "group:" then
-		local groups = extract_groups(item)
-		for i = 1, inv_items_size do
-			local item_groups = reg_items[inv_items[i]].groups
-			if item_has_groups(item_groups, groups) then
-				return true
-			end
-		end
-	else
-		for i = 1, inv_items_size do
-			if inv_items[i] == item then
-				return true
-			end
-		end
-	end
 end
 
 local function init_data(name)
@@ -865,6 +852,26 @@ else
 end
 
 if progressive_mode then
+	local function item_in_inv(item, inv_items)
+		local inv_items_size = #inv_items
+
+		if item:sub(1,6) == "group:" then
+			local groups = extract_groups(item)
+			for i = 1, inv_items_size do
+				local item_groups = reg_items[inv_items[i]].groups
+				if item_has_groups(item_groups, groups) then
+					return true
+				end
+			end
+		else
+			for i = 1, inv_items_size do
+				if inv_items[i] == item then
+					return true
+				end
+			end
+		end
+	end
+
 	local function recipe_in_inv(recipe, inv_items)
 		for _, item in pairs(recipe.items) do
 			if not item_in_inv(item, inv_items) then
@@ -969,7 +976,7 @@ mt.register_chatcommand("craft", {
 			elseif recipes_cache[node_name] then
 				return false, fmt(msg, S("You don't know a recipe for this node"))
 			else
-				return false, fmt(msg, S("No recipe for this node"))	
+				return false, fmt(msg, S("No recipe for this node"))
 			end
 		end
 
