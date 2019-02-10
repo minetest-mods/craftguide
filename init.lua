@@ -16,6 +16,7 @@ local sfinv_only = mt.settings:get_bool("craftguide_sfinv_only") and rawget(_G, 
 local reg_items = mt.registered_items
 local get_result = mt.get_craft_result
 local show_formspec = mt.show_formspec
+local get_player_by_name = mt.get_player_by_name
 local serialize, deserialize = mt.serialize, mt.deserialize
 
 -- Intllib
@@ -222,6 +223,33 @@ local function cache_recipes(output)
 		recipes_cache[output] = recipes
 		return true
 	end
+end
+
+local function get_recipes(item, data, player)
+	local is_fuel = fuel_cache[item]
+	local recipes = recipes_cache[item]
+
+	if recipes then
+		recipes = apply_recipe_filters(recipes, player)
+	end
+
+	local no_recipes = not recipes or #recipes == 0
+	if no_recipes and not is_fuel then
+		return
+	end
+
+	if is_fuel and no_recipes then
+		data.show_usages = true
+	end
+
+	if data.show_usages then
+		recipes = apply_recipe_filters(get_item_usages(item), player)
+		if #recipes == 0 then
+			return
+		end
+	end
+
+	return recipes
 end
 
 local function get_burntime(item)
@@ -683,37 +711,14 @@ local function on_receive_fields(player, fields)
 			item = item:sub(1,-5)
 		end
 
-		local is_fuel = fuel_cache[item]
-		local recipes = recipes_cache[item]
-
-		if recipes then
-			recipes = apply_recipe_filters(recipes, player)
-		end
-
-		local no_recipes = not recipes or #recipes == 0
-		if no_recipes and not is_fuel then
-			return
-		end
-
 		if item ~= data.query_item then
 			data.show_usages = nil
 		else
 			data.show_usages = not data.show_usages
 		end
 
-		if is_fuel and no_recipes then
-			data.show_usages = true
-		end
-
-		if data.show_usages then
-			recipes = apply_recipe_filters(get_item_usages(item), player)
-			if #recipes == 0 then
-				return
-			end
-		end
-
 		data.query_item = item
-		data.recipes    = recipes
+		data.recipes    = get_recipes(item, data, player)
 		data.rnum       = 1
 
 		show_fs(player, name)
@@ -932,7 +937,7 @@ end
 mt.register_chatcommand("craft", {
 	description = S("Show recipe(s) of the pointed node"),
 	func = function(name)
-		local player = mt.get_player_by_name(name)
+		local player = get_player_by_name(name)
 		local ppos   = player:get_pos()
 		local dir    = player:get_look_dir()
 		local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
@@ -986,6 +991,25 @@ mt.register_chatcommand("craft", {
 		return true, show_fs(player, name)
 	end,
 })
+
+function craftguide.show(name, item, show_usages)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(name, func .. "player name missing")
+
+	local data   = player_data[name]
+	local player = get_player_by_name(name)
+	local query_item = data.query_item
+
+	reset_data(data)
+
+	item = reg_items[item] and item or query_item
+
+	data.query_item  = item
+	data.show_usages = show_usages
+	data.recipes     = get_recipes(item, data, player)
+
+	show_fs(player, name)
+end
 
 --[[ Custom recipes (>3x3) test code
 
