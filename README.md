@@ -22,7 +22,7 @@ Use the command `/craft` to show the recipe(s) of the pointed node.
 
 ### Custom recipes
 
-#### Registering a custom crafting type
+#### Registering a custom crafting type (example)
 
 ```Lua
 craftguide.register_craft_type("digging", {
@@ -31,7 +31,7 @@ craftguide.register_craft_type("digging", {
 })
 ```
 
-#### Registering a custom crafting recipe
+#### Registering a custom crafting recipe (example)
 
 ```Lua
 craftguide.register_craft({

@@ -89,11 +89,6 @@ function craftguide.register_craft_type(name, def)
 	end
 end
 
-craftguide.register_craft_type("digging", {
-	description = S("Digging"),
-	icon = "default_tool_steelpick.png",
-})
-
 function craftguide.register_craft(def)
 	local func = "craftguide." .. __func() .. "(): "
 	assert(def.type, func .. "'type' field missing")
@@ -103,13 +98,6 @@ function craftguide.register_craft(def)
 
 	craftguide.custom_crafts[#craftguide.custom_crafts + 1] = def
 end
-
-craftguide.register_craft({
-	type   = "digging",
-	width  = 1,
-	output = "default:cobble",
-	items  = {"default:stone"},
-})
 
 local recipe_filters = {}
 
@@ -238,9 +226,7 @@ local function get_recipes(item, data, player)
 	local no_recipes = not recipes or #recipes == 0
 	if no_recipes and not is_fuel then
 		return
-	end
-
-	if is_fuel and no_recipes then
+	elseif is_fuel and no_recipes then
 		data.show_usages = true
 	end
 
