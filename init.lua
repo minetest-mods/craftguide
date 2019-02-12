@@ -180,17 +180,12 @@ local function get_filtered_items(player)
 	for i = 1, #init_items do
 		local item = init_items[i]
 		local recipes = recipes_cache[item]
+		local fuel = fuel_cache[item]
 
-		if not recipes and fuel_cache[item] then
-			recipes = table_merge(get_item_usages(item), recipes)
-		end
-
-		if recipes then
-			recipes = apply_recipe_filters(recipes, player)
-			if #recipes > 0 then
-				c = c + 1
-				items[c] = item
-			end
+		if recipes and #apply_recipe_filters(recipes, player) > 0 or
+		   fuel and #apply_recipe_filters(get_item_usages(item), player) > 0 then
+			c = c + 1
+			items[c] = item
 		end
 	end
 
