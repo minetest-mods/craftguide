@@ -53,25 +53,40 @@ local group_stereotypes = {
 
 local function table_merge(t, t2)
 	t, t2 = t or {}, t2 or {}
+	local c = #t
 
 	for i = 1, #t2 do
-		t[#t + 1] = t2[i]
+		c = c + 1
+		t[c] = t2[i]
 	end
 
 	return t
 end
 
-local function clean_items(items)
-	local hash, ct = {}, {}
-	for i = 1, #items do
-		local item = items[i]
-		if not hash[item] and reg_items[item] then
-			ct[#ct + 1] = item
-			hash[item] = true
+local function table_diff(t, t2)
+	local t3 = {}
+
+	for i = 1, #t do
+		local v = t[i]
+		t3[v] = true
+	end
+
+	for i = 1, #t2 do
+		local v = t2[i]
+		t3[v] = nil
+	end
+
+	local ret, c = {}, 0
+
+	for i = 1, #t do
+		local v = t[i]
+		if t3[v] then
+			c = c + 1
+			ret[c] = v
 		end
 	end
 
-	return ct
+	return ret
 end
 
 local function __func()
@@ -740,6 +755,7 @@ if sfinv_only then
 			if next(recipe_filters) then
 				local name = player:get_player_name()
 				local data = player_data[name]
+
 				data.items_raw = get_filtered_items(player)
 				search(data)
 			end
@@ -877,18 +893,16 @@ if progressive_mode then
 
 	local function progressive_filter(recipes, player)
 		local name = player:get_player_name()
-		local discovered = player_data[name].inv_items
-		local inv_items = get_inv_items(player)
-		discovered = clean_items(table_merge(discovered, inv_items))
+		local data = player_data[name]
 
-		if #discovered == 0 then
+		if #data.inv_items == 0 then
 			return {}
 		end
 
 		local filtered, c = {}, 0
 		for i = 1, #recipes do
 			local recipe = recipes[i]
-			if recipe_in_inv(recipe, discovered) then
+			if recipe_in_inv(recipe, data.inv_items) then
 				c = c + 1
 				filtered[c] = recipe
 			end
@@ -897,19 +911,37 @@ if progressive_mode then
 		return filtered
 	end
 
+	mt.register_globalstep(function()
+		local players = mt.get_connected_players()
+		for i = 1, #players do
+			local player = players[i]
+			local name   = player:get_player_name()
+			local data   = player_data[name]
+			local inv_items = get_inv_items(player)
+			local diff      = table_diff(inv_items, data.inv_items)
+
+			if #diff > 0 then
+				data.inv_items = table_merge(diff, data.inv_items)
+			end
+		end
+	end)
+
 	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
 
 	mt.register_on_joinplayer(function(player)
 		local meta = player:get_meta()
-		local inv_items = deserialize(meta:get_string("inv_items")) or {}
 		local name = player:get_player_name()
-		player_data[name].inv_items = inv_items
+		local data = player_data[name]
+
+		data.inv_items = deserialize(meta:get_string("inv_items")) or {}
 	end)
 
 	local function save_meta(player)
 		local meta = player:get_meta()
 		local name = player:get_player_name()
-		meta:set_string("inv_items", serialize(player_data[name].inv_items))
+		local data = player_data[name]
+
+		meta:set_string("inv_items", serialize(data.inv_items))
 	end
 
 	mt.register_on_leaveplayer(save_meta)
@@ -917,7 +949,8 @@ if progressive_mode then
 	mt.register_on_shutdown(function()
 		local players = mt.get_connected_players()
 		for i = 1, #players do
-			save_meta(players[i])
+			local player = players[i]
+			save_meta(player)
 		end
 	end)
 end
