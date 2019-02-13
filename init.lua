@@ -21,8 +21,7 @@ local show_formspec = mt.show_formspec
 local get_player_by_name = mt.get_player_by_name
 local serialize, deserialize = mt.serialize, mt.deserialize
 
--- Intllib
-local S = dofile(mt.get_modpath("craftguide") .. "/intllib.lua")
+local S = mt.get_translator("craftguide")
 
 -- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
 -- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
