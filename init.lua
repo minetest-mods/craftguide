@@ -925,6 +925,8 @@ if progressive_mode then
 		return filtered
 	end
 
+	-- Workaround. Need an engine call to detect when the contents
+	-- of the player inventory changed, instead.
 	mt.register_globalstep(function()
 		local players = mt.get_connected_players()
 		for i = 1, #players do
