@@ -70,23 +70,23 @@ local function table_merge(t, t2)
 end
 
 local function table_diff(t, t2)
-	local t3 = {}
+	local hash = {}
 
 	for i = 1, #t do
 		local v = t[i]
-		t3[v] = true
+		hash[v] = true
 	end
 
 	for i = 1, #t2 do
 		local v = t2[i]
-		t3[v] = nil
+		hash[v] = nil
 	end
 
 	local ret, c = {}, 0
 
 	for i = 1, #t do
 		local v = t[i]
-		if t3[v] then
+		if hash[v] then
 			c = c + 1
 			ret[c] = v
 		end
@@ -730,8 +730,13 @@ local function on_receive_fields(player, fields)
 			data.show_usages = not data.show_usages
 		end
 
+		local recipes = get_recipes(item, data, player)
+		if not recipes then
+			return
+		end
+
 		data.query_item = item
-		data.recipes    = get_recipes(item, data, player)
+		data.recipes    = recipes
 		data.rnum       = 1
 
 		show_fs(player, name)
