@@ -51,6 +51,12 @@ local group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
+local item_lists = {
+	"main",
+	"craft",
+	"craftpreview",
+}
+
 local function table_merge(t, t2)
 	t, t2 = t or {}, t2 or {}
 	local c = #t
@@ -595,8 +601,12 @@ end
 
 local function get_inv_items(player)
 	local inv = player:get_inventory()
-	local main, craft = inv:get_list("main"), inv:get_list("craft")
-	local stacks = table_merge(main, craft)
+	local stacks = {}
+
+	for i = 1, #item_lists do
+		stacks = table_merge(stacks, inv:get_list(item_lists[i]))
+	end
+
 	local inv_items, c = {}, 0
 
 	for i = 1, #stacks do
