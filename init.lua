@@ -35,10 +35,11 @@ local MIN_LIMIT, MAX_LIMIT = 10, 12
 DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
 local GRID_LIMIT = 5
+local POLL_FREQ  = 0.5
 
-local fmt_label   = "label[%f,%f;%s]"
-local fmt_image   = "image[%f,%f;%f,%f;%s]"
-local fmt_tooltip = "tooltip[%f,%f;%f,%f;%s]"
+local FMT_label   = "label[%f,%f;%s]"
+local FMT_image   = "image[%f,%f;%f,%f;%s]"
+local FMT_tooltip = "tooltip[%f,%f;%f,%f;%s]"
 
 local group_stereotypes = {
 	wool         = "wool:white",
@@ -332,7 +333,7 @@ local function get_recipe_fs(data, iY)
 	local rightest, btn_size, s_btn_size = 0, 1.1
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
-		fs[#fs + 1] = fmt(fmt_label,
+		fs[#fs + 1] = fmt(FMT_label,
 			(data.iX / 2) - 2,
 			iY + 2.2,
 			fs_esc(S("Recipe is too big to be displayed (@1x@2)", width, rows)))
@@ -390,7 +391,7 @@ local function get_recipe_fs(data, iY)
 			icon = "craftguide_" .. icon .. ".png^[resize:16x16"
 		end
 
-		fs[#fs + 1] = fmt(fmt_image,
+		fs[#fs + 1] = fmt(FMT_image,
 			rightest + 1.2,
 			iY + (sfinv_only and 2.2 or 1.7),
 			0.5,
@@ -400,7 +401,7 @@ local function get_recipe_fs(data, iY)
 		local tooltip = custom_recipe and custom_recipe.description or
 				shapeless and S("Shapeless") or S("Cooking")
 
-		fs[#fs + 1] = fmt(fmt_tooltip,
+		fs[#fs + 1] = fmt(FMT_tooltip,
 			rightest + 1.2,
 			iY + (sfinv_only and 2.2 or 1.7),
 			0.5,
@@ -411,7 +412,7 @@ local function get_recipe_fs(data, iY)
 	local arrow_X  = rightest + (s_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
-	fs[#fs + 1] = fmt(fmt_image,
+	fs[#fs + 1] = fmt(FMT_image,
 		arrow_X,
 		iY + (sfinv_only and 2.85 or 2.35),
 		0.9,
@@ -419,7 +420,7 @@ local function get_recipe_fs(data, iY)
 		"craftguide_arrow.png")
 
 	if recipe.type == "fuel" then
-		fs[#fs + 1] = fmt(fmt_image,
+		fs[#fs + 1] = fmt(FMT_image,
 			output_X,
 			iY + (sfinv_only and 2.68 or 2.18),
 			1.1,
@@ -440,14 +441,14 @@ local function get_recipe_fs(data, iY)
 		if burntime then
 			fs[#fs + 1] = get_tooltip(output_name, nil, nil, burntime)
 
-			fs[#fs + 1] = fmt(fmt_image,
+			fs[#fs + 1] = fmt(FMT_image,
 				output_X + 1,
 				iY + (sfinv_only and 2.83 or 2.33),
 				0.6,
 				0.4,
 				"craftguide_arrow.png")
 
-			fs[#fs + 1] = fmt(fmt_image,
+			fs[#fs + 1] = fmt(FMT_image,
 				output_X + 1.6,
 				iY + (sfinv_only and 2.68 or 2.18),
 				0.6,
@@ -509,7 +510,7 @@ local function make_formspec(name)
 	fs[#fs + 1] = "image_button[" .. (data.iX - (sfinv_only and 2.6 or 3.1)) ..
 			",0.12;0.8,0.8;craftguide_prev_icon.png;prev;]"
 
-	fs[#fs + 1] = fmt(fmt_label,
+	fs[#fs + 1] = fmt(FMT_label,
 			data.iX - (sfinv_only and 1.7 or 2.2),
 			0.22,
 			colorize("yellow", data.pagenum) .. " / " .. data.pagemax)
@@ -529,7 +530,7 @@ local function make_formspec(name)
 			pos = pos - 1
 		end
 
-		fs[#fs + 1] = fmt(fmt_label, pos, 2, fs_esc(no_item))
+		fs[#fs + 1] = fmt(FMT_label, pos, 2, fs_esc(no_item))
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
@@ -927,7 +928,7 @@ if progressive_mode then
 
 	-- Workaround. Need an engine call to detect when the contents
 	-- of the player inventory changed, instead.
-	mt.register_globalstep(function()
+	local function poll_new_items()
 		local players = mt.get_connected_players()
 		for i = 1, #players do
 			local player = players[i]
@@ -940,7 +941,11 @@ if progressive_mode then
 				data.inv_items = table_merge(diff, data.inv_items)
 			end
 		end
-	end)
+
+		mt.after(POLL_FREQ, poll_new_items)
+	end
+
+	poll_new_items()
 
 	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
 
