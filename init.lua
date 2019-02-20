@@ -209,16 +209,42 @@ local function get_item_usages(item)
 	return usages
 end
 
+local function item_in_inv(item, inv_items)
+	local inv_items_size = #inv_items
+
+	if sub(item, 1, 6) == "group:" then
+		local groups = extract_groups(item)
+		for i = 1, inv_items_size do
+			local inv_item = reg_items[inv_items[i]]
+			if inv_item then
+				local item_groups = inv_item.groups
+				if item_has_groups(item_groups, groups) then
+					return true
+				end
+			end
+		end
+	else
+		for i = 1, inv_items_size do
+			if inv_items[i] == item then
+				return true
+			end
+		end
+	end
+end
+
 local function get_filtered_items(player)
+	local name = player:get_player_name()
+	local data = player_data[name]
 	local items, c = {}, 0
 
 	for i = 1, #init_items do
 		local item = init_items[i]
 		local recipes = recipes_cache[item]
-		local fuel = fuel_cache[item]
+		local usages = usages_cache[item]
 
 		if recipes and #apply_recipe_filters(recipes, player) > 0 or
-		   fuel and #apply_recipe_filters(usages_cache[item], player) > 0 then
+		  (usages and item_in_inv(item, data.inv_items) and
+		   #apply_recipe_filters(usages_cache[item], player) > 0) then
 			c = c + 1
 			items[c] = item
 		end
@@ -246,17 +272,17 @@ local function cache_recipes(output)
 end
 
 local function get_recipes(item, data, player)
-	local is_fuel = fuel_cache[item]
 	local recipes = recipes_cache[item]
+	local usages = usages_cache[item]
 
 	if recipes then
 		recipes = apply_recipe_filters(recipes, player)
 	end
 
 	local no_recipes = not recipes or #recipes == 0
-	if no_recipes and not is_fuel then
+	if no_recipes and not usages then
 		return
-	elseif is_fuel and no_recipes then
+	elseif usages and no_recipes then
 		data.show_usages = true
 	end
 
@@ -910,26 +936,6 @@ else
 end
 
 if progressive_mode then
-	local function item_in_inv(item, inv_items)
-		local inv_items_size = #inv_items
-
-		if sub(item, 1, 6) == "group:" then
-			local groups = extract_groups(item)
-			for i = 1, inv_items_size do
-				local item_groups = reg_items[inv_items[i]].groups
-				if item_has_groups(item_groups, groups) then
-					return true
-				end
-			end
-		else
-			for i = 1, inv_items_size do
-				if inv_items[i] == item then
-					return true
-				end
-			end
-		end
-	end
-
 	local function recipe_in_inv(recipe, inv_items)
 		for _, item in pairs(recipe.items) do
 			if not item_in_inv(item, inv_items) then
@@ -1039,7 +1045,7 @@ M.register_chatcommand("craft", {
 		reset_data(data)
 
 		local recipes = recipes_cache[node_name]
-		local is_fuel = fuel_cache[node_name]
+		local usages = usages_cache[node_name]
 
 		if recipes then
 			recipes = apply_recipe_filters(recipes, player)
@@ -1049,7 +1055,7 @@ M.register_chatcommand("craft", {
 			local ylw = colorize("yellow", node_name)
 			local msg = red .. "%s: " .. ylw
 
-			if is_fuel then
+			if usages then
 				recipes = usages_cache[node_name]
 				if #recipes > 0 then
 					data.show_usages = true
