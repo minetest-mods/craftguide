@@ -26,13 +26,12 @@ local serialize, deserialize = M.serialize, M.deserialize
 local ESC = M.formspec_escape
 local S = M.get_translator("craftguide")
 
--- Lua 5.3 removed `table.maxn`, use this alternative in case of breakage:
--- https://github.com/kilbith/xdecor/blob/master/handlers/helpers.lua#L1
-local maxn, sort, concat = table.maxn, table.sort, table.concat
-local vector_add, vector_mul = vector.add, vector.multiply
+local maxn, sort, concat, insert = table.maxn, table.sort, table.concat, table.insert
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local fmt, find, sub, gmatch = string.format, string.find, string.sub, string.gmatch
-local pairs, next = pairs, next
+local fmt, find, match, sub, split =
+	string.format, string.find, string.match, string.sub, string.split
+local pairs, next, unpack = pairs, next, unpack
+local vec_add, vec_mul = vector.add, vector.multiply
 
 local DEFAULT_SIZE = 10
 local MIN_LIMIT, MAX_LIMIT = 10, 12
@@ -41,9 +40,16 @@ DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 local GRID_LIMIT = 5
 local POLL_FREQ  = 0.25
 
-local FMT_label   = "label[%f,%f;%s]"
-local FMT_image   = "image[%f,%f;%f,%f;%s]"
-local FMT_tooltip = "tooltip[%f,%f;%f,%f;%s]"
+local FMT = {
+	box     = "box[%f,%f;%f,%f;%s]",
+	label   = "label[%f,%f;%s]",
+	image   = "image[%f,%f;%f,%f;%s]",
+	button  = "button[%f,%f;%f,%f;%s;%s]",
+	tooltip = "tooltip[%s;%s]",
+	item_image = "item_image[%f,%f;%f,%f;%s]",
+	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
+	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
+}
 
 local group_stereotypes = {
 	wool         = "wool:white",
@@ -150,6 +156,29 @@ local function apply_recipe_filters(recipes, player)
 	return recipes
 end
 
+local formspec_elements = {}
+
+function craftguide.add_formspec_element(name, def)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(def.element, func .. "'element' field not defined")
+	assert(def.type, func .. "'type' field not defined")
+	assert(FMT[def.type], func .. "'" .. def.type .. "' type not supported by the API")
+
+	formspec_elements[name] = {
+		type    = def.type,
+		element = def.element,
+		action  = def.action,
+	}
+end
+
+function craftguide.remove_formspec_element(name)
+	formspec_elements[name] = nil
+end
+
+function craftguide.get_formspec_elements()
+	return formspec_elements
+end
+
 local function item_has_groups(item_groups, groups)
 	for i = 1, #groups do
 		local group = groups[i]
@@ -161,18 +190,8 @@ local function item_has_groups(item_groups, groups)
 	return true
 end
 
-local function split(str)
-	local t, c = {}, 0
-	for s in gmatch(str, "([^,]+)") do
-		c = c + 1
-		t[c] = s
-	end
-
-	return t
-end
-
 local function extract_groups(str)
-	return split(sub(str, 7))
+	return split(sub(str, 7), ",")
 end
 
 local function item_in_recipe(item, recipe)
@@ -259,7 +278,7 @@ local function cache_recipes(output)
 
 	for i = 1, #craftguide.custom_crafts do
 		local custom_craft = craftguide.custom_crafts[i]
-		if custom_craft.output:match("%S*") == output then
+		if match(custom_craft.output, "%S*") == output then
 			c = c + 1
 			recipes[c] = custom_craft
 		end
@@ -356,7 +375,7 @@ local function get_tooltip(item, groups, cooktime, burntime)
 			S("Burning time: @1", colorize("yellow", burntime))
 	end
 
-	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
+	return fmt(FMT.tooltip, item, ESC(tooltip))
 end
 
 local function get_recipe_fs(data, iY)
@@ -377,7 +396,7 @@ local function get_recipe_fs(data, iY)
 	local rightest, btn_size, s_btn_size = 0, 1.1
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
-		fs[#fs + 1] = fmt(FMT_label,
+		fs[#fs + 1] = fmt(FMT.label,
 			(data.iX / 2) - 2,
 			iY + 2.2,
 			ESC(S("Recipe is too big to be displayed (@1x@2)", width, rows)))
@@ -409,13 +428,13 @@ local function get_recipe_fs(data, iY)
 
 		local label = groups and "\nG" or ""
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
+		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X,
 			Y + (sfinv_only and 0.7 or 0.2),
 			btn_size,
 			btn_size,
 			item,
-			item:match("%S*"),
+			match(item, "%S*"),
 			ESC(label))
 
 		local burntime = fuel_cache[item]
@@ -435,7 +454,7 @@ local function get_recipe_fs(data, iY)
 			icon = fmt("craftguide_%s.png^[resize:16x16", icon)
 		end
 
-		fs[#fs + 1] = fmt(FMT_image,
+		fs[#fs + 1] = fmt(FMT.image,
 			rightest + 1.2,
 			iY + (sfinv_only and 2.2 or 1.7),
 			0.5,
@@ -445,7 +464,7 @@ local function get_recipe_fs(data, iY)
 		local tooltip = custom_recipe and custom_recipe.description or
 				shapeless and S("Shapeless") or S("Cooking")
 
-		fs[#fs + 1] = fmt(FMT_tooltip,
+		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
 			rightest + 1.2,
 			iY + (sfinv_only and 2.2 or 1.7),
 			0.5,
@@ -456,7 +475,7 @@ local function get_recipe_fs(data, iY)
 	local arrow_X  = rightest + (s_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
-	fs[#fs + 1] = fmt(FMT_image,
+	fs[#fs + 1] = fmt(FMT.image,
 		arrow_X,
 		iY + (sfinv_only and 2.85 or 2.35),
 		0.9,
@@ -464,35 +483,36 @@ local function get_recipe_fs(data, iY)
 		"craftguide_arrow.png")
 
 	if recipe.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT_image,
+		fs[#fs + 1] = fmt(FMT.image,
 			output_X,
 			iY + (sfinv_only and 2.68 or 2.18),
 			1.1,
 			1.1,
 			"craftguide_fire.png")
 	else
-		local output_name = recipe.output:match("%S+")
+		local output_name = match(recipe.output, "%S+")
 		local burntime = fuel_cache[output_name]
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;]",
+		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X,
 			iY + (sfinv_only and 2.7 or 2.2),
 			1.1,
 			1.1,
 			recipe.output,
-			ESC(output_name))
+			ESC(output_name),
+			"")
 
 		if burntime then
 			fs[#fs + 1] = get_tooltip(output_name, nil, nil, burntime)
 
-			fs[#fs + 1] = fmt(FMT_image,
+			fs[#fs + 1] = fmt(FMT.image,
 				output_X + 1,
 				iY + (sfinv_only and 2.83 or 2.33),
 				0.6,
 				0.4,
 				"craftguide_arrow.png")
 
-			fs[#fs + 1] = fmt(FMT_image,
+			fs[#fs + 1] = fmt(FMT.image,
 				output_X + 1.6,
 				iY + (sfinv_only and 2.68 or 2.18),
 				0.6,
@@ -582,7 +602,7 @@ local function make_formspec(name)
 			pos = pos - 1
 		end
 
-		fs[#fs + 1] = fmt(FMT_label, pos, 2, ESC(no_item))
+		fs[#fs + 1] = fmt(FMT.label, pos, 2, ESC(no_item))
 	end
 
 	local first_item = (data.pagenum - 1) * ipp
@@ -606,6 +626,17 @@ local function make_formspec(name)
 
 	if data.recipes and #data.recipes > 0 then
 		fs[#fs + 1] = get_recipe_fs(data, iY)
+	end
+
+	for elem_name, def in pairs(formspec_elements) do
+		local element = def.element(data)
+		if element then
+			if find(def.type, "button") then
+				insert(element, #element, elem_name)
+			end
+
+			fs[#fs + 1] = fmt(FMT[def.type], unpack(element))
+		end
 	end
 
 	return concat(fs)
@@ -656,7 +687,8 @@ local function get_inv_items(player)
 	local stacks = {}
 
 	for i = 1, #item_lists do
-		stacks = table_merge(stacks, inv:get_list(item_lists[i]))
+		local l = inv:get_list(item_lists[i])
+		stacks = table_merge(stacks, l)
 	end
 
 	local inv_items, c = {}, 0
@@ -722,6 +754,12 @@ end
 local function on_receive_fields(player, fields)
 	local name = player:get_player_name()
 	local data = player_data[name]
+
+	for elem_name, def in pairs(formspec_elements) do
+		if fields[elem_name] and def.action then
+			return def.action(player, data)
+		end
+	end
 
 	if fields.clear then
 		reset_data(data)
@@ -1026,7 +1064,7 @@ M.register_chatcommand("craft", {
 		local node_name
 
 		for i = 1, 10 do
-			local look_at = vector_add(eye_h, vector_mul(dir, i))
+			local look_at = vec_add(eye_h, vec_mul(dir, i))
 			local node = M.get_node(look_at)
 
 			if node.name ~= "air" then
