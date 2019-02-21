@@ -392,16 +392,17 @@ local function get_recipe_fs(data, iY)
 	local rows = ceil(maxn(recipe.items) / width)
 	local rightest, btn_size, s_btn_size = 0, 1.1
 
-	fs[#fs + 1] = fmt("button[%f,%f;%f,%f;%s;%s %u %s %u]",
+	local btn_lab = data.show_usages and
+		ESC(S("Usage @1 of @2", data.rnum, #data.recipes)) or
+		ESC(S("Recipe @1 of @2", data.rnum, #data.recipes))
+
+	fs[#fs + 1] = fmt(FMT.button,
 		sfinv_only and 5.8 or data.iX - 2.6,
 		sfinv_only and 7.9 or iY + 3.3,
 		2.2,
 		1,
 		"alternate",
-		data.show_usages and ESC(S("Usage")) or ESC(S("Recipe")),
-		data.rnum,
-		ESC(S("of")),
-		#data.recipes)
+		btn_lab)
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
 		fs[#fs + 1] = fmt(FMT.label,
@@ -577,7 +578,7 @@ local function make_formspec(name)
 		ESC(S("Next page")))
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 5.7 or data.iX - 2.2,
+		sfinv_only and 6.3 or data.iX - 2.2,
 		0.22,
 		colorize("yellow", data.pagenum),
 		data.pagemax)
@@ -585,7 +586,7 @@ local function make_formspec(name)
 	fs[#fs + 1] = fmt([[
 		image_button[%f,0.12;0.8,0.8;craftguide_prev_icon.png;prev;]
 		image_button[%f,0.12;0.8,0.8;craftguide_next_icon.png;next;] ]],
-		sfinv_only and 6.6 or data.iX - 3.1,
+		sfinv_only and 5.5 or data.iX - 3.1,
 		sfinv_only and 7.3 or (data.iX - 1.2) - (data.iX >= 11 and 0.08 or 0))
 
 	fs[#fs + 1] = fmt("field[0.3,0.32;2.5,1;filter;;%s]", ESC(data.filter))
@@ -924,7 +925,7 @@ else
 
 		on_construct = function(pos)
 			local meta = M.get_meta(pos)
-			meta:set_string("infotext", S("Crafting Guide Sign"))
+			meta:set_string("infotext", "Crafting Guide Sign")
 		end,
 
 		on_rightclick = function(pos, node, user, itemstack)
