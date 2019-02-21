@@ -1,4 +1,5 @@
-#For enabling some options of craftguide.
-
+# The progressive mode shows recipes you can craft from items you ever had in your inventory.
 craftguide_progressive_mode	(Progressive Mode)	bool false
+
+# Integration in the default Minetest Game inventory.
 craftguide_sfinv_only		(Sfinv only)		bool false
