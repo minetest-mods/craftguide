@@ -1,7 +1,4 @@
-craftguide = {
-	custom_crafts = {},
-	craft_types = {},
-}
+craftguide = {}
 
 local M = minetest
 local player_data = {}
@@ -109,15 +106,15 @@ local function __func()
 	return debug.getinfo(2, "n").name
 end
 
+local custom_crafts, craft_types = {}, {}
+
 function craftguide.register_craft_type(name, def)
 	local func = "craftguide." .. __func() .. "(): "
 	assert(name, func .. "'name' field missing")
 	assert(def.description, func .. "'description' field missing")
 	assert(def.icon, func .. "'icon' field missing")
 
-	if not craftguide.craft_types[name] then
-		craftguide.craft_types[name] = def
-	end
+	craft_types[name] = def
 end
 
 function craftguide.register_craft(def)
@@ -127,7 +124,7 @@ function craftguide.register_craft(def)
 	assert(def.output, func .. "'output' field missing")
 	assert(def.items, func .. "'items' field missing")
 
-	craftguide.custom_crafts[#craftguide.custom_crafts + 1] = def
+	custom_crafts[#custom_crafts + 1] = def
 end
 
 local recipe_filters = {}
@@ -276,8 +273,8 @@ local function cache_recipes(output)
 	local recipes = M.get_all_craft_recipes(output) or {}
 	local c = 0
 
-	for i = 1, #craftguide.custom_crafts do
-		local custom_craft = craftguide.custom_crafts[i]
+	for i = 1, #custom_crafts do
+		local custom_craft = custom_crafts[i]
 		if match(custom_craft.output, "%S*") == output then
 			c = c + 1
 			recipes[c] = custom_craft
@@ -444,7 +441,7 @@ local function get_recipe_fs(data, iY)
 		end
 	end
 
-	local custom_recipe = craftguide.craft_types[recipe.type]
+	local custom_recipe = craft_types[recipe.type]
 
 	if custom_recipe or shapeless or recipe.type == "cooking" then
 		local icon = custom_recipe and custom_recipe.icon or
