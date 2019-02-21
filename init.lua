@@ -392,6 +392,17 @@ local function get_recipe_fs(data, iY)
 	local rows = ceil(maxn(recipe.items) / width)
 	local rightest, btn_size, s_btn_size = 0, 1.1
 
+	fs[#fs + 1] = fmt("button[%f,%f;%f,%f;%s;%s %u %s %u]",
+		data.iX - (sfinv_only and 2.2 or 2.6),
+		iY + (sfinv_only and 3.9 or 3.3),
+		2.2,
+		1,
+		"alternate",
+		data.show_usages and ESC(S("Usage")) or ESC(S("Recipe")),
+		data.rnum,
+		ESC(S("of")),
+		#data.recipes)
+
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
 		fs[#fs + 1] = fmt(FMT.label,
 			(data.iX / 2) - 2,
@@ -517,17 +528,6 @@ local function get_recipe_fs(data, iY)
 				"craftguide_fire.png")
 		end
 	end
-
-	fs[#fs + 1] = fmt("button[%f,%f;%f,%f;%s;%s %u %s %u]",
-		data.iX - (sfinv_only and 2.2 or 2.6),
-		iY + (sfinv_only and 3.9 or 3.3),
-		2.2,
-		1,
-		"alternate",
-		data.show_usages and ESC(S("Usage")) or ESC(S("Recipe")),
-		data.rnum,
-		ESC(S("of")),
-		#data.recipes)
 
 	return concat(fs)
 end
@@ -1140,7 +1140,7 @@ for x = 1, 6 do
 	for i = 1, 10 - x do
 		cr[x][i] = {}
 		for j = 1, 10 - x do
-			cr[x][i][j] = "group:sand"
+			cr[x][i][j] = "group:wood"
 		end
 	end
 
