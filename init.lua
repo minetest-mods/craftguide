@@ -259,8 +259,8 @@ local function get_filtered_items(player)
 		local usages = usages_cache[item]
 
 		if recipes and #apply_recipe_filters(recipes, player) > 0 or
-		  (usages and (progressive_mode and item_in_inv(item, data.inv_items)) and
-		   #apply_recipe_filters(usages_cache[item], player) > 0) then
+			(usages and (not progressive_mode or item_in_inv(item, data.inv_items)) and
+				#apply_recipe_filters(usages_cache[item], player) > 0) then
 			c = c + 1
 			items[c] = item
 		end
