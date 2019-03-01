@@ -24,9 +24,12 @@ local ESC = M.formspec_escape
 local S = M.get_translator("craftguide")
 
 local maxn, sort, concat, insert, copy =
-	table.maxn, table.sort, table.concat, table.insert, table.copy
-local fmt, find, match, sub, split =
-	string.format, string.find, string.match, string.sub, string.split
+	table.maxn, table.sort, table.concat, table.insert,
+	table.copy
+
+local fmt, find, match, sub, split, lower =
+	string.format, string.find, string.match, string.sub,
+	string.split, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next, unpack = pairs, next, unpack
@@ -247,29 +250,6 @@ local function get_item_usages(item)
 	end
 
 	return usages
-end
-
-local function item_in_inv(item, inv_items)
-	local inv_items_size = #inv_items
-
-	if sub(item, 1, 6) == "group:" then
-		local groups = extract_groups(item)
-		for i = 1, inv_items_size do
-			local inv_item = reg_items[inv_items[i]]
-			if inv_item then
-				local item_groups = inv_item.groups
-				if item_has_groups(item_groups, groups) then
-					return true
-				end
-			end
-		end
-	else
-		for i = 1, inv_items_size do
-			if inv_items[i] == item then
-				return true
-			end
-		end
-	end
 end
 
 local function get_filtered_items(player)
@@ -681,9 +661,34 @@ local function search(data)
 
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
-		local desc = reg_items[item].description:lower()
+		local def  = reg_items[item]
+		local desc = lower(def.description)
 
-		if find(item .. desc, filter, 1, true) then
+		local to_add
+		local search_in = item .. desc
+		local subfilter, search_groups, group_filters =
+			match(filter, "(.*)(:groups=)([%w_,]+)$")
+
+		if search_groups then
+			local groups = split(group_filters, ",")
+			local has_groups = true
+
+			for j = 1, #groups do
+				local group = groups[j]
+				if not def.groups[group] then
+					has_groups = nil
+					break
+				end
+			end
+
+			if has_groups then
+				to_add = not subfilter or find(search_in, subfilter, 1, true)
+			end
+		else
+			to_add = find(search_in, filter, 1, true)
+		end
+
+		if to_add then
 			c = c + 1
 			filtered_list[c] = item
 		end
@@ -795,7 +800,7 @@ local function on_receive_fields(player, fields)
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
-		local fltr = fields.filter:lower()
+		local fltr = lower(fields.filter)
 		if data.filter == fltr then
 			return
 		end
@@ -993,6 +998,29 @@ else
 end
 
 if progressive_mode then
+	local function item_in_inv(item, inv_items)
+		local inv_items_size = #inv_items
+
+		if sub(item, 1, 6) == "group:" then
+			local groups = extract_groups(item)
+			for i = 1, inv_items_size do
+				local inv_item = reg_items[inv_items[i]]
+				if inv_item then
+					local item_groups = inv_item.groups
+					if item_has_groups(item_groups, groups) then
+						return true
+					end
+				end
+			end
+		else
+			for i = 1, inv_items_size do
+				if inv_items[i] == item then
+					return true
+				end
+			end
+		end
+	end
+
 	local function recipe_in_inv(recipe, inv_items)
 		for _, item in pairs(recipe.items) do
 			if not item_in_inv(item, inv_items) then
