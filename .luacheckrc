@@ -8,4 +8,5 @@ read_globals = {
 	"sfinv_buttons",
 	"vector",
 	"string",
+	"table",
 }

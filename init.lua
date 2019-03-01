@@ -23,10 +23,12 @@ local serialize, deserialize = M.serialize, M.deserialize
 local ESC = M.formspec_escape
 local S = M.get_translator("craftguide")
 
-local maxn, sort, concat, insert = table.maxn, table.sort, table.concat, table.insert
-local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
+local maxn, sort, concat, insert, copy =
+	table.maxn, table.sort, table.concat, table.insert, table.copy
 local fmt, find, match, sub, split =
 	string.format, string.find, string.match, string.sub, string.split
+
+local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next, unpack = pairs, next, unpack
 local vec_add, vec_mul = vector.add, vector.multiply
 
@@ -74,6 +76,14 @@ local function table_merge(t, t2)
 	end
 
 	return t
+end
+
+local function table_replace(t, val, new)
+	for k, v in pairs(t) do
+		if v == val then
+			t[k] = new
+		end
+	end
 end
 
 local function table_diff(t, t2)
@@ -192,14 +202,22 @@ local function extract_groups(str)
 end
 
 local function item_in_recipe(item, recipe)
-	local item_groups = reg_items[item].groups
 	for _, recipe_item in pairs(recipe.items) do
 		if recipe_item == item then
 			return true
-		elseif sub(recipe_item, 1, 6) == "group:" then
+		end
+	end
+end
+
+local function groups_item_in_recipe(item, recipe)
+	local item_groups = reg_items[item].groups
+	for _, recipe_item in pairs(recipe.items) do
+		if sub(recipe_item, 1, 6) == "group:" then
 			local groups = extract_groups(recipe_item)
 			if item_has_groups(item_groups, groups) then
-				return true
+				local usage = copy(recipe)
+				table_replace(usage.items, recipe_item, item)
+				return usage
 			end
 		end
 	end
@@ -214,6 +232,12 @@ local function get_item_usages(item)
 		if item_in_recipe(item, recipe) then
 			c = c + 1
 			usages[c] = recipe
+		else
+			recipe = groups_item_in_recipe(item, recipe)
+			if recipe then
+				c = c + 1
+				usages[c] = recipe
+			end
 		end
 	end
 	end
@@ -249,8 +273,6 @@ local function item_in_inv(item, inv_items)
 end
 
 local function get_filtered_items(player)
-	local name = player:get_player_name()
-	local data = player_data[name]
 	local items, c = {}, 0
 
 	for i = 1, #init_items do
@@ -259,8 +281,7 @@ local function get_filtered_items(player)
 		local usages = usages_cache[item]
 
 		if recipes and #apply_recipe_filters(recipes, player) > 0 or
-			(usages and (not progressive_mode or item_in_inv(item, data.inv_items)) and
-				#apply_recipe_filters(usages_cache[item], player) > 0) then
+		   usages and #apply_recipe_filters(usages, player) > 0 then
 			c = c + 1
 			items[c] = item
 		end
