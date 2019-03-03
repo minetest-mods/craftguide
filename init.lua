@@ -699,24 +699,31 @@ local function search(data)
 	end
 
 	local filtered_list, c = {}, 0
+	local pattern = "^(.-)%+([%w_]+)=([%w_,]+)"
+	local search_filter = next(search_filters) and match(filter, pattern)
+	local filters = {}
+
+	if search_filter then
+		for filter_name, values in gmatch(filter, sub(pattern, 6, -1)) do
+			if search_filters[filter_name] then
+				values = split(values, ",")
+				filters[filter_name] = values
+			end
+		end
+	end
 
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
 		local desc = lower(def.description)
 		local search_in = item .. desc
-		local pattern = "%+([%w_]+)=([%w_,]+)"
 		local to_add
 
-		if find(filter, pattern) then
-			local prepend = match(filter, "^(.-)%+")
-			for filter_name, values in gmatch(filter, pattern) do
+		if search_filter then
+			for filter_name, values in pairs(filters) do
 				local func = search_filters[filter_name]
-				if func then
-					values = split(values, ",")
-					to_add = func(item, values) and (not prepend or
-						find(search_in, prepend, 1, true))
-				end
+				to_add = func(item, values) and (not search_filter or
+					find(search_in, search_filter, 1, true))
 			end
 		else
 			to_add = find(search_in, filter, 1, true)
