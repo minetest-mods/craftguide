@@ -22,6 +22,8 @@ craftguide.register_craft({
 })
 ```
 
+---
+
 ### Recipe filters
 
 Recipe filters can be used to filter the recipes shown to players. Progressive
@@ -60,6 +62,57 @@ Removes all recipe filters and adds a new one.
 #### `craftguide.get_recipe_filters()`
 
 Returns a map of recipe filters, indexed by name.
+
+---
+
+### Search filters
+
+Search filters are used to perform specific searches inside the search field.
+They can be used like so: `<optional name>+<filter name>=<value1>,<value2>,<...>`
+
+Notes:
+- If `optional name` is omitted, the search filter will apply to all items, without pre-filtering.
+- Filters can be combined.
+- The `+groups=` filter is currently implemented by default.
+
+#### `craftguide.add_search_filter(name, function(item, values))`
+
+Adds a search filter with the given name.
+The search function should return a boolean value (whether the given item should be listed or not).
+
+Example function to show items which contain at least a recipe of given width(s):
+
+```lua
+craftguide.add_search_filter("widths", function(item, widths)
+	local has_width
+	local recipes = recipes_cache[item]
+
+	if recipes then
+		for i = 1, #recipes do
+			local recipe_width = recipes[i].width
+			for j = 1, #widths do
+				local width = tonumber(widths[j])
+				if width == recipe_width then
+					has_width = true
+					break
+				end
+			end
+		end
+	end
+
+	return has_width
+end)
+```
+
+#### `craftguide.remove_search_filter(name)`
+
+Removes the search filter with the given name.
+
+#### `craftguide.get_search_filters()`
+
+Returns a map of search filters, indexed by name.
+
+---
 
 ### Custom formspec elements
 
@@ -101,6 +154,8 @@ Removes the formspec element with the given name.
 #### `craftguide.get_formspec_elements()`
 
 Returns a map of formspec elements, indexed by name.
+
+---
 
 ### Miscellaneous
 

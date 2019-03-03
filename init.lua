@@ -27,9 +27,9 @@ local maxn, sort, concat, insert, copy =
 	table.maxn, table.sort, table.concat, table.insert,
 	table.copy
 
-local fmt, find, match, sub, split, lower =
-	string.format, string.find, string.match, string.sub,
-	string.split, string.lower
+local fmt, find, gmatch, match, sub, split, lower =
+	string.format, string.find, string.gmatch, string.match,
+	string.sub, string.split, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next, unpack = pairs, next, unpack
@@ -102,17 +102,17 @@ local function table_diff(t, t2)
 		hash[v] = nil
 	end
 
-	local ret, c = {}, 0
+	local diff, c = {}, 0
 
 	for i = 1, #t do
 		local v = t[i]
 		if hash[v] then
 			c = c + 1
-			ret[c] = v
+			diff[c] = v
 		end
 	end
 
-	return ret
+	return diff
 end
 
 local function __func()
@@ -142,16 +142,24 @@ end
 
 local recipe_filters = {}
 
-function craftguide.add_recipe_filter(name, func)
-	recipe_filters[name] = func
+function craftguide.add_recipe_filter(name, f)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(name, func .. "filter name missing")
+	assert(f and type(f) == "function", func .. "filter function missing")
+
+	recipe_filters[name] = f
 end
 
 function craftguide.remove_recipe_filter(name)
 	recipe_filters[name] = nil
 end
 
-function craftguide.set_recipe_filter(name, func)
-	recipe_filters = {[name] = func}
+function craftguide.set_recipe_filter(name, f)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(name, func .. "filter name missing")
+	assert(f and type(f) == "function", func .. "filter function missing")
+
+	recipe_filters = {[name] = f}
 end
 
 function craftguide.get_recipe_filters()
@@ -164,6 +172,24 @@ local function apply_recipe_filters(recipes, player)
 	end
 
 	return recipes
+end
+
+local search_filters = {}
+
+function craftguide.add_search_filter(name, f)
+	local func = "craftguide." .. __func() .. "(): "
+	assert(name, func .. "filter name missing")
+	assert(f and type(f) == "function", func .. "filter function missing")
+
+	search_filters[name] = f
+end
+
+function craftguide.remove_search_filter(name)
+	search_filters[name] = nil
+end
+
+function craftguide.get_search_filters()
+	return search_filters
 end
 
 local formspec_elements = {}
@@ -649,6 +675,21 @@ local show_fs = function(player, name)
 	end
 end
 
+craftguide.add_search_filter("groups", function(item, groups)
+	local itemdef = reg_items[item]
+	local has_groups = true
+
+	for i = 1, #groups do
+		local group = groups[i]
+		if not itemdef.groups[group] then
+			has_groups = nil
+			break
+		end
+	end
+
+	return has_groups
+end)
+
 local function search(data)
 	local filter = data.filter
 
@@ -663,26 +704,19 @@ local function search(data)
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
 		local desc = lower(def.description)
-
-		local to_add
 		local search_in = item .. desc
-		local subfilter, search_groups, group_filters =
-			match(filter, "(.*)(:groups=)([%w_,]+)$")
+		local pattern = "%+([%w_]+)=([%w_,]+)"
+		local to_add
 
-		if search_groups then
-			local groups = split(group_filters, ",")
-			local has_groups = true
-
-			for j = 1, #groups do
-				local group = groups[j]
-				if not def.groups[group] then
-					has_groups = nil
-					break
+		if find(filter, pattern) then
+			local prepend = match(filter, "^(.-)%+")
+			for filter_name, values in gmatch(filter, pattern) do
+				local func = search_filters[filter_name]
+				if func then
+					values = split(values, ",")
+					to_add = func(item, values) and (not prepend or
+						find(search_in, prepend, 1, true))
 				end
-			end
-
-			if has_groups then
-				to_add = not subfilter or find(search_in, subfilter, 1, true)
 			end
 		else
 			to_add = find(search_in, filter, 1, true)
