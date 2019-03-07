@@ -70,10 +70,15 @@ Returns a map of recipe filters, indexed by name.
 Search filters are used to perform specific searches inside the search field.
 They can be used like so: `<optional name>+<filter name>=<value1>,<value2>,<...>`
 
+Examples:
+
+- `+groups=cracky,crumbly`: search for groups `cracky` and `crumbly` in all items.
+- `sand+groups=falling_node`: search for group `falling_node` for items which contain `sand` in their names.
+
 Notes:
 - If `optional name` is omitted, the search filter will apply to all items, without pre-filtering.
 - Filters can be combined.
-- The `+groups=` filter is currently implemented by default.
+- The `groups` filter is currently implemented by default.
 
 #### `craftguide.add_search_filter(name, function(item, values))`
 
