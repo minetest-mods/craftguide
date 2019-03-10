@@ -399,7 +399,7 @@ local function get_tooltip(item, groups, cooktime, burntime)
 			S("Burning time: @1", colorize("yellow", burntime))
 	end
 
-	return fmt(FMT.tooltip, item, ESC(tooltip))
+	return fmt("tooltip[:%s;%s]", item, ESC(tooltip))
 end
 
 local function get_recipe_fs(data, iY)
@@ -464,7 +464,7 @@ local function get_recipe_fs(data, iY)
 
 		local label = groups and "\nG" or ""
 
-		fs[#fs + 1] = fmt(FMT.item_image_button,
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;:%s;]",
 			X,
 			Y + (sfinv_only and 0.7 or 0.2),
 			btn_size,
@@ -529,7 +529,7 @@ local function get_recipe_fs(data, iY)
 		local output_name = match(recipe.output, "%S+")
 		local burntime = fuel_cache[output_name]
 
-		fs[#fs + 1] = fmt(FMT.item_image_button,
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;:%s;]",
 			output_X,
 			sfinv_only and 6.7 or iY + 2.2,
 			1.1,
@@ -640,7 +640,7 @@ local function make_formspec(name)
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;:%s;]",
 			X - (sfinv_only and 0 or (X * 0.05)),
 			Y,
 			1.1,
@@ -699,12 +699,12 @@ local function search(data)
 	end
 
 	local filtered_list, c = {}, 0
-	local pattern = "^(.-)%+([%w_]+)=([%w_,]+)"
-	local search_filter = next(search_filters) and match(filter, pattern)
+	local extras = "^(.-)%+([%w_]+)=([%w_,]+)"
+	local search_filter = next(search_filters) and match(filter, extras)
 	local filters = {}
 
 	if search_filter then
-		for filter_name, values in gmatch(filter, sub(pattern, 6, -1)) do
+		for filter_name, values in gmatch(filter, sub(extras, 6, -1)) do
 			if search_filters[filter_name] then
 				values = split(values, ",")
 				filters[filter_name] = values
@@ -722,7 +722,7 @@ local function search(data)
 		if search_filter then
 			for filter_name, values in pairs(filters) do
 				local func = search_filters[filter_name]
-				to_add = func(item, values) and (not search_filter or
+				to_add = func(item, values) and (search_filter == "" or
 					find(search_in, search_filter, 1, true))
 			end
 		else
@@ -752,8 +752,8 @@ local function get_inv_items(player)
 	local stacks = {}
 
 	for i = 1, #item_lists do
-		local l = inv:get_list(item_lists[i])
-		stacks = table_merge(stacks, l)
+		local list = inv:get_list(item_lists[i])
+		table_merge(stacks, list)
 	end
 
 	local inv_items, c = {}, 0
@@ -871,20 +871,17 @@ local function on_receive_fields(player, fields)
 		data.pagenum = 1
 		data.iX = data.iX + (fields.size_inc and 1 or -1)
 		show_fs(player, name)
-
 	else
 		local item
 		for field in pairs(fields) do
-			if find(field, ":") then
-				item = field
+			if sub(field, 1, 1) == ":" then
+				item = sub(field, 2, -1)
 				break
 			end
 		end
 
 		if not item then
 			return
-		elseif sub(item, -4) == "_inv" then
-			item = sub(item, 1, -5)
 		end
 
 		if item ~= data.query_item then
