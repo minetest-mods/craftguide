@@ -399,7 +399,7 @@ local function get_tooltip(item, groups, cooktime, burntime)
 			S("Burning time: @1", colorize("yellow", burntime))
 	end
 
-	return fmt("tooltip[:%s;%s]", item, ESC(tooltip))
+	return fmt(FMT.tooltip, item, ESC(tooltip))
 end
 
 local function get_recipe_fs(data, iY)
@@ -464,7 +464,7 @@ local function get_recipe_fs(data, iY)
 
 		local label = groups and "\nG" or ""
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;:%s;]",
+		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X,
 			Y + (sfinv_only and 0.7 or 0.2),
 			btn_size,
@@ -529,7 +529,7 @@ local function get_recipe_fs(data, iY)
 		local output_name = match(recipe.output, "%S+")
 		local burntime = fuel_cache[output_name]
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;:%s;]",
+		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X,
 			sfinv_only and 6.7 or iY + 2.2,
 			1.1,
@@ -640,7 +640,7 @@ local function make_formspec(name)
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;:%s;]",
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
 			X - (sfinv_only and 0 or (X * 0.05)),
 			Y,
 			1.1,
@@ -874,14 +874,16 @@ local function on_receive_fields(player, fields)
 	else
 		local item
 		for field in pairs(fields) do
-			if sub(field, 1, 1) == ":" then
-				item = sub(field, 2, -1)
+			if find(field, ":") then
+				item = field
 				break
 			end
 		end
 
 		if not item then
 			return
+		elseif sub(item, -4) == "_inv" then
+			item = sub(item, 1, -5)
 		end
 
 		if item ~= data.query_item then
