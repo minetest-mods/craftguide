@@ -13,6 +13,7 @@ local fuel_cache    = {}
 local progressive_mode = M.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = M.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
+local after = M.after
 local colorize = M.colorize
 local reg_items = M.registered_items
 local get_result = M.get_craft_result
@@ -119,23 +120,31 @@ local function __func()
 	return debug.getinfo(2, "n").name
 end
 
+local function is_str(x)
+	return type(x) == "string"
+end
+
+local function is_func(x)
+	return type(x) == "function"
+end
+
 local custom_crafts, craft_types = {}, {}
 
 function craftguide.register_craft_type(name, def)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(name, func .. "'name' field missing")
-	assert(def.description, func .. "'description' field missing")
-	assert(def.icon, func .. "'icon' field missing")
+	assert(is_str(name), func .. "'name' field missing")
+	assert(is_str(def.description), func .. "'description' field missing")
+	assert(is_str(def.icon), func .. "'icon' field missing")
 
 	craft_types[name] = def
 end
 
 function craftguide.register_craft(def)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(def.type, func .. "'type' field missing")
-	assert(def.width, func .. "'width' field missing")
-	assert(def.output, func .. "'output' field missing")
-	assert(def.items, func .. "'items' field missing")
+	assert(is_str(def.type), func .. "'type' field missing")
+	assert(is_str(def.width), func .. "'width' field missing")
+	assert(is_str(def.output), func .. "'output' field missing")
+	assert(is_str(def.items), func .. "'items' field missing")
 
 	custom_crafts[#custom_crafts + 1] = def
 end
@@ -144,8 +153,8 @@ local recipe_filters = {}
 
 function craftguide.add_recipe_filter(name, f)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(name, func .. "filter name missing")
-	assert(f and type(f) == "function", func .. "filter function missing")
+	assert(is_str(name), func .. "filter name missing")
+	assert(is_func(f), func .. "filter function missing")
 
 	recipe_filters[name] = f
 end
@@ -156,8 +165,8 @@ end
 
 function craftguide.set_recipe_filter(name, f)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(name, func .. "filter name missing")
-	assert(f and type(f) == "function", func .. "filter function missing")
+	assert(is_str(name), func .. "filter name missing")
+	assert(is_func(f), func .. "filter function missing")
 
 	recipe_filters = {[name] = f}
 end
@@ -178,8 +187,8 @@ local search_filters = {}
 
 function craftguide.add_search_filter(name, f)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(name, func .. "filter name missing")
-	assert(f and type(f) == "function", func .. "filter function missing")
+	assert(is_str(name), func .. "filter name missing")
+	assert(is_func(f), func .. "filter function missing")
 
 	search_filters[name] = f
 end
@@ -196,8 +205,9 @@ local formspec_elements = {}
 
 function craftguide.add_formspec_element(name, def)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(def.element, func .. "'element' field not defined")
-	assert(def.type, func .. "'type' field not defined")
+	assert(is_str(name), func .. "formspec element name missing")
+	assert(is_str(def.element), func .. "'element' field not defined")
+	assert(is_str(def.type), func .. "'type' field not defined")
 	assert(FMT[def.type], func .. "'" .. def.type .. "' type not supported by the API")
 
 	formspec_elements[name] = {
@@ -1107,7 +1117,7 @@ if progressive_mode then
 			end
 		end
 
-		M.after(POLL_FREQ, poll_new_items)
+		after(POLL_FREQ, poll_new_items)
 	end
 
 	poll_new_items()
