@@ -758,31 +758,6 @@ local function search(data)
 	data.items = filtered_list
 end
 
-local function get_inv_items(player)
-	local inv = player:get_inventory()
-	local stacks = {}
-
-	for i = 1, #item_lists do
-		local list = inv:get_list(item_lists[i])
-		table_merge(stacks, list)
-	end
-
-	local inv_items, c = {}, 0
-
-	for i = 1, #stacks do
-		local stack = stacks[i]
-		if not stack:is_empty() then
-			local name = stack:get_name()
-			if reg_items[name] then
-				c = c + 1
-				inv_items[c] = name
-			end
-		end
-	end
-
-	return inv_items
-end
-
 local function init_data(name)
 	player_data[name] = {
 		filter  = "",
@@ -1102,6 +1077,31 @@ if progressive_mode then
 		return filtered
 	end
 
+	local function get_inv_items(player)
+		local inv = player:get_inventory()
+		local stacks = {}
+
+		for i = 1, #item_lists do
+			local list = inv:get_list(item_lists[i])
+			table_merge(stacks, list)
+		end
+
+		local inv_items, c = {}, 0
+
+		for i = 1, #stacks do
+			local stack = stacks[i]
+			if not stack:is_empty() then
+				local name = stack:get_name()
+				if reg_items[name] then
+					c = c + 1
+					inv_items[c] = name
+				end
+			end
+		end
+
+		return inv_items
+	end
+
 	-- Workaround. Need an engine call to detect when the contents
 	-- of the player inventory changed, instead.
 	local function poll_new_items()
@@ -1212,7 +1212,7 @@ M.register_chatcommand("craft", {
 
 function craftguide.show(name, item, show_usages)
 	local func = "craftguide." .. __func() .. "(): "
-	assert(name, func .. "player name missing")
+	assert(is_str(name), func .. "player name missing")
 
 	local data   = player_data[name]
 	local player = get_player_by_name(name)
