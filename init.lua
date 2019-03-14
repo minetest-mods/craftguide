@@ -898,11 +898,6 @@ M.register_on_joinplayer(function(player)
 	init_data(name)
 end)
 
-M.register_on_leaveplayer(function(player)
-	local name = player:get_player_name()
-	player_data[name] = nil
-end)
-
 if sfinv_only then
 	sfinv.register_page("craftguide:craftguide", {
 		title = S("Craft Guide"),
@@ -1151,6 +1146,11 @@ if progressive_mode then
 		end
 	end)
 end
+
+M.register_on_leaveplayer(function(player)
+	local name = player:get_player_name()
+	player_data[name] = nil
+end)
 
 M.register_chatcommand("craft", {
 	description = S("Show recipe(s) of the pointed node"),
