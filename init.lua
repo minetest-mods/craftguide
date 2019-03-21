@@ -54,7 +54,7 @@ local FMT = {
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 }
 
-local group_stereotypes = {
+craftguide.group_stereotypes = {
 	wool         = "wool:white",
 	dye          = "dye:white",
 	water_bucket = "bucket:bucket_water",
@@ -373,9 +373,11 @@ local function groups_to_item(groups)
 	if #groups == 1 then
 		local group = groups[1]
 		local def_gr = "default:" .. group
+		local stereotypes = craftguide.group_stereotypes
+		local stereotype = stereotypes and stereotypes[group]
 
-		if group_stereotypes[group] then
-			return group_stereotypes[group]
+		if stereotype then
+			return stereotype
 		elseif reg_items[def_gr] then
 			return def_gr
 		end

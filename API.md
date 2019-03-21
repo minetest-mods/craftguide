@@ -171,3 +171,12 @@ Opens the Crafting Guide with the current filter applied.
    * `player_name`: string param.
    * `item`: optional, string param. If set, this item is pre-selected. If the item does not exist or has no recipe, use the player's previous selection. By default, player's previous selection is used
    * `show_usages`: optional, boolean param. If true, show item usages.
+
+#### `craftguide.group_stereotypes`
+
+This is the table indexing the item groups by stereotypes.
+You can add a stereotype like so:
+
+```Lua
+craftguide.group_stereotypes.radioactive = "mod:item"
+```
