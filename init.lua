@@ -48,7 +48,7 @@ local FMT = {
 	label   = "label[%f,%f;%s]",
 	image   = "image[%f,%f;%f,%f;%s]",
 	button  = "button[%f,%f;%f,%f;%s;%s]",
-	tooltip = "tooltip[%s;%s]",
+	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
@@ -419,7 +419,7 @@ local function get_tooltip(item, groups, cooktime, burntime)
 			S("Burning time: @1", colorize("yellow", burntime))
 	end
 
-	return fmt(FMT.tooltip, item, ESC(tooltip))
+	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
 local function get_recipe_fs(data, iY)
