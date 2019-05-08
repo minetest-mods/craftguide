@@ -258,6 +258,7 @@ end
 
 local function groups_item_in_recipe(item, recipe)
 	local item_groups = reg_items[item].groups
+
 	for _, recipe_item in pairs(recipe.items) do
 		if sub(recipe_item, 1, 6) == "group:" then
 			local groups = extract_groups(recipe_item)
@@ -478,6 +479,7 @@ local function get_recipe_fs(data, iY)
 		end
 
 		local groups
+
 		if sub(item, 1, 6) == "group:" then
 			groups = extract_groups(item)
 			item = groups_to_item(groups)
@@ -770,10 +772,10 @@ end
 
 local function init_data(name)
 	player_data[name] = {
-		filter  = "",
-		pagenum = 1,
-		iX      = sfinv_only and 8 or DEFAULT_SIZE,
-		items   = init_items,
+		filter    = "",
+		pagenum   = 1,
+		iX        = sfinv_only and 8 or DEFAULT_SIZE,
+		items     = init_items,
 		items_raw = init_items,
 	}
 end
@@ -1168,11 +1170,12 @@ M.register_chatcommand("craft", {
 		local player = get_player_by_name(name)
 		local ppos   = player:get_pos()
 		local dir    = player:get_look_dir()
-		local eye_h  = {x = ppos.x, y = ppos.y + 1.625, z = ppos.z}
+
+		ppos.y = ppos.y + 1.625
 		local node_name
 
 		for i = 1, 10 do
-			local look_at = vec_add(eye_h, vec_mul(dir, i))
+			local look_at = vec_add(ppos, vec_mul(dir, i))
 			local node = M.get_node(look_at)
 
 			if node.name ~= "air" then
