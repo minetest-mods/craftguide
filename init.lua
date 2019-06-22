@@ -271,7 +271,7 @@ local function groups_item_in_recipe(item, recipe)
 	end
 end
 
-local function get_item_usages(item)
+local function get_usages(item)
 	local usages, c = {}, 0
 
 	for _, recipes in pairs(recipes_cache) do
@@ -329,7 +329,13 @@ local function cache_recipes(output)
 
 	if #recipes > 0 then
 		recipes_cache[output] = recipes
-		return true
+	end
+end
+
+local function cache_usages(item)
+	local usages = get_usages(item)
+	if #usages > 0 then
+		usages_cache[item] = usages
 	end
 end
 
@@ -350,7 +356,7 @@ local function get_recipes(item, data, player)
 
 	if data.show_usages then
 		recipes = apply_recipe_filters(usages_cache[item], player)
-		if #recipes == 0 then
+		if recipes and #recipes == 0 then
 			return
 		end
 	end
@@ -790,28 +796,38 @@ local function reset_data(data)
 	data.items       = data.items_raw
 end
 
-local function cache_usages()
-	for i = 1, #init_items do
-		local item = init_items[i]
-		usages_cache[item] = get_item_usages(item)
-	end
+local function check_item(def)
+	return not (def.groups.not_in_craft_guide == 1 or
+		def.groups.not_in_creative_inventory == 1) and
+		def.description and def.description ~= ""
 end
 
 local function get_init_items()
-	local c = 0
+	local items, c = {}, 0
+
 	for name, def in pairs(reg_items) do
-		local is_fuel = cache_fuel(name)
-		if not (def.groups.not_in_craft_guide == 1 or
-				def.groups.not_in_creative_inventory == 1) and
-				def.description and def.description ~= "" and
-				(cache_recipes(name) or is_fuel) then
+		if check_item(def) then
+			cache_fuel(name)
+			cache_recipes(name)
+
+			c = c + 1
+			items[c] = name
+		end
+	end
+
+	c = 0
+
+	for i = 1, #items do
+		local name = items[i]
+		cache_usages(name)
+
+		if recipes_cache[name] or usages_cache[name] then
 			c = c + 1
 			init_items[c] = name
 		end
 	end
 
 	sort(init_items)
-	cache_usages()
 end
 
 local function on_receive_fields(player, fields)
