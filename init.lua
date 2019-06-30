@@ -749,7 +749,7 @@ local function search(data)
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
-		local desc = lower(def.description)
+		local desc = (def and def.description) and lower(def.description) or ""
 		local search_in = item .. desc
 		local to_add
 
