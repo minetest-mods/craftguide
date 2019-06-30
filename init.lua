@@ -30,9 +30,9 @@ local maxn, sort, concat, insert, copy =
 	table.maxn, table.sort, table.concat, table.insert,
 	table.copy
 
-local fmt, find, gmatch, match, sub, split, lower =
+local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
-	string.sub, string.split, string.lower
+	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next, unpack = pairs, next, unpack
@@ -414,7 +414,11 @@ local function get_tooltip(item, groups, cooktime, burntime)
 		groupstr = concat(groupstr, ", ")
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
 	else
-		tooltip = reg_items[item].description
+		local def = reg_items[item]
+
+		tooltip = def and def.description or
+			(def and match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
+			 S("Unknown Item (@1)", item))
 	end
 
 	if cooktime then
@@ -734,7 +738,7 @@ local function search(data)
 	local filters = {}
 
 	if search_filter then
-		for filter_name, values in gmatch(filter, sub(extras, 6, -1)) do
+		for filter_name, values in gmatch(filter, sub(extras, 6)) do
 			if search_filters[filter_name] then
 				values = split(values, ",")
 				filters[filter_name] = values
