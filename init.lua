@@ -237,7 +237,7 @@ end
 local function item_has_groups(item_groups, groups)
 	for i = 1, #groups do
 		local group = groups[i]
-		if not item_groups[group] then
+		if (item_groups[group] or 0) == 0 then
 			return
 		end
 	end
