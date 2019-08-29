@@ -1,6 +1,5 @@
 craftguide = {}
 
-local M = minetest
 local pdata = {}
 
 -- Caches
@@ -10,21 +9,21 @@ local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
 
-local progressive_mode = M.settings:get_bool("craftguide_progressive_mode")
-local sfinv_only = M.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
+local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
+local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
-local after = M.after
-local colorize = M.colorize
-local reg_items = M.registered_items
-local get_result = M.get_craft_result
-local show_formspec = M.show_formspec
-local get_players = M.get_connected_players
-local get_all_recipes = M.get_all_craft_recipes
-local get_player_by_name = M.get_player_by_name
-local serialize, deserialize = M.serialize, M.deserialize
+local after = core.after
+local colorize = core.colorize
+local reg_items = core.registered_items
+local get_result = core.get_craft_result
+local show_formspec = core.show_formspec
+local get_players = core.get_connected_players
+local get_all_recipes = core.get_all_craft_recipes
+local get_player_by_name = core.get_player_by_name
+local serialize, deserialize = core.serialize, core.deserialize
 
-local ESC = M.formspec_escape
-local S = M.get_translator("craftguide")
+local ESC = core.formspec_escape
+local S = core.get_translator("craftguide")
 
 local maxn, sort, concat, insert, copy =
 	table.maxn, table.sort, table.concat, table.insert,
@@ -644,32 +643,21 @@ local function make_formspec(name)
 			background[1,1;1,1;craftguide_bg.png;true]
 		]]
 
-		fs[#fs + 1] = fmt([[ tooltip[size_inc;%s]
-				     tooltip[size_dec;%s] ]],
-			ESC(S("Increase window size")),
-			ESC(S("Decrease window size")))
-
 		fs[#fs + 1] = fmt([[
 			image_button[%f,0.12;0.8,0.8;craftguide_zoomin_icon.png;size_inc;]
-			image_button[%f,0.12;0.8,0.8;craftguide_zoomout_icon.png;size_dec;] ]],
+			image_button[%f,0.12;0.8,0.8;craftguide_zoomout_icon.png;size_dec;]
+			]],
 			data.iX * 0.47,
 			data.iX * 0.47 + 0.6)
 	end
+
+	fs[#fs + 1] = fmt("field[0.3,0.33;2.5,1;filter;;%s]", ESC(data.filter))
 
 	fs[#fs + 1] = [[
 		image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
 		image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
 		field_close_on_enter[filter;false]
 	]]
-
-	fs[#fs + 1] = fmt([[ tooltip[search;%s]
-			     tooltip[clear;%s]
-			     tooltip[prev;%s]
-			     tooltip[next;%s] ]],
-		ESC(S("Search")),
-		ESC(S("Reset")),
-		ESC(S("Previous page")),
-		ESC(S("Next page")))
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
 		sfinv_only and 6.3 or data.iX - 2.2,
@@ -679,11 +667,10 @@ local function make_formspec(name)
 
 	fs[#fs + 1] = fmt([[
 		image_button[%f,0.12;0.8,0.8;craftguide_prev_icon.png;prev;]
-		image_button[%f,0.12;0.8,0.8;craftguide_next_icon.png;next;] ]],
+		image_button[%f,0.12;0.8,0.8;craftguide_next_icon.png;next;]
+		]],
 		sfinv_only and 5.5 or data.iX - 3.1,
 		sfinv_only and 7.3 or (data.iX - 1.2) - (data.iX >= 11 and 0.08 or 0))
-
-	fs[#fs + 1] = fmt("field[0.3,0.32;2.5,1;filter;;%s]", ESC(data.filter))
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
@@ -765,13 +752,12 @@ local function search(data)
 		return
 	end
 
-	local filtered_list, c = {}, 0
-	local extras = "^(.-)%+([%w_]+)=([%w_,]+)"
-	local search_filter = next(search_filters) and match(filter, extras)
+	local opt = "^(.-)%+([%w_]+)=([%w_,]+)"
+	local search_filter = next(search_filters) and match(filter, opt)
 	local filters = {}
 
 	if search_filter then
-		for filter_name, values in gmatch(filter, sub(extras, 6)) do
+		for filter_name, values in gmatch(filter, sub(opt, 6)) do
 			if search_filters[filter_name] then
 				values = split(values, ",")
 				filters[filter_name] = values
@@ -779,11 +765,13 @@ local function search(data)
 		end
 	end
 
+	local filtered_list, c = {}, 0
+
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
 		local desc = (def and def.description) and lower(def.description) or ""
-		local search_in = item .. desc
+		local search_in = item .. " " .. desc
 		local to_add
 
 		if search_filter then
@@ -957,9 +945,9 @@ local function on_receive_fields(player, fields)
 	end
 end
 
-M.register_on_mods_loaded(get_init_items)
+core.register_on_mods_loaded(get_init_items)
 
-M.register_on_joinplayer(function(player)
+core.register_on_joinplayer(function(player)
 	local name = player:get_player_name()
 	init_data(name)
 end)
@@ -990,7 +978,7 @@ if sfinv_only then
 		end,
 	})
 else
-	M.register_on_player_receive_fields(function(player, formname, fields)
+	core.register_on_player_receive_fields(function(player, formname, fields)
 		if formname == "craftguide" then
 			on_receive_fields(player, fields)
 		end
@@ -1008,7 +996,7 @@ else
 		show_formspec(name, "craftguide", make_formspec(name))
 	end
 
-	M.register_craftitem("craftguide:book", {
+	core.register_craftitem("craftguide:book", {
 		description = S("Crafting Guide"),
 		inventory_image = "craftguide_book.png",
 		wield_image = "craftguide_book.png",
@@ -1019,7 +1007,7 @@ else
 		end
 	})
 
-	M.register_node("craftguide:sign", {
+	core.register_node("craftguide:sign", {
 		description = S("Crafting Guide Sign"),
 		drawtype = "nodebox",
 		tiles = {"craftguide_sign.png"},
@@ -1037,7 +1025,7 @@ else
 		},
 
 		on_construct = function(pos)
-			local meta = M.get_meta(pos)
+			local meta = core.get_meta(pos)
 			meta:set_string("infotext", "Crafting Guide Sign")
 		end,
 
@@ -1046,27 +1034,27 @@ else
 		end
 	})
 
-	M.register_craft({
+	core.register_craft({
 		output = "craftguide:book",
 		recipe = {
 			{"default:book"}
 		}
 	})
 
-	M.register_craft({
+	core.register_craft({
 		type = "fuel",
 		recipe = "craftguide:book",
 		burntime = 3
 	})
 
-	M.register_craft({
+	core.register_craft({
 		output = "craftguide:sign",
 		recipe = {
 			{"default:sign_wall_wood"}
 		}
 	})
 
-	M.register_craft({
+	core.register_craft({
 		type = "fuel",
 		recipe = "craftguide:sign",
 		burntime = 10
@@ -1189,7 +1177,7 @@ if progressive_mode then
 
 	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
 
-	M.register_on_joinplayer(function(player)
+	core.register_on_joinplayer(function(player)
 		PLAYERS = get_players()
 
 		local meta = player:get_meta()
@@ -1207,12 +1195,12 @@ if progressive_mode then
 		meta:set_string("inv_items", serialize(data.inv_items))
 	end
 
-	M.register_on_leaveplayer(function(player)
+	core.register_on_leaveplayer(function(player)
 		PLAYERS = get_players()
 		save_meta(player)
 	end)
 
-	M.register_on_shutdown(function()
+	core.register_on_shutdown(function()
 		for i = 1, #PLAYERS do
 			local player = PLAYERS[i]
 			save_meta(player)
@@ -1220,12 +1208,12 @@ if progressive_mode then
 	end)
 end
 
-M.register_on_leaveplayer(function(player)
+core.register_on_leaveplayer(function(player)
 	local name = player:get_player_name()
 	pdata[name] = nil
 end)
 
-M.register_chatcommand("craft", {
+core.register_chatcommand("craft", {
 	description = S("Show recipe(s) of the pointed node"),
 	func = function(name)
 		local player = get_player_by_name(name)
@@ -1237,7 +1225,7 @@ M.register_chatcommand("craft", {
 
 		for i = 1, 10 do
 			local look_at = vec_add(ppos, vec_mul(dir, i))
-			local node = M.get_node(look_at)
+			local node = core.get_node(look_at)
 
 			if node.name ~= "air" then
 				node_name = node.name
