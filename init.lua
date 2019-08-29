@@ -149,11 +149,46 @@ function craftguide.register_craft_type(name, def)
 end
 
 function craftguide.register_craft(def)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(def.type), func .. "'type' field missing")
-	assert(is_num(def.width), func .. "'width' field missing")
-	assert(is_str(def.output), func .. "'output' field missing")
-	assert(is_table(def.items), func .. "'items' field missing")
+	if def.result then
+		def.output = def.result -- Backward compatibility
+	end
+
+	if not is_str(def.output) then
+		def.output = ""
+	end
+
+	if not is_table(def.items) then
+		def.items = {}
+	end
+
+	if not is_num(def.width) then
+		def.width = 0
+	end
+
+	if def.grid then
+		if not is_table(def.grid) then
+			def.grid = {}
+		end
+
+		local cp = copy(def.grid)
+		sort(cp, function(a, b)
+			return #a > #b
+		end)
+
+		def.width = #cp[1]
+
+		for i = 1, #def.grid do
+			while #def.grid[i] < def.width do
+				def.grid[i] = def.grid[i] .. " "
+			end
+		end
+
+		local c = 1
+		for symbol in gmatch(concat(def.grid), ".") do
+			def.items[c] = def.key[symbol]
+			c = c + 1
+		end
+	end
 
 	custom_crafts[#custom_crafts + 1] = def
 end
@@ -318,13 +353,11 @@ end
 
 local function cache_recipes(output)
 	local recipes = get_all_recipes(output) or {}
-	local c = 0
 
 	for i = 1, #custom_crafts do
 		local custom_craft = custom_crafts[i]
 		if match(custom_craft.output, "%S*") == output then
-			c = c + 1
-			recipes[c] = custom_craft
+			recipes[#recipes + 1] = custom_craft
 		end
 	end
 
@@ -481,7 +514,7 @@ local function get_recipe_fs(data, iY)
 		if width > 3 or rows > 3 then
 			btn_size = width > 3 and 3 / width or 3 / rows
 			s_btn_size = btn_size
-			X = btn_size * (i % width) + xoffset - 2.65
+			X = btn_size * ((i - 1) % width) + xoffset - 2.65
 			Y = btn_size * floor((i - 1) / width) + (iY + 3) - min(2, rows)
 		end
 
@@ -491,7 +524,7 @@ local function get_recipe_fs(data, iY)
 
 		local groups
 
-		if sub(item, 1, 6) == "group:" then
+		if sub(item, 1,6) == "group:" then
 			groups = extract_groups(item)
 			item = groups_to_item(groups)
 		end
@@ -525,7 +558,7 @@ local function get_recipe_fs(data, iY)
 		end
 
 		fs[#fs + 1] = fmt(FMT.image,
-			rightest + 1.2,
+			min(3.9, rightest) + 1.2,
 			sfinv_only and 6.2 or iY + 1.7,
 			0.5,
 			0.5,
@@ -1269,26 +1302,3 @@ function craftguide.show(name, item, show_usages)
 
 	show_fs(player, name)
 end
-
---[[ Custom recipes (>3x3) test code
-
-M.register_craftitem(":secretstuff:custom_recipe_test", {
-	description = "Custom Recipe Test",
-})
-
-local cr = {}
-for x = 1, 6 do
-	cr[x] = {}
-	for i = 1, 10 - x do
-		cr[x][i] = {}
-		for j = 1, 10 - x do
-			cr[x][i][j] = "group:wood"
-		end
-	end
-
-	M.register_craft({
-		output = "secretstuff:custom_recipe_test",
-		recipe = cr[x]
-	})
-end
-]]

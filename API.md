@@ -11,14 +11,32 @@ craftguide.register_craft_type("digging", {
 })
 ```
 
-#### Registering a custom crafting recipe (example)
+#### Registering a custom crafting recipe (examples)
 
 ```Lua
 craftguide.register_craft({
 	type   = "digging",
 	width  = 1,
-	output = "default:cobble 2",
+	result = "default:cobble 2",
 	items  = {"default:stone"},
+})
+```
+
+Recipes can also be registered in a Minecraft-like way:
+
+```Lua
+craftguide.register_craft({
+	grid = {
+		"X  #",
+		" ## ",
+		"X#X#",
+		"X  X",
+	},
+	key = {
+		['#'] = "default:wood",
+		['X'] = "default:glass",
+	},
+	result = "default:mese 3",
 })
 ```
 
