@@ -1223,15 +1223,15 @@ if progressive_mode then
 		data.hud = {
 			bg = player:hud_add({
 				hud_elem_type = "image",
-				position      = {x = 0.8,  y = 1},
+				position      = {x = 0.78, y = 1},
 				alignment     = {x = 1,    y = 1},
-				scale         = {x = 320,  y = 112},
+				scale         = {x = 370,  y = 112},
 				text          = "craftguide_bg.png",
 			}),
 
 			book = player:hud_add({
 				hud_elem_type = "image",
-				position      = {x = 0.81, y = 1.02},
+				position      = {x = 0.79, y = 1.02},
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 4,    y = 4},
 				text          = "craftguide_book.png",
@@ -1239,7 +1239,7 @@ if progressive_mode then
 
 			text = player:hud_add({
 				hud_elem_type = "text",
-				position      = {x = 0.85, y = 1.04},
+				position      = {x = 0.84, y = 1.04},
 				alignment     = {x = 1,    y = 1},
 				number        = 0xFFFFFF,
 				text          = "",
@@ -1247,13 +1247,20 @@ if progressive_mode then
 		}
 	end)
 
+	local to_save = {
+		"inv_items",
+		"known_recipes",
+	}
+
 	local function save_meta(player)
 		local meta = player:get_meta()
 		local name = player:get_player_name()
 		local data = pdata[name]
 
-		meta:set_string("inv_items", serialize(data.inv_items))
-		meta:set_string("known_recipes", serialize(data.known_recipes))
+		for i = 1, #to_save do
+			local meta_name = to_save[i]
+			meta:set_string(meta_name, serialize(data[meta_name]))
+		end
 	end
 
 	core.register_on_leaveplayer(function(player)
