@@ -1,6 +1,7 @@
 craftguide = {}
 
 local pdata = {}
+local core = core
 
 -- Caches
 local init_items    = {}
@@ -15,12 +16,19 @@ local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G
 local after = core.after
 local colorize = core.colorize
 local reg_items = core.registered_items
-local get_result = core.get_craft_result
-local get_players = core.get_connected_players
 local show_formspec = core.show_formspec
+local globalstep = core.register_globalstep
+local on_shutdown = core.register_on_shutdown
+local get_craft_result = core.get_craft_result
+local get_players = core.get_connected_players
+local on_joinplayer = core.register_on_joinplayer
+local register_command = core.register_chatcommand
 local get_all_recipes = core.get_all_craft_recipes
 local get_player_by_name = core.get_player_by_name
+local on_mods_loaded = core.register_on_mods_loaded
+local on_leaveplayer = core.register_on_leaveplayer
 local serialize, deserialize = core.serialize, core.deserialize
+local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
 local S = core.get_translator("craftguide")
@@ -63,56 +71,12 @@ craftguide.group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
-local item_lists = {
-	"main",
-	"craft",
-	"craftpreview",
-}
-
-local function table_merge(t, t2)
-	t, t2 = t or {}, t2 or {}
-	local c = #t
-
-	for i = 1, #t2 do
-		c = c + 1
-		t[c] = t2[i]
-	end
-
-	return t
-end
-
 local function table_replace(t, val, new)
 	for k, v in pairs(t) do
 		if v == val then
 			t[k] = new
 		end
 	end
-end
-
-local function table_diff(t, t2)
-	local hash = {}
-
-	for i = 1, #t do
-		local v = t[i]
-		hash[v] = true
-	end
-
-	for i = 1, #t2 do
-		local v = t2[i]
-		hash[v] = nil
-	end
-
-	local diff, c = {}, 0
-
-	for i = 1, #t do
-		local v = t[i]
-		if hash[v] then
-			c = c + 1
-			diff[c] = v
-		end
-	end
-
-	return diff
 end
 
 local function __func()
@@ -270,7 +234,7 @@ local function groups_item_in_recipe(item, recipe)
 	local item_groups = reg_items[item].groups
 
 	for _, recipe_item in pairs(recipe.items) do
-		if sub(recipe_item, 1, 6) == "group:" then
+		if sub(recipe_item, 1,6) == "group:" then
 			local groups = extract_groups(recipe_item)
 			if item_has_groups(item_groups, groups) then
 				local usage = copy(recipe)
@@ -384,7 +348,7 @@ local function get_recipes(item, data, player)
 end
 
 local function get_burntime(item)
-	return get_result({method = "fuel", width = 1, items = {item}}).time
+	return get_craft_result({method = "fuel", width = 1, items = {item}}).time
 end
 
 local function cache_fuel(item)
@@ -831,7 +795,7 @@ local function get_init_items()
 	sort(init_items)
 end
 
-local function on_receive_fields(player, fields)
+local function _fields(player, fields)
 	local name = player:get_player_name()
 	local data = pdata[name]
 
@@ -914,9 +878,9 @@ local function on_receive_fields(player, fields)
 	end
 end
 
-core.register_on_mods_loaded(get_init_items)
+on_mods_loaded(get_init_items)
 
-core.register_on_joinplayer(function(player)
+on_joinplayer(function(player)
 	local name = player:get_player_name()
 	init_data(name)
 end)
@@ -943,13 +907,13 @@ if sfinv_only then
 		end,
 
 		on_player_receive_fields = function(self, player, context, fields)
-			on_receive_fields(player, fields)
+			_fields(player, fields)
 		end,
 	})
 else
-	core.register_on_player_receive_fields(function(player, formname, fields)
+	on_receive_fields(function(player, formname, fields)
 		if formname == "craftguide" then
-			on_receive_fields(player, fields)
+			_fields(player, fields)
 		end
 	end)
 
@@ -1048,7 +1012,7 @@ if progressive_mode then
 	local function item_in_inv(item, inv_items)
 		local inv_items_size = #inv_items
 
-		if sub(item, 1, 6) == "group:" then
+		if sub(item, 1,6) == "group:" then
 			local groups = extract_groups(item)
 			for i = 1, inv_items_size do
 				local inv_item = reg_items[inv_items[i]]
@@ -1100,6 +1064,50 @@ if progressive_mode then
 		end
 
 		return filtered
+	end
+
+	local item_lists = {
+		"main",
+		"craft",
+		"craftpreview",
+	}
+
+	local function table_merge(t, t2)
+		t, t2 = t or {}, t2 or {}
+		local c = #t
+
+		for i = 1, #t2 do
+			c = c + 1
+			t[c] = t2[i]
+		end
+
+		return t
+	end
+
+	local function table_diff(t, t2)
+		local hash = {}
+
+		for i = 1, #t do
+			local v = t[i]
+			hash[v] = true
+		end
+
+		for i = 1, #t2 do
+			local v = t2[i]
+			hash[v] = nil
+		end
+
+		local diff, c = {}, 0
+
+		for i = 1, #t do
+			local v = t[i]
+			if hash[v] then
+				c = c + 1
+				diff[c] = v
+			end
+		end
+
+		return diff
 	end
 
 	local function get_inv_items(player)
@@ -1196,7 +1204,7 @@ if progressive_mode then
 
 	poll_new_items()
 
-	minetest.register_globalstep(function(dtime)
+	globalstep(function(dtime)
 		for i = 1, #PLAYERS do
 			local player = PLAYERS[i]
 			local name   = player:get_player_name()
@@ -1210,7 +1218,7 @@ if progressive_mode then
 
 	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
 
-	core.register_on_joinplayer(function(player)
+	on_joinplayer(function(player)
 		PLAYERS = get_players()
 
 		local meta = player:get_meta()
@@ -1263,12 +1271,12 @@ if progressive_mode then
 		end
 	end
 
-	core.register_on_leaveplayer(function(player)
+	on_leaveplayer(function(player)
 		PLAYERS = get_players()
 		save_meta(player)
 	end)
 
-	core.register_on_shutdown(function()
+	on_shutdown(function()
 		for i = 1, #PLAYERS do
 			local player = PLAYERS[i]
 			save_meta(player)
@@ -1276,12 +1284,12 @@ if progressive_mode then
 	end)
 end
 
-core.register_on_leaveplayer(function(player)
+on_leaveplayer(function(player)
 	local name = player:get_player_name()
 	pdata[name] = nil
 end)
 
-core.register_chatcommand("craft", {
+register_command("craft", {
 	description = S("Show recipe(s) of the pointed node"),
 	func = function(name)
 		local player = get_player_by_name(name)
