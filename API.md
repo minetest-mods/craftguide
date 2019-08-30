@@ -137,49 +137,6 @@ Returns a map of search filters, indexed by name.
 
 ---
 
-### Custom formspec elements
-
-#### `craftguide.add_formspec_element(name, def)`
-
-Adds a formspec element to the current formspec.
-Supported types: `box`, `label`, `image`, `button`, `tooltip`, `item_image`, `image_button`, `item_image_button`
-
-Example:
-
-```lua
-craftguide.add_formspec_element("export", {
-	type = "button",
-	element = function(data)
-		-- Should return a table of parameters according to the formspec element type.
-		-- Note: for all buttons, the 'name' parameter *must not* be specified!
-		if data.recipes then
-			return {
-				data.iX - 3.7,   -- X
-				sfinv_only and 7.9 or 8, -- Y
-				1.6,             -- W
-				1,               -- H
-				ESC(S("Export")) -- label
-			}
-		end
-	end,
-	-- Optional.
-	action = function(player, data)
-		-- When the button is pressed.
-		print("Exported!")
-	end
-})
-```
-
-#### `craftguide.remove_formspec_element(name)`
-
-Removes the formspec element with the given name.
-
-#### `craftguide.get_formspec_elements()`
-
-Returns a map of formspec elements, indexed by name.
-
----
-
 ### Miscellaneous
 
 #### `craftguide.show(player_name, item, show_usages)`

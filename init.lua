@@ -16,8 +16,8 @@ local after = core.after
 local colorize = core.colorize
 local reg_items = core.registered_items
 local get_result = core.get_craft_result
-local show_formspec = core.show_formspec
 local get_players = core.get_connected_players
+local show_formspec = core.show_formspec
 local get_all_recipes = core.get_all_craft_recipes
 local get_player_by_name = core.get_player_by_name
 local serialize, deserialize = core.serialize, core.deserialize
@@ -25,16 +25,15 @@ local serialize, deserialize = core.serialize, core.deserialize
 local ESC = core.formspec_escape
 local S = core.get_translator("craftguide")
 
-local maxn, sort, concat, insert, copy =
-	table.maxn, table.sort, table.concat, table.insert,
-	table.copy
+local maxn, sort, concat, copy =
+	table.maxn, table.sort, table.concat, table.copy
 
 local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next, unpack = pairs, next, unpack
+local pairs, next = pairs, next
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local DEFAULT_SIZE = 10
@@ -44,10 +43,10 @@ DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 local GRID_LIMIT = 5
 
 local FMT = {
-	box     = "box[%f,%f;%f,%f;%s]",
-	label   = "label[%f,%f;%s]",
-	image   = "image[%f,%f;%f,%f;%s]",
-	button  = "button[%f,%f;%f,%f;%s;%s]",
+	box = "box[%f,%f;%f,%f;%s]",
+	label = "label[%f,%f;%s]",
+	image = "image[%f,%f;%f,%f;%s]",
+	button = "button[%f,%f;%f,%f;%s;%s]",
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
@@ -244,30 +243,6 @@ function craftguide.get_search_filters()
 	return search_filters
 end
 
-local formspec_elements = {}
-
-function craftguide.add_formspec_element(name, def)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(name), func .. "formspec element name missing")
-	assert(is_str(def.element), func .. "'element' field not defined")
-	assert(is_str(def.type), func .. "'type' field not defined")
-	assert(FMT[def.type], func .. "'" .. def.type .. "' type not supported by the API")
-
-	formspec_elements[name] = {
-		type    = def.type,
-		element = def.element,
-		action  = def.action,
-	}
-end
-
-function craftguide.remove_formspec_element(name)
-	formspec_elements[name] = nil
-end
-
-function craftguide.get_formspec_elements()
-	return formspec_elements
-end
-
 local function item_has_groups(item_groups, groups)
 	for i = 1, #groups do
 		local group = groups[i]
@@ -332,22 +307,33 @@ local function get_usages(item)
 	return usages
 end
 
-local function get_filtered_items(player)
+local function get_filtered_items(player, data)
 	local items, c = {}, 0
+	local known = 0
 
 	for i = 1, #init_items do
 		local item = init_items[i]
 		local recipes = recipes_cache[item]
 		local usages = usages_cache[item]
 
-		if recipes and #apply_recipe_filters(recipes, player) > 0 or
-		   usages and #apply_recipe_filters(usages, player) > 0 then
-			c = c + 1
-			items[c] = item
+		recipes = #apply_recipe_filters(recipes or {}, player)
+		usages  = #apply_recipe_filters(usages or {}, player)
+
+		if recipes > 0 or usages > 0 then
+			if not data then
+				c = c + 1
+				items[c] = item
+			else
+				known = known + recipes + usages
+			end
 		end
 	end
 
-	return items
+	if data then
+		data.known_recipes = known
+	else
+		return items
+	end
 end
 
 local function cache_recipes(output)
@@ -707,17 +693,6 @@ local function make_formspec(name)
 		fs[#fs + 1] = get_recipe_fs(data, iY)
 	end
 
-	for elem_name, def in pairs(formspec_elements) do
-		local element = def.element(data)
-		if element then
-			if find(def.type, "button") then
-				insert(element, #element, elem_name)
-			end
-
-			fs[#fs + 1] = fmt(FMT[def.type], unpack(element))
-		end
-	end
-
 	return concat(fs)
 end
 
@@ -859,12 +834,6 @@ end
 local function on_receive_fields(player, fields)
 	local name = player:get_player_name()
 	local data = pdata[name]
-
-	for elem_name, def in pairs(formspec_elements) do
-		if fields[elem_name] and def.action then
-			return def.action(player, data)
-		end
-	end
 
 	if fields.clear then
 		reset_data(data)
@@ -1110,6 +1079,10 @@ if progressive_mode then
 	end
 
 	local function progressive_filter(recipes, player)
+		if not recipes then
+			return {}
+		end
+
 		local name = player:get_player_name()
 		local data = pdata[name]
 
@@ -1154,8 +1127,48 @@ if progressive_mode then
 		return inv_items
 	end
 
+	local function show_hud_success(player, data, dtime)
+		local hud_info_bg = player:hud_get(data.hud.bg)
+
+		if hud_info_bg.position.y <= 0.9 then
+			data.show_hud = false
+			data.hud_timer = (data.hud_timer or 0) + dtime
+		end
+
+		if data.show_hud then
+			for _, def in pairs(data.hud) do
+				local hud_info = player:hud_get(def)
+
+				player:hud_change(def, "position", {
+					x = hud_info.position.x,
+					y = hud_info.position.y - (dtime / 5)
+				})
+			end
+
+			player:hud_change(data.hud.text, "text",
+				S("@1 new recipe(s) discovered!", data.discovered))
+
+		elseif data.show_hud == false then
+			if data.hud_timer > 3 then
+				for _, def in pairs(data.hud) do
+					local hud_info = player:hud_get(def)
+
+					player:hud_change(def, "position", {
+						x = hud_info.position.x,
+						y = hud_info.position.y + (dtime / 5)
+					})
+				end
+
+				if hud_info_bg.position.y >= 1 then
+					data.show_hud = nil
+					data.hud_timer = nil
+				end
+			end
+		end
+	end
+
 	-- Workaround. Need an engine call to detect when the contents
-	-- of the player inventory changed, instead.
+	-- of the player inventory changed, instead
 	local function poll_new_items()
 		for i = 1, #PLAYERS do
 			local player = PLAYERS[i]
@@ -1167,6 +1180,14 @@ if progressive_mode then
 
 			if #diff > 0 then
 				data.inv_items = table_merge(diff, data.inv_items)
+
+				local oldknown = data.known_recipes or 0
+				get_filtered_items(player, data)
+				data.discovered = data.known_recipes - oldknown
+
+				if data.show_hud == nil and data.discovered > 0 then
+					data.show_hud = true
+				end
 			end
 		end
 
@@ -1174,6 +1195,18 @@ if progressive_mode then
 	end
 
 	poll_new_items()
+
+	minetest.register_globalstep(function(dtime)
+		for i = 1, #PLAYERS do
+			local player = PLAYERS[i]
+			local name   = player:get_player_name()
+			local data   = pdata[name]
+
+			if data.show_hud ~= nil then
+				show_hud_success(player, data, dtime)
+			end
+		end
+	end)
 
 	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
 
@@ -1185,6 +1218,33 @@ if progressive_mode then
 		local data = pdata[name]
 
 		data.inv_items = deserialize(meta:get_string("inv_items")) or {}
+		data.known_recipes = deserialize(meta:get_string("known_recipes")) or 0
+
+		data.hud = {
+			bg = player:hud_add({
+				hud_elem_type = "image",
+				position      = {x = 0.8,  y = 1},
+				alignment     = {x = 1,    y = 1},
+				scale         = {x = 320,  y = 112},
+				text          = "craftguide_bg.png",
+			}),
+
+			book = player:hud_add({
+				hud_elem_type = "image",
+				position      = {x = 0.81, y = 1.02},
+				alignment     = {x = 1,    y = 1},
+				scale         = {x = 4,    y = 4},
+				text          = "craftguide_book.png",
+			}),
+
+			text = player:hud_add({
+				hud_elem_type = "text",
+				position      = {x = 0.85, y = 1.04},
+				alignment     = {x = 1,    y = 1},
+				number        = 0xFFFFFF,
+				text          = "",
+			}),
+		}
 	end)
 
 	local function save_meta(player)
@@ -1193,6 +1253,7 @@ if progressive_mode then
 		local data = pdata[name]
 
 		meta:set_string("inv_items", serialize(data.inv_items))
+		meta:set_string("known_recipes", serialize(data.known_recipes))
 	end
 
 	core.register_on_leaveplayer(function(player)
