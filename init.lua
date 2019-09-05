@@ -210,9 +210,7 @@ end
 local function item_has_groups(item_groups, groups)
 	for i = 1, #groups do
 		local group = groups[i]
-		if (item_groups[group] or 0) == 0 then
-			return
-		end
+		if (item_groups[group] or 0) == 0 then return end
 	end
 
 	return true
@@ -339,9 +337,7 @@ local function get_recipes(item, data, player)
 
 	if data.show_usages then
 		recipes = apply_recipe_filters(usages_cache[item], player)
-		if recipes and #recipes == 0 then
-			return
-		end
+		if recipes and #recipes == 0 then return end
 	end
 
 	return recipes
@@ -645,9 +641,7 @@ local function make_formspec(name)
 	local first_item = (data.pagenum - 1) * ipp
 	for i = first_item, first_item + ipp - 1 do
 		local item = data.items[i + 1]
-		if not item then
-			break
-		end
+		if not item then break end
 
 		local X = i % data.iX
 		local Y = (i % ipp - X) / data.iX + 1
@@ -806,41 +800,35 @@ end
 local function _fields(player, fields)
 	local name = player:get_player_name()
 	local data = pdata[name]
+	local _f   = fields
 
-	if fields.clear then
+	if _f.clear then
 		reset_data(data)
 		show_fs(player, name)
 		return true
 
-	elseif fields.alternate then
-		if #data.recipes == 1 then
-			return
-		end
-
+	elseif _f.alternate then
+		if #data.recipes == 1 then return end
 		local num_next = data.rnum + 1
 		data.rnum = data.recipes[num_next] and num_next or 1
+
 		show_fs(player, name)
 		return true
 
-	elseif (fields.key_enter_field == "filter" or fields.search) and
-			fields.filter ~= "" then
-		local fltr = lower(fields.filter)
-		if data.filter == fltr then
-			return
-		end
+	elseif (_f.key_enter_field == "filter" or _f.search) and _f.filter ~= "" then
+		local fltr = lower(_f.filter)
+		if data.filter == fltr then return end
 
 		data.filter = fltr
 		data.pagenum = 1
 		search(data)
+
 		show_fs(player, name)
 		return true
 
-	elseif fields.prev or fields.next then
-		if data.pagemax == 1 then
-			return
-		end
-
-		data.pagenum = data.pagenum - (fields.prev and 1 or -1)
+	elseif _f.prev or _f.next then
+		if data.pagemax == 1 then return end
+		data.pagenum = data.pagenum - (_f.prev and 1 or -1)
 
 		if data.pagenum > data.pagemax then
 			data.pagenum = 1
@@ -851,15 +839,15 @@ local function _fields(player, fields)
 		show_fs(player, name)
 		return true
 
-	elseif (fields.size_inc and data.iX < MAX_LIMIT) or
-			(fields.size_dec and data.iX > MIN_LIMIT) then
+	elseif (_f.size_inc and data.iX < MAX_LIMIT) or
+			(_f.size_dec and data.iX > MIN_LIMIT) then
 		data.pagenum = 1
-		data.iX = data.iX + (fields.size_inc and 1 or -1)
+		data.iX = data.iX + (_f.size_inc and 1 or -1)
 		show_fs(player, name)
 		return true
 	else
 		local item
-		for field in pairs(fields) do
+		for field in pairs(_f) do
 			if find(field, ":") then
 				item = field
 				break
@@ -869,7 +857,7 @@ local function _fields(player, fields)
 		if not item then
 			return
 		elseif sub(item, -4) == "_inv" then
-			item = sub(item, 1, -5)
+			item = sub(item, 1,-5)
 		end
 
 		if item ~= data.query_item then
@@ -879,9 +867,7 @@ local function _fields(player, fields)
 		end
 
 		local recipes = get_recipes(item, data, player)
-		if not recipes then
-			return
-		end
+		if not recipes then return end
 
 		data.query_item = item
 		data.recipes    = recipes
@@ -1048,9 +1034,7 @@ if progressive_mode then
 
 	local function recipe_in_inv(recipe, inv_items)
 		for _, item in pairs(recipe.items) do
-			if not item_in_inv(item, inv_items) then
-				return
-			end
+			if not item_in_inv(item, inv_items) then return end
 		end
 
 		return true
