@@ -48,7 +48,7 @@ local DEFAULT_SIZE = 10
 local MIN_LIMIT, MAX_LIMIT = 10, 12
 DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
 
-local GRID_LIMIT = 5
+local GRID_LIMIT = 6
 
 local FMT = {
 	box = "box[%f,%f;%f,%f;%s]",
@@ -455,16 +455,24 @@ local function get_recipe_fs(data, iY)
 		return concat(fs)
 	end
 
-	for i, item in pairs(recipe.items) do
+	for i = 1, width * rows do
+		local item = recipe.items[i] or ""
 		local X = ceil((i - 1) % width + xoffset - width) -
 			(sfinv_only and 0 or 0.2)
 		local Y = ceil(i / width + (iY + 2) - min(2, rows))
 
 		if width > 3 or rows > 3 then
-			btn_size = width > 3 and 3 / width or 3 / rows
+			local xof = 1 - 4 / width
+			local yof = 1 - 4 / rows
+			local x_y = width > rows and xof or yof
+
+			btn_size = width > rows and
+				(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
 			s_btn_size = btn_size
-			X = btn_size * ((i - 1) % width) + xoffset - 2.65
-			Y = btn_size * floor((i - 1) / width) + (iY + 3) - min(2, rows)
+
+			X = (btn_size * ((i - 1) % width) + xoffset - 2.49) * (0.83 - (x_y / 5))
+			Y = (btn_size * floor((i - 1) / width) + (iY + (1.98 + (x_y * 1.2)))) *
+				(0.86 - (x_y / 5))
 		end
 
 		if X > rightest then
@@ -802,6 +810,7 @@ local function _fields(player, fields)
 	if fields.clear then
 		reset_data(data)
 		show_fs(player, name)
+		return true
 
 	elseif fields.alternate then
 		if #data.recipes == 1 then
@@ -811,6 +820,7 @@ local function _fields(player, fields)
 		local num_next = data.rnum + 1
 		data.rnum = data.recipes[num_next] and num_next or 1
 		show_fs(player, name)
+		return true
 
 	elseif (fields.key_enter_field == "filter" or fields.search) and
 			fields.filter ~= "" then
@@ -823,6 +833,7 @@ local function _fields(player, fields)
 		data.pagenum = 1
 		search(data)
 		show_fs(player, name)
+		return true
 
 	elseif fields.prev or fields.next then
 		if data.pagemax == 1 then
@@ -838,12 +849,14 @@ local function _fields(player, fields)
 		end
 
 		show_fs(player, name)
+		return true
 
 	elseif (fields.size_inc and data.iX < MAX_LIMIT) or
 			(fields.size_dec and data.iX > MIN_LIMIT) then
 		data.pagenum = 1
 		data.iX = data.iX + (fields.size_inc and 1 or -1)
 		show_fs(player, name)
+		return true
 	else
 		local item
 		for field in pairs(fields) do
@@ -875,6 +888,7 @@ local function _fields(player, fields)
 		data.rnum       = 1
 
 		show_fs(player, name)
+		return true
 	end
 end
 
