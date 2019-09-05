@@ -44,11 +44,10 @@ local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next = pairs, next
 local vec_add, vec_mul = vector.add, vector.multiply
 
-local DEFAULT_SIZE = 10
-local MIN_LIMIT, MAX_LIMIT = 10, 12
-DEFAULT_SIZE = min(MAX_LIMIT, max(MIN_LIMIT, DEFAULT_SIZE))
-
-local GRID_LIMIT = 6
+local ROWS  = sfinv_only and 9 or 11
+local LINES = 5
+local IPP   = ROWS * LINES
+local GRID_LIMIT = 8
 
 local FMT = {
 	box = "box[%f,%f;%f,%f;%s]",
@@ -412,11 +411,11 @@ local function get_tooltip(item, groups, cooktime, burntime)
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
-local function get_recipe_fs(data, iY)
+local function get_recipe_fs(data)
 	local fs = {}
 	local recipe = data.recipes[data.rnum]
 	local width = recipe.width
-	local xoffset = data.iX / 2.15
+	local xoffset = sfinv_only and 4 or 4.92
 	local cooktime, shapeless
 
 	if recipe.type == "cooking" then
@@ -435,8 +434,8 @@ local function get_recipe_fs(data, iY)
 		ESC(S("Recipe @1 of @2", data.rnum, #data.recipes))
 
 	fs[#fs + 1] = fmt(FMT.button,
-		sfinv_only and 5.8 or data.iX - 2.6,
-		sfinv_only and 7.9 or iY + 3.3,
+		sfinv_only and 5.8 or 7.4,
+		sfinv_only and 8 or 8.4,
 		2.2,
 		1,
 		"alternate",
@@ -444,8 +443,8 @@ local function get_recipe_fs(data, iY)
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
 		fs[#fs + 1] = fmt(FMT.label,
-			(data.iX / 2) - 2,
-			iY + 2.2,
+			sfinv_only and 2 or 3,
+			7,
 			ESC(S("Recipe is too big to be displayed (@1x@2)", width, rows)))
 
 		return concat(fs)
@@ -453,9 +452,9 @@ local function get_recipe_fs(data, iY)
 
 	for i = 1, width * rows do
 		local item = recipe.items[i] or ""
-		local X = ceil((i - 1) % width + xoffset - width) -
+		local X = ceil((i - 1) % width - width) + xoffset -
 			(sfinv_only and 0 or 0.2)
-		local Y = ceil(i / width + (iY + 2) - min(2, rows))
+		local Y = ceil(i / width + (sfinv_only and 6 or 7) - min(2, rows))
 
 		if width > 3 or rows > 3 then
 			local xof = 1 - 4 / width
@@ -466,9 +465,10 @@ local function get_recipe_fs(data, iY)
 				(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
 			s_btn_size = btn_size
 
-			X = (btn_size * ((i - 1) % width) + xoffset - 2.49) * (0.83 - (x_y / 5))
-			Y = (btn_size * floor((i - 1) / width) + (iY + (1.98 + (x_y * 1.2)))) *
-				(0.86 - (x_y / 5))
+			X = (btn_size * ((i - 1) % width) + xoffset -
+				(sfinv_only and 2.8 or 2.84)) * (0.83 - (x_y / 5))
+			Y = (btn_size * floor((i - 1) / width) +
+				(5 + ((sfinv_only and 0.81 or 1.97) + x_y))) * (0.86 - (x_y / 5))
 		end
 
 		if X > rightest then
@@ -486,7 +486,7 @@ local function get_recipe_fs(data, iY)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X,
-			Y + (sfinv_only and 0.7 or 0.2),
+			Y + (sfinv_only and 0.7 or 0),
 			btn_size,
 			btn_size,
 			item,
@@ -512,7 +512,7 @@ local function get_recipe_fs(data, iY)
 
 		fs[#fs + 1] = fmt(FMT.image,
 			min(3.9, rightest) + 1.2,
-			sfinv_only and 6.2 or iY + 1.7,
+			sfinv_only and 6.2 or 6.55,
 			0.5,
 			0.5,
 			icon)
@@ -522,7 +522,7 @@ local function get_recipe_fs(data, iY)
 
 		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
 			rightest + 1.2,
-			sfinv_only and 6.2 or iY + 1.7,
+			sfinv_only and 6.2 or 6.55,
 			0.5,
 			0.5,
 			ESC(tooltip))
@@ -533,7 +533,7 @@ local function get_recipe_fs(data, iY)
 
 	fs[#fs + 1] = fmt(FMT.image,
 		arrow_X,
-		sfinv_only and 6.85 or iY + 2.35,
+		sfinv_only and 6.85 or 7.2,
 		0.9,
 		0.7,
 		"craftguide_arrow.png")
@@ -541,7 +541,7 @@ local function get_recipe_fs(data, iY)
 	if recipe.type == "fuel" then
 		fs[#fs + 1] = fmt(FMT.image,
 			output_X,
-			sfinv_only and 6.68 or iY + 2.18,
+			sfinv_only and 6.68 or 7,
 			1.1,
 			1.1,
 			"craftguide_fire.png")
@@ -551,7 +551,7 @@ local function get_recipe_fs(data, iY)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X,
-			sfinv_only and 6.7 or iY + 2.2,
+			sfinv_only and 6.7 or 7,
 			1.1,
 			1.1,
 			recipe.output,
@@ -563,14 +563,14 @@ local function get_recipe_fs(data, iY)
 
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X + 1,
-				sfinv_only and 6.83 or iY + 2.33,
+				sfinv_only and 6.83 or 7.1,
 				0.6,
 				0.4,
 				"craftguide_arrow.png")
 
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X + 1.6,
-				sfinv_only and 6.68 or iY + 2.18,
+				sfinv_only and 6.68 or 6.95,
 				0.6,
 				0.6,
 				"craftguide_fire.png")
@@ -582,39 +582,33 @@ end
 
 local function make_formspec(name)
 	local data = pdata[name]
-	local iY = sfinv_only and 4 or data.iX - 5
-	local ipp = data.iX * iY
-
-	data.pagemax = max(1, ceil(#data.items / ipp))
+	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	local fs = {}
 
 	if not sfinv_only then
-		fs[#fs + 1] = fmt("size[%f,%f;]", data.iX - 0.35, iY + 4)
+		fs[#fs + 1] = fmt("size[%f,%f;]", 9.62, 9)
 
 		fs[#fs + 1] = [[
 			no_prepend[]
 			background[1,1;1,1;craftguide_bg.png;true]
 		]]
-
-		fs[#fs + 1] = fmt([[
-			image_button[%f,0.12;0.8,0.8;craftguide_zoomin_icon.png;size_inc;]
-			image_button[%f,0.12;0.8,0.8;craftguide_zoomout_icon.png;size_dec;]
-			]],
-			data.iX * 0.47,
-			data.iX * 0.47 + 0.6)
 	end
 
-	fs[#fs + 1] = fmt("field[0.3,0.33;2.5,1;filter;;%s]", ESC(data.filter))
+	fs[#fs + 1] = fmt("field[0.3,0.33;%f,1;filter;;%s]",
+		sfinv_only and 2.75 or 2.72,
+		ESC(data.filter))
 
-	fs[#fs + 1] = [[
-		image_button[2.4,0.12;0.8,0.8;craftguide_search_icon.png;search;]
-		image_button[3.05,0.12;0.8,0.8;craftguide_clear_icon.png;clear;]
+	fs[#fs + 1] = fmt([[
+		image_button[%f,0.09;0.85,0.85;craftguide_search_icon.png;search;]
+		image_button[%f,0.09;0.85,0.85;craftguide_clear_icon.png;clear;]
 		field_close_on_enter[filter;false]
-	]]
+	]],
+		sfinv_only and 2.65 or 2.6,
+		sfinv_only and 3.35 or 3.3)
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 6.3 or data.iX - 2.2,
+		sfinv_only and 6.3 or 7.8,
 		0.22,
 		colorize("yellow", data.pagenum),
 		data.pagemax)
@@ -623,12 +617,12 @@ local function make_formspec(name)
 		image_button[%f,0.12;0.8,0.8;craftguide_prev_icon.png;prev;]
 		image_button[%f,0.12;0.8,0.8;craftguide_next_icon.png;next;]
 		]],
-		sfinv_only and 5.5 or data.iX - 3.1,
-		sfinv_only and 7.3 or (data.iX - 1.2) - (data.iX >= 11 and 0.08 or 0))
+		sfinv_only and 5.5 or 6.88,
+		sfinv_only and 7.25 or 8.8)
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
-		local pos = (data.iX / 2) - 1
+		local pos = sfinv_only and 3 or 3.8
 
 		if next(recipe_filters) and #init_items > 0 and data.filter == "" then
 			no_item = S("Collect items to reveal more recipes")
@@ -638,25 +632,25 @@ local function make_formspec(name)
 		fs[#fs + 1] = fmt(FMT.label, pos, 2, ESC(no_item))
 	end
 
-	local first_item = (data.pagenum - 1) * ipp
-	for i = first_item, first_item + ipp - 1 do
+	local first_item = (data.pagenum - 1) * IPP
+	for i = first_item, first_item + IPP - 1 do
 		local item = data.items[i + 1]
 		if not item then break end
 
-		local X = i % data.iX
-		local Y = (i % ipp - X) / data.iX + 1
+		local X = i % ROWS
+		local Y = (i % IPP - X) / ROWS + 1
 
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
-			X - (sfinv_only and 0 or (X * 0.05)),
-			Y,
-			1.1,
-			1.1,
+			X - (X * (sfinv_only and 0.12 or 0.14)),
+			Y - (Y * 0.1) + 0.1,
+			1,
+			1,
 			item,
 			item)
 	end
 
 	if data.recipes and #data.recipes > 0 then
-		fs[#fs + 1] = get_recipe_fs(data, iY)
+		fs[#fs + 1] = get_recipe_fs(data)
 	end
 
 	return concat(fs)
@@ -747,7 +741,6 @@ local function init_data(name)
 	pdata[name] = {
 		filter    = "",
 		pagenum   = 1,
-		iX        = sfinv_only and 8 or DEFAULT_SIZE,
 		items     = init_items,
 		items_raw = init_items,
 	}
@@ -836,13 +829,6 @@ local function _fields(player, fields)
 			data.pagenum = data.pagemax
 		end
 
-		show_fs(player, name)
-		return true
-
-	elseif (_f.size_inc and data.iX < MAX_LIMIT) or
-			(_f.size_dec and data.iX > MIN_LIMIT) then
-		data.pagenum = 1
-		data.iX = data.iX + (_f.size_inc and 1 or -1)
 		show_fs(player, name)
 		return true
 	else
