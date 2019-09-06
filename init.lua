@@ -909,17 +909,17 @@ else
 		description = S("Crafting Guide Sign"),
 		drawtype = "nodebox",
 		tiles = {"craftguide_sign.png"},
-		inventory_image = "craftguide_sign_inv.png",
-		wield_image = "craftguide_sign_inv.png",
+		inventory_image = "craftguide_sign.png",
+		wield_image = "craftguide_sign.png",
 		paramtype = "light",
 		paramtype2 = "wallmounted",
 		sunlight_propagates = true,
 		groups = {oddly_breakable_by_hand = 1, flammable = 3},
 		node_box = {
 			type = "wallmounted",
-			wall_top    = {-0.4375, 0.4375, -0.3125, 0.4375, 0.5, 0.3125},
-			wall_bottom = {-0.4375, -0.5, -0.3125, 0.4375, -0.4375, 0.3125},
-			wall_side   = {-0.5, -0.3125, -0.4375, -0.4375, 0.3125, 0.4375}
+			wall_top    = {-0.5, 0.4375, -0.5, 0.5, 0.5, 0.5},
+			wall_bottom = {-0.5, -0.5, -0.5, 0.5, -0.4375, 0.5},
+			wall_side   = {-0.5, -0.5, -0.5, -0.4375, 0.5, 0.5}
 		},
 
 		on_construct = function(pos)
