@@ -599,7 +599,8 @@ local function make_formspec(name)
 
 		fs[#fs + 1] = [[
 			no_prepend[]
-			background[1,1;1,1;craftguide_bg.png;true]
+			bgcolor[#00000000;false]
+			background[1,1;1,1;craftguide_bg_full.png;true;10]
 		]]
 	end
 
@@ -607,11 +608,12 @@ local function make_formspec(name)
 		sfinv_only and 2.76 or 2.72,
 		ESC(data.filter))
 
-	fs[#fs + 1] = fmt([[
-		image_button[%f,-0.05;0.85,0.85;craftguide_search_icon.png;search;]
-		image_button[%f,-0.05;0.85,0.85;craftguide_clear_icon.png;clear;]
-		field_close_on_enter[filter;false]
-	]],
+	fs[#fs + 1] = fmt(
+		"field_close_on_enter[filter;false]\
+		image_button[%f,-0.05;0.85,0.85;craftguide_search_icon.png;search;;;false;" ..
+			"craftguide_search_icon.png^\\[colorize:yellow:255]" ..
+		"image_button[%f,-0.05;0.85,0.85;craftguide_clear_icon.png;clear;;;false;" ..
+			"craftguide_clear_icon.png^\\[colorize:red:255]",
 		sfinv_only and 2.6 or 2.54,
 		sfinv_only and 3.3 or 3.25)
 
@@ -621,10 +623,11 @@ local function make_formspec(name)
 		colorize("yellow", data.pagenum),
 		data.pagemax)
 
-	fs[#fs + 1] = fmt([[
-		image_button[%f,-0.05;0.8,0.8;craftguide_prev_icon.png;prev;]
-		image_button[%f,-0.05;0.8,0.8;craftguide_next_icon.png;next;]
-		]],
+	fs[#fs + 1] = fmt(
+		"image_button[%f,-0.05;0.8,0.8;craftguide_prev_icon.png;prev;;;false;" ..
+			"craftguide_prev_icon.png^\\[colorize:yellow:255]" ..
+		"image_button[%f,-0.05;0.8,0.8;craftguide_next_icon.png;next;;;false;" ..
+			"craftguide_next_icon.png^\\[colorize:yellow:255]",
 		sfinv_only and 5.45 or 6.83,
 		sfinv_only and 7.2 or 8.75)
 
