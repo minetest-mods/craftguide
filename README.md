@@ -17,4 +17,4 @@ Use the command `/craft` to show the recipe(s) of the pointed node.
 For developers, `craftguide` also has a [modding API](https://github.com/minetest-mods/craftguide/blob/master/API.md). 
 
 
-![Preview2](https://i.imgur.com/ZxGNxrK.png)
+![Preview2](https://i.imgur.com/oGSvbTW.png)

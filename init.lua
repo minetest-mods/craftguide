@@ -1,5 +1,7 @@
 craftguide = {}
 
+craftguide.background = "craftguide_bg_full.png"
+
 local pdata = {}
 local core = core
 
@@ -443,15 +445,11 @@ local function get_recipe_fs(data)
 	fs[#fs + 1] = fmt(FMT.button,
 		xoffset + (sfinv_only and 1.98 or 2.7),
 		yoffset + (sfinv_only and 1.9 or 1.2),
-		2.2,
-		1,
-		"alternate",
-		btn_lab)
+		2.2, 1, "alternate", btn_lab)
 
 	if width > GRID_LIMIT or rows > GRID_LIMIT then
 		fs[#fs + 1] = fmt(FMT.label,
-			sfinv_only and 2 or 3,
-			7,
+			sfinv_only and 2 or 3, 7,
 			ESC(S("Recipe is too big to be displayed (@1x@2)", width, rows)))
 
 		return concat(fs)
@@ -491,13 +489,8 @@ local function get_recipe_fs(data)
 		local label = groups and "\nG" or ""
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
-			X,
-			Y + (sfinv_only and 0.7 or 0),
-			btn_size,
-			btn_size,
-			item,
-			match(item, "%S*"),
-			ESC(label))
+			X, Y + (sfinv_only and 0.7 or 0),
+			btn_size, btn_size, item, match(item, "%S*"), ESC(label))
 
 		local burntime = fuel_cache[item]
 
@@ -519,69 +512,44 @@ local function get_recipe_fs(data)
 		local pos_y = yoffset + (sfinv_only and 0.25 or -0.45)
 
 		fs[#fs + 1] = fmt(FMT.image,
-			min(3.9, rightest) + 1.2,
-			pos_y,
-			0.5,
-			0.5,
-			icon)
+			min(3.9, rightest) + 1.2, pos_y, 0.5, 0.5, icon)
 
 		local tooltip = custom_recipe and custom_recipe.description or
 				shapeless and S("Shapeless") or S("Cooking")
 
 		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
-			rightest + 1.2,
-			pos_y,
-			0.5,
-			0.5,
-			ESC(tooltip))
+			rightest + 1.2, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
 	local arrow_X  = rightest + (s_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
 	fs[#fs + 1] = fmt(FMT.image,
-		arrow_X,
-		yoffset + (sfinv_only and 0.9 or 0.2),
-		0.9,
-		0.7,
-		"craftguide_arrow.png")
+		arrow_X, yoffset + (sfinv_only and 0.9 or 0.2),
+		0.9, 0.7, "craftguide_arrow.png")
 
 	if recipe.type == "fuel" then
 		fs[#fs + 1] = fmt(FMT.image,
-			output_X,
-			yoffset + (sfinv_only and 0.7 or 0),
-			1.1,
-			1.1,
-			"craftguide_fire.png")
+			output_X, yoffset + (sfinv_only and 0.7 or 0),
+			1.1, 1.1, "craftguide_fire.png")
 	else
 		local output_name = match(recipe.output, "%S+")
 		local burntime = fuel_cache[output_name]
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
-			output_X,
-			yoffset + (sfinv_only and 0.7 or 0),
-			1.1,
-			1.1,
-			recipe.output,
-			ESC(output_name),
-			"")
+			output_X, yoffset + (sfinv_only and 0.7 or 0),
+			1.1, 1.1, recipe.output, ESC(output_name), "")
 
 		if burntime then
 			fs[#fs + 1] = get_tooltip(output_name, nil, nil, burntime)
 
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1,
-				yoffset + (sfinv_only and 0.7 or 0.1),
-				0.6,
-				0.4,
-				"craftguide_arrow.png")
+				output_X + 1, yoffset + (sfinv_only and 0.7 or 0.1),
+				0.6, 0.4, "craftguide_arrow.png")
 
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1.6,
-				yoffset + (sfinv_only and 0.55 or 0),
-				0.6,
-				0.6,
-				"craftguide_fire.png")
+				output_X + 1.6, yoffset + (sfinv_only and 0.55 or 0),
+				0.6, 0.6, "craftguide_fire.png")
 		end
 	end
 
@@ -595,41 +563,44 @@ local function make_formspec(name)
 	local fs = {}
 
 	if not sfinv_only then
-		fs[#fs + 1] = fmt("size[%f,%f;]", 9.5, 8.4)
-
-		fs[#fs + 1] = [[
+		fs[#fs + 1] = fmt([[
+			size[%f,%f;]
 			no_prepend[]
 			bgcolor[#00000000;false]
-			background[1,1;1,1;craftguide_bg_full.png;true;10]
-		]]
+			background[1,1;1,1;%s;true;10]
+		]],
+		9.5, 8.4, craftguide.background)
 	end
 
-	fs[#fs + 1] = fmt("field[0.25,0.2;%f,1;filter;;%s]",
-		sfinv_only and 2.76 or 2.72,
-		ESC(data.filter))
+	fs[#fs + 1] = fmt([[
+		field[0.25,0.2;%f,1;filter;;%s]
+		field_close_on_enter[filter;false]
+		]],
+		sfinv_only and 2.76 or 2.72, ESC(data.filter))
 
-	fs[#fs + 1] = fmt(
-		"field_close_on_enter[filter;false]\
-		image_button[%f,-0.05;0.85,0.85;craftguide_search_icon.png;search;;;false;" ..
-			"craftguide_search_icon.png^\\[colorize:yellow:255]" ..
-		"image_button[%f,-0.05;0.85,0.85;craftguide_clear_icon.png;clear;;;false;" ..
-			"craftguide_clear_icon.png^\\[colorize:red:255]",
-		sfinv_only and 2.6 or 2.54,
-		sfinv_only and 3.3 or 3.25)
+	local search_icon = "craftguide_search_icon.png"
+	local clear_icon = "craftguide_clear_icon.png"
+
+	fs[#fs + 1] = fmt([[
+		image_button[%f,-0.05;0.85,0.85;%s;search;;;false;%s^\[colorize:yellow:255]
+		image_button[%f,-0.05;0.85,0.85;%s;clear;;;false;%s^\[colorize:red:255]
+		]],
+		sfinv_only and 2.6 or 2.54, search_icon, search_icon,
+		sfinv_only and 3.3 or 3.25, clear_icon, clear_icon)
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 6.35 or 7.85,
-		0.06,
-		colorize("yellow", data.pagenum),
-		data.pagemax)
+		sfinv_only and 6.35 or 7.85, 0.06,
+		colorize("yellow", data.pagenum), data.pagemax)
 
-	fs[#fs + 1] = fmt(
-		"image_button[%f,-0.05;0.8,0.8;craftguide_prev_icon.png;prev;;;false;" ..
-			"craftguide_prev_icon.png^\\[colorize:yellow:255]" ..
-		"image_button[%f,-0.05;0.8,0.8;craftguide_next_icon.png;next;;;false;" ..
-			"craftguide_next_icon.png^\\[colorize:yellow:255]",
-		sfinv_only and 5.45 or 6.83,
-		sfinv_only and 7.2 or 8.75)
+	local prev_icon = "craftguide_next_icon.png^\\[transformFX"
+	local next_icon = "craftguide_next_icon.png"
+
+	fs[#fs + 1] = fmt([[
+		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
+		image_button[%f,-0.05;0.8,0.8;%s;next;;;false;%s^\[colorize:yellow:255]
+		]],
+		sfinv_only and 5.45 or 6.83, prev_icon, prev_icon,
+		sfinv_only and 7.2 or 8.75, next_icon, next_icon)
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
@@ -654,10 +625,7 @@ local function make_formspec(name)
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
 			X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 			Y - (Y * 0.1) - 0.1,
-			1,
-			1,
-			item,
-			item)
+			1, 1, item, item)
 	end
 
 	if data.recipes and #data.recipes > 0 then
