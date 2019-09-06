@@ -13,6 +13,7 @@ local fuel_cache    = {}
 local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
+local log = core.log
 local after = core.after
 local colorize = core.colorize
 local reg_items = core.registered_items
@@ -33,8 +34,8 @@ local on_receive_fields = core.register_on_player_receive_fields
 local ESC = core.formspec_escape
 local S = core.get_translator("craftguide")
 
-local maxn, sort, concat, copy =
-	table.maxn, table.sort, table.concat, table.copy
+local maxn, sort, concat, copy, insert =
+	table.maxn, table.sort, table.concat, table.copy, table.insert
 
 local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
@@ -78,10 +79,6 @@ local function table_replace(t, val, new)
 	end
 end
 
-local function __func()
-	return debug.getinfo(2, "n").name
-end
-
 local function is_str(x)
 	return type(x) == "string"
 end
@@ -98,24 +95,35 @@ local function is_func(x)
 	return type(x) == "function"
 end
 
-local custom_crafts, craft_types = {}, {}
+local craft_types = {}
 
 function craftguide.register_craft_type(name, def)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(name), func .. "'name' field missing")
-	assert(is_str(def.description), func .. "'description' field missing")
-	assert(is_str(def.icon), func .. "'icon' field missing")
+	if not is_str(name) or name == "" then
+		return log("error", "craftguide.register_craft_type(): name missing")
+	end
+
+	if not is_str(def.description) then
+		def.description = ""
+	end
+
+	if not is_str(def.icon) then
+		def.icon = ""
+	end
 
 	craft_types[name] = def
 end
 
 function craftguide.register_craft(def)
+	if not is_table(def) or not next(def) then
+		return log("error", "craftguide.register_craft(): craft definition missing")
+	end
+
 	if def.result then
 		def.output = def.result -- Backward compatibility
 	end
 
-	if not is_str(def.output) then
-		def.output = ""
+	if not is_str(def.output) or def.output == "" then
+		return log("error", "craftguide.register_craft(): output missing")
 	end
 
 	if not is_table(def.items) then
@@ -151,29 +159,25 @@ function craftguide.register_craft(def)
 		end
 	end
 
-	custom_crafts[#custom_crafts + 1] = def
+	local output = match(def.output, "%S*")
+	recipes_cache[output] = recipes_cache[output] or {}
+	insert(recipes_cache[output], def)
 end
 
 local recipe_filters = {}
 
 function craftguide.add_recipe_filter(name, f)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(name), func .. "filter name missing")
-	assert(is_func(f), func .. "filter function missing")
+	if not is_str(name) or name == "" then
+		return log("error", "craftguide.add_recipe_filter(): name missing")
+	elseif not is_func(f) then
+		return log("error", "craftguide.add_recipe_filter(): function missing")
+	end
 
 	recipe_filters[name] = f
 end
 
 function craftguide.remove_recipe_filter(name)
 	recipe_filters[name] = nil
-end
-
-function craftguide.set_recipe_filter(name, f)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(name), func .. "filter name missing")
-	assert(is_func(f), func .. "filter function missing")
-
-	recipe_filters = {[name] = f}
 end
 
 function craftguide.get_recipe_filters()
@@ -191,9 +195,11 @@ end
 local search_filters = {}
 
 function craftguide.add_search_filter(name, f)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(name), func .. "filter name missing")
-	assert(is_func(f), func .. "filter function missing")
+	if not is_str(name) or name == "" then
+		return log("error", "craftguide.add_search_filter(): name missing")
+	elseif not is_func(f) then
+		return log("error", "craftguide.add_search_filter(): function missing")
+	end
 
 	search_filters[name] = f
 end
@@ -299,16 +305,16 @@ end
 
 local function cache_recipes(output)
 	local recipes = get_all_recipes(output) or {}
+	local num = #recipes
 
-	for i = 1, #custom_crafts do
-		local custom_craft = custom_crafts[i]
-		if match(custom_craft.output, "%S*") == output then
-			recipes[#recipes + 1] = custom_craft
+	if num > 0 then
+		if recipes_cache[output] then
+			for i = 1, num do
+				insert(recipes_cache[output], 1, recipes[i])
+			end
+		else
+			recipes_cache[output] = recipes
 		end
-	end
-
-	if #recipes > 0 then
-		recipes_cache[output] = recipes
 	end
 end
 
@@ -1335,8 +1341,9 @@ register_command("craft", {
 })
 
 function craftguide.show(name, item, show_usages)
-	local func = "craftguide." .. __func() .. "(): "
-	assert(is_str(name), func .. "player name missing")
+	if not is_str(name) or name == "" then
+		return log("error", "craftguide.show(): player name missing")
+	end
 
 	local data = pdata[name]
 	local player = get_player_by_name(name)

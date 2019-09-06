@@ -73,10 +73,6 @@ end)
 
 Removes the recipe filter with the given name.
 
-#### `craftguide.set_recipe_filter(name, function(recipe, player))`
-
-Removes all recipe filters and adds a new one.
-
 #### `craftguide.get_recipe_filters()`
 
 Returns a map of recipe filters, indexed by name.
