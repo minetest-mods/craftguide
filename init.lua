@@ -48,7 +48,27 @@ local vec_add, vec_mul = vector.add, vector.multiply
 local ROWS  = sfinv_only and 9 or 11
 local LINES = 5
 local IPP   = ROWS * LINES
-local GRID_LIMIT = 8
+local WH_LIMIT = 8
+
+local XOFFSET = sfinv_only and 3.83 or 4.66
+local YOFFSET = sfinv_only and 6 or 6.6
+
+local DEV_CORE = sub(core.get_version().string, -3) == "dev"
+
+craftguide.background = "craftguide_bg_full.png"
+
+local PNG = {
+	bg      = "craftguide_bg.png",
+	bg_full = craftguide.background,
+	search  = "craftguide_search_icon.png",
+	clear   = "craftguide_clear_icon.png",
+	prev    = "craftguide_next_icon.png^\\[transformFX",
+	next    = "craftguide_next_icon.png",
+	arrow   = "craftguide_arrow.png",
+	fire    = "craftguide_fire.png",
+	book    = "craftguide_book.png",
+	sign    = "craftguide_sign.png",
+}
 
 local FMT = {
 	box = "box[%f,%f;%f,%f;%s]",
@@ -70,8 +90,6 @@ craftguide.group_stereotypes = {
 	flower       = "flowers:dandelion_yellow",
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
-
-craftguide.background = "craftguide_bg_full.png"
 
 local function table_replace(t, val, new)
 	for k, v in pairs(t) do
@@ -385,7 +403,7 @@ local function groups_to_item(groups)
 	return ""
 end
 
-local function get_tooltip(item, groups, cooktime, burntime)
+local function get_tooltip(item, burntime, groups, cooktime)
 	local tooltip
 
 	if groups then
@@ -423,8 +441,6 @@ local function get_recipe_fs(data)
 	local fs = {}
 	local recipe = data.recipes[data.rnum]
 	local width = recipe.width
-	local xoffset = sfinv_only and 3.83 or 4.66
-	local yoffset = sfinv_only and 6 or 6.6
 	local cooktime, shapeless
 
 	if recipe.type == "cooking" then
@@ -443,22 +459,22 @@ local function get_recipe_fs(data)
 		ESC(S("Recipe @1 of @2", data.rnum, #data.recipes))
 
 	fs[#fs + 1] = fmt(FMT.button,
-		xoffset + (sfinv_only and 1.98 or 2.7),
-		yoffset + (sfinv_only and 1.9 or 1.2),
+		XOFFSET + (sfinv_only and 1.98 or 2.7),
+		YOFFSET + (sfinv_only and 1.9 or 1.2),
 		2.2, 1, "alternate", btn_lab)
 
-	if width > GRID_LIMIT or rows > GRID_LIMIT then
+	if width > WH_LIMIT or rows > WH_LIMIT then
 		fs[#fs + 1] = fmt(FMT.label,
 			sfinv_only and 2 or 3, 7,
-			ESC(S("Recipe is too big to be displayed (@1x@2)", width, rows)))
+			ESC(S("Recipe's too big to be displayed (@1x@2)", width, rows)))
 
 		return concat(fs)
 	end
 
 	for i = 1, width * rows do
 		local item = recipe.items[i] or ""
-		local X = ceil((i - 1) % width - width) + xoffset
-		local Y = ceil(i / width) + yoffset - min(2, rows)
+		local X = ceil((i - 1) % width - width) + XOFFSET
+		local Y = ceil(i / width) + YOFFSET - min(2, rows)
 
 		if width > 3 or rows > 3 then
 			local xof = 1 - 4 / width
@@ -469,10 +485,10 @@ local function get_recipe_fs(data)
 				(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
 			s_btn_size = btn_size
 
-			X = (btn_size * ((i - 1) % width) + xoffset -
-				(sfinv_only and 2.83 or (xoffset - 2))) * (0.83 - (x_y / 5))
+			X = (btn_size * ((i - 1) % width) + XOFFSET -
+				(sfinv_only and 2.83 or (XOFFSET - 2))) * (0.83 - (x_y / 5))
 			Y = (btn_size * floor((i - 1) / width) +
-				(5 + ((sfinv_only and 0.81 or 1.5) + x_y))) * (0.86 - (x_y / 5))
+				(sfinv_only and 5.81 or 6.5) + x_y) * (0.86 - (x_y / 5))
 		end
 
 		if X > rightest then
@@ -495,7 +511,7 @@ local function get_recipe_fs(data)
 		local burntime = fuel_cache[item]
 
 		if groups or cooktime or burntime then
-			fs[#fs + 1] = get_tooltip(item, groups, cooktime, burntime)
+			fs[#fs + 1] = get_tooltip(item, burntime, groups, cooktime)
 		end
 	end
 
@@ -509,7 +525,7 @@ local function get_recipe_fs(data)
 			icon = fmt("craftguide_%s.png^[resize:16x16", icon)
 		end
 
-		local pos_y = yoffset + (sfinv_only and 0.25 or -0.45)
+		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
 
 		fs[#fs + 1] = fmt(FMT.image,
 			min(3.9, rightest) + 1.2, pos_y, 0.5, 0.5, icon)
@@ -525,31 +541,31 @@ local function get_recipe_fs(data)
 	local output_X = arrow_X + 0.9
 
 	fs[#fs + 1] = fmt(FMT.image,
-		arrow_X, yoffset + (sfinv_only and 0.9 or 0.2),
-		0.9, 0.7, "craftguide_arrow.png")
+		arrow_X, YOFFSET + (sfinv_only and 0.9 or 0.2),
+		0.9, 0.7, PNG.arrow)
 
 	if recipe.type == "fuel" then
 		fs[#fs + 1] = fmt(FMT.image,
-			output_X, yoffset + (sfinv_only and 0.7 or 0),
-			1.1, 1.1, "craftguide_fire.png")
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
+			1.1, 1.1, PNG.fire)
 	else
 		local output_name = match(recipe.output, "%S+")
 		local burntime = fuel_cache[output_name]
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
-			output_X, yoffset + (sfinv_only and 0.7 or 0),
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
 			1.1, 1.1, recipe.output, ESC(output_name), "")
 
 		if burntime then
-			fs[#fs + 1] = get_tooltip(output_name, nil, nil, burntime)
+			fs[#fs + 1] = get_tooltip(output_name, burntime)
 
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1, yoffset + (sfinv_only and 0.7 or 0.1),
-				0.6, 0.4, "craftguide_arrow.png")
+				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
+				0.6, 0.4, PNG.arrow)
 
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1.6, yoffset + (sfinv_only and 0.55 or 0),
-				0.6, 0.6, "craftguide_fire.png")
+				output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
+				0.6, 0.6, PNG.fire)
 		end
 	end
 
@@ -567,9 +583,9 @@ local function make_formspec(name)
 			size[%f,%f;]
 			no_prepend[]
 			bgcolor[#00000000;false]
-			background[1,1;1,1;%s;true;10]
+			background[1,1;1,1;%s;true%s]
 		]],
-		9.5, 8.4, craftguide.background)
+		9.5, 8.4, PNG.bg_full, DEV_CORE and ";10" or "")
 	end
 
 	fs[#fs + 1] = fmt([[
@@ -578,29 +594,23 @@ local function make_formspec(name)
 		]],
 		sfinv_only and 2.76 or 2.72, ESC(data.filter))
 
-	local search_icon = "craftguide_search_icon.png"
-	local clear_icon = "craftguide_clear_icon.png"
-
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.85,0.85;%s;search;;;false;%s^\[colorize:yellow:255]
 		image_button[%f,-0.05;0.85,0.85;%s;clear;;;false;%s^\[colorize:red:255]
 		]],
-		sfinv_only and 2.6 or 2.54, search_icon, search_icon,
-		sfinv_only and 3.3 or 3.25, clear_icon, clear_icon)
+		sfinv_only and 2.6 or 2.54, PNG.search, PNG.search,
+		sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear)
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
 		sfinv_only and 6.35 or 7.85, 0.06,
 		colorize("yellow", data.pagenum), data.pagemax)
 
-	local prev_icon = "craftguide_next_icon.png^\\[transformFX"
-	local next_icon = "craftguide_next_icon.png"
-
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
 		image_button[%f,-0.05;0.8,0.8;%s;next;;;false;%s^\[colorize:yellow:255]
 		]],
-		sfinv_only and 5.45 or 6.83, prev_icon, prev_icon,
-		sfinv_only and 7.2 or 8.75, next_icon, next_icon)
+		sfinv_only and 5.45 or 6.83, PNG.prev, PNG.prev,
+		sfinv_only and 7.2 or 8.75, PNG.next, PNG.next)
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
@@ -615,6 +625,7 @@ local function make_formspec(name)
 	end
 
 	local first_item = (data.pagenum - 1) * IPP
+
 	for i = first_item, first_item + IPP - 1 do
 		local item = data.items[i + 1]
 		if not item then break end
@@ -896,8 +907,8 @@ else
 
 	core.register_craftitem("craftguide:book", {
 		description = S("Crafting Guide"),
-		inventory_image = "craftguide_book.png",
-		wield_image = "craftguide_book.png",
+		inventory_image = PNG.book,
+		wield_image = PNG.book,
 		stack_max = 1,
 		groups = {book = 1},
 		on_use = function(itemstack, user)
@@ -908,9 +919,9 @@ else
 	core.register_node("craftguide:sign", {
 		description = S("Crafting Guide Sign"),
 		drawtype = "nodebox",
-		tiles = {"craftguide_sign.png"},
-		inventory_image = "craftguide_sign.png",
-		wield_image = "craftguide_sign.png",
+		tiles = {PNG.sign},
+		inventory_image = PNG.sign,
+		wield_image = PNG.sign,
 		paramtype = "light",
 		paramtype2 = "wallmounted",
 		sunlight_propagates = true,
@@ -962,7 +973,7 @@ else
 		sfinv_buttons.register_button("craftguide", {
 			title = S("Crafting Guide"),
 			tooltip = S("Shows a list of available crafting recipes, cooking recipes and fuels"),
-			image = "craftguide_book.png",
+			image = PNG.book,
 			action = function(player)
 				on_use(player)
 			end,
@@ -1197,7 +1208,7 @@ if progressive_mode then
 				position      = {x = 0.78, y = 1},
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 370,  y = 112},
-				text          = "craftguide_bg.png",
+				text          = PNG.bg,
 			}),
 
 			book = player:hud_add({
@@ -1205,7 +1216,7 @@ if progressive_mode then
 				position      = {x = 0.79, y = 1.02},
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 4,    y = 4},
-				text          = "craftguide_book.png",
+				text          = PNG.book,
 			}),
 
 			text = player:hud_add({
