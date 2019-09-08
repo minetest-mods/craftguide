@@ -2,6 +2,9 @@
 
 ### Custom recipes
 
+Custom recipes are nonconventional crafts outside the main crafting grid.
+They can be registered in-game dynamically and have a size beyond 3x3 items.
+
 #### Registering a custom crafting type (example)
 
 ```Lua

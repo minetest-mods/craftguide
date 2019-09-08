@@ -59,7 +59,6 @@ craftguide.background = "craftguide_bg_full.png"
 
 local PNG = {
 	bg      = "craftguide_bg.png",
-	bg_full = craftguide.background,
 	search  = "craftguide_search_icon.png",
 	clear   = "craftguide_clear_icon.png",
 	prev    = "craftguide_next_icon.png^\\[transformFX",
@@ -580,12 +579,12 @@ local function make_formspec(name)
 
 	if not sfinv_only then
 		fs[#fs + 1] = fmt([[
-			size[%f,%f;]
+			size[9.5,8.4]
 			no_prepend[]
 			bgcolor[#00000000;false]
 			background[1,1;1,1;%s;true%s]
 		]],
-		9.5, 8.4, PNG.bg_full, DEV_CORE and ";10" or "")
+		craftguide.background, DEV_CORE and ";10" or "")
 	end
 
 	fs[#fs + 1] = fmt([[
