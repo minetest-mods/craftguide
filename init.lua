@@ -524,16 +524,16 @@ local function get_recipe_fs(data)
 			icon = fmt("craftguide_%s.png^[resize:16x16", icon)
 		end
 
+		local pos_x = rightest + btn_size + 0.1
 		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
 
-		fs[#fs + 1] = fmt(FMT.image,
-			min(3.9, rightest) + 1.2, pos_y, 0.5, 0.5, icon)
+		fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y, 0.5, 0.5, icon)
 
 		local tooltip = custom_recipe and custom_recipe.description or
 				shapeless and S("Shapeless") or S("Cooking")
 
 		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
-			rightest + 1.2, pos_y, 0.5, 0.5, ESC(tooltip))
+			pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
 	local arrow_X  = rightest + (s_btn_size or 1.1)
