@@ -8,12 +8,15 @@ local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
 
+local toolrepair
+
 local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
 local log = core.log
 local after = core.after
 local colorize = core.colorize
+local reg_tools = core.registered_tools
 local reg_items = core.registered_items
 local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
@@ -411,13 +414,18 @@ local function groups_to_items(groups, get_all)
 	return #names > 0 and concat(names, ",") or ""
 end
 
+local function not_repairable(tool)
+	local def = reg_tools[tool]
+	return toolrepair and def and def.groups and def.groups.disable_repair == 1
+end
+
 local function get_description(item, def)
 	return def and def.description or
 		(def and match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
 		S("Unknown Item (@1)", item))
 end
 
-local function get_tooltip(item, burntime, groups, cooktime, replace)
+local function get_tooltip(item, burntime, norepair, groups, cooktime, replace)
 	local tooltip
 
 	if groups then
@@ -433,6 +441,10 @@ local function get_tooltip(item, burntime, groups, cooktime, replace)
 	else
 		local def = reg_items[item]
 		tooltip = get_description(item, def)
+
+		if norepair then
+			tooltip = tooltip .. "\n" .. S("This tool cannot be repaired")
+		end
 	end
 
 	if cooktime then
@@ -541,7 +553,8 @@ local function get_recipe_fs(data)
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
 		if groups or cooktime or burntime or replace then
-			fs[#fs + 1] = get_tooltip(item, burntime, groups, cooktime, replace)
+			fs[#fs + 1] = get_tooltip(
+				item, burntime, nil, groups, cooktime, replace)
 		end
 	end
 
@@ -586,16 +599,20 @@ local function get_recipe_fs(data)
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
 			1.1, 1.1, recipe.output, ESC(output_name), "")
 
-		if burntime then
-			fs[#fs + 1] = get_tooltip(output_name, burntime)
+		local norepair = not_repairable(recipe.output)
 
-			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
-				0.6, 0.4, PNG.arrow)
+		if burntime or norepair then
+			fs[#fs + 1] = get_tooltip(output_name, burntime, norepair)
 
-			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
-				0.6, 0.6, PNG.fire)
+			if burntime then
+				fs[#fs + 1] = fmt(FMT.image,
+					output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
+					0.6, 0.4, PNG.arrow)
+
+				fs[#fs + 1] = fmt(FMT.image,
+					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
+					0.6, 0.6, PNG.fire)
+			end
 		end
 	end
 
@@ -792,6 +809,10 @@ local old_register_craft = core.register_craft
 
 core.register_craft = function(recipe)
 	old_register_craft(recipe)
+
+	if recipe.type == "toolrepair" then
+		toolrepair = recipe.additional_wear ~= 0
+	end
 
 	local output = recipe.output or
 		(is_str(recipe.recipe) and recipe.recipe or "")
