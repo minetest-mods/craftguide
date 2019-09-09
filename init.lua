@@ -130,6 +130,10 @@ local function is_func(x)
 	return type(x) == "function"
 end
 
+local function is_group(item)
+	return sub(item, 1, 6) == "group:"
+end
+
 local craft_types = {}
 
 function craftguide.register_craft_type(name, def)
@@ -281,7 +285,7 @@ local function groups_item_in_recipe(item, recipe)
 	local item_groups = def.groups
 
 	for _, recipe_item in pairs(recipe.items) do
-		if sub(recipe_item, 1,6) == "group:" then
+		if is_group(recipe_item) then
 			local groups = extract_groups(recipe_item)
 			if item_has_groups(item_groups, groups) then
 				local usage = copy(recipe)
@@ -368,6 +372,7 @@ local function get_recipes(item, data, player)
 	end
 
 	local no_recipes = not recipes or #recipes == 0
+
 	if no_recipes and not usages then
 		return
 	elseif usages and no_recipes then
@@ -511,7 +516,7 @@ local function get_recipe_fs(data)
 
 		local groups
 
-		if sub(item, 1,6) == "group:" then
+		if is_group(item) then
 			groups = extract_groups(item)
 			item = groups_to_items(groups)
 		end
@@ -788,12 +793,14 @@ local old_register_craft = core.register_craft
 core.register_craft = function(recipe)
 	old_register_craft(recipe)
 
-	local output = recipe.output or (is_str(recipe.recipe) and recipe.recipe or "")
+	local output = recipe.output or
+		(is_str(recipe.recipe) and recipe.recipe or "")
+
 	if output == "" then return end
 	output = output:match(match(output, "%S*"))
 	local groups
 
-	if sub(output, 1,6) == "group:" then
+	if is_group(output) then
 		groups = extract_groups(output)
 		output = groups_to_items(groups, true)
 	end
@@ -806,33 +813,32 @@ core.register_craft = function(recipe)
 			item = current_alias[2]
 		end
 
-		local rcp = copy(recipe)
-		rcp.items = {}
+		recipe.items = {}
 
-		if rcp.type == "fuel" then
-			fuel_cache[item] = rcp
+		if recipe.type == "fuel" then
+			fuel_cache[item] = recipe
 
-		elseif rcp.type == "cooking" then
-			rcp.width = rcp.cooktime
-			rcp.cooktime = nil
-			rcp.items[1] = rcp.recipe
+		elseif recipe.type == "cooking" then
+			recipe.width = recipe.cooktime
+			recipe.cooktime = nil
+			recipe.items[1] = recipe.recipe
 
-		elseif rcp.type == "shapeless" then
-			rcp.width = 0
-			for j = 1, #rcp.recipe do
-				rcp.items[#rcp.items + 1] = rcp.recipe[j]
+		elseif recipe.type == "shapeless" then
+			recipe.width = 0
+			for j = 1, #recipe.recipe do
+				recipe.items[#recipe.items + 1] = recipe.recipe[j]
 			end
 		else
-			rcp.width = get_width(rcp.recipe)
+			recipe.width = get_width(recipe.recipe)
 			local c = 1
 
-			for j = 1, #rcp.recipe do
-				if rcp.recipe[j] then
-					for h = 1, rcp.width do
-						local it = rcp.recipe[j][h]
+			for j = 1, #recipe.recipe do
+				if recipe.recipe[j] then
+					for h = 1, recipe.width do
+						local it = recipe.recipe[j][h]
 
 						if it and it ~= "" then
-							rcp.items[c] = it
+							recipe.items[c] = it
 						end
 
 						c = c + 1
@@ -841,10 +847,10 @@ core.register_craft = function(recipe)
 			end
 		end
 
-		if rcp.type ~= "fuel" then
-			rcp.recipe = nil
+		if recipe.type ~= "fuel" then
+			recipe.recipe = nil
 			recipes_cache[item] = recipes_cache[item] or {}
-			insert(recipes_cache[item], 1, rcp)
+			insert(recipes_cache[item], 1, recipe)
 		end
 	end
 end
@@ -931,7 +937,7 @@ local function _fields(player, fields)
 		if not item then
 			return
 		elseif sub(item, -4) == "_inv" then
-			item = sub(item, 1,-5)
+			item = sub(item, 1, -5)
 		end
 
 		if item ~= data.query_item then
@@ -1103,12 +1109,13 @@ if progressive_mode then
 	local function item_in_inv(item, inv_items)
 		local inv_items_size = #inv_items
 
-		if sub(item, 1,6) == "group:" then
+		if is_group(item) then
 			local groups = extract_groups(item)
 			for i = 1, inv_items_size do
-				local inv_item = reg_items[inv_items[i]]
-				if inv_item then
-					local item_groups = inv_item.groups
+				local def = reg_items[inv_items[i]]
+
+				if def then
+					local item_groups = def.groups
 					if item_has_groups(item_groups, groups) then
 						return true
 					end
