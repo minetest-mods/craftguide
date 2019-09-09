@@ -767,7 +767,7 @@ local function reset_data(data)
 	data.items       = data.items_raw
 end
 
--- Because `core.get_craft_recipe` and `core.get_all_craft_recipes` do not return the replacements,
+-- As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not return the replacements,
 -- we have to override `core.register_craft` and `core.register_alias` and do some reverse engineering.
 -- See engine's issue #4901.
 
@@ -1183,6 +1183,9 @@ if progressive_mode then
 	end
 
 	local function show_hud_success(player, data, dtime)
+		-- It'd better to have an engine function `hud_move` to do not
+		-- depend on the server dtime, and use the client dtime internally instead.
+
 		local hud_info_bg = player:hud_get(data.hud.bg)
 
 		if hud_info_bg.position.y <= 0.9 then
@@ -1222,8 +1225,8 @@ if progressive_mode then
 		end
 	end
 
-	-- Workaround. Need an engine call to detect when the contents
-	-- of the player inventory changed, instead
+	-- Workaround. Need an engine call to detect when the contents of
+	-- the player inventory changed, instead.
 	local function poll_new_items()
 		for i = 1, #PLAYERS do
 			local player = PLAYERS[i]
