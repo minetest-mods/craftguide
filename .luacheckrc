@@ -2,7 +2,6 @@ unused_args = false
 allow_defined_top = true
 
 read_globals = {
-	"core",
 	"minetest",
 	"default",
 	"sfinv",
@@ -10,4 +9,9 @@ read_globals = {
 	"vector",
 	"string",
 	"table",
+}
+
+globals = {
+	"craftguide",
+	"core",
 }

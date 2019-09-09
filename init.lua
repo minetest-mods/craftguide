@@ -1,9 +1,7 @@
 craftguide = {}
 
-local pdata = {}
-local core = core
-
 -- Caches
+local pdata         = {}
 local init_items    = {}
 local searches      = {}
 local recipes_cache = {}
@@ -20,11 +18,9 @@ local reg_items = core.registered_items
 local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
-local get_craft_result = core.get_craft_result
 local get_players = core.get_connected_players
 local on_joinplayer = core.register_on_joinplayer
 local register_command = core.register_chatcommand
-local get_all_recipes = core.get_all_craft_recipes
 local get_player_by_name = core.get_player_by_name
 local on_mods_loaded = core.register_on_mods_loaded
 local on_leaveplayer = core.register_on_leaveplayer
@@ -90,6 +86,26 @@ craftguide.group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
+local function table_merge(t1, t2, hash)
+	t1 = t1 or {}
+	t2 = t2 or {}
+
+	if hash then
+		for k, v in pairs(t2) do
+			t1[k] = v
+		end
+	else
+		local c = #t1
+
+		for i = 1, #t2 do
+			c = c + 1
+			t1[c] = t2[i]
+		end
+	end
+
+	return t1
+end
+
 local function table_replace(t, val, new)
 	for k, v in pairs(t) do
 		if v == val then
@@ -132,6 +148,18 @@ function craftguide.register_craft_type(name, def)
 	craft_types[name] = def
 end
 
+local function get_width(recipe)
+	if is_table(recipe) then
+		sort(recipe, function(a, b)
+			return #a > #b
+		end)
+
+		return #recipe[1]
+	end
+
+	return 0
+end
+
 function craftguide.register_craft(def)
 	if not is_table(def) or not next(def) then
 		return log("error", "craftguide.register_craft(): craft definition missing")
@@ -159,11 +187,7 @@ function craftguide.register_craft(def)
 		end
 
 		local cp = copy(def.grid)
-		sort(cp, function(a, b)
-			return #a > #b
-		end)
-
-		def.width = #cp[1]
+		def.width = get_width(cp)
 
 		for i = 1, #def.grid do
 			while #def.grid[i] < def.width do
@@ -253,7 +277,8 @@ local function item_in_recipe(item, recipe)
 end
 
 local function groups_item_in_recipe(item, recipe)
-	local item_groups = reg_items[item].groups
+	local def = reg_items[item]
+	local item_groups = def.groups
 
 	for _, recipe_item in pairs(recipe.items) do
 		if sub(recipe_item, 1,6) == "group:" then
@@ -265,32 +290,6 @@ local function groups_item_in_recipe(item, recipe)
 			end
 		end
 	end
-end
-
-local function get_usages(item)
-	local usages, c = {}, 0
-
-	for _, recipes in pairs(recipes_cache) do
-	for i = 1, #recipes do
-		local recipe = recipes[i]
-		if item_in_recipe(item, recipe) then
-			c = c + 1
-			usages[c] = recipe
-		else
-			recipe = groups_item_in_recipe(item, recipe)
-			if recipe then
-				c = c + 1
-				usages[c] = recipe
-			end
-		end
-	end
-	end
-
-	if fuel_cache[item] then
-		usages[#usages + 1] = {type = "fuel", width = 1, items = {item}}
-	end
-
-	return usages
 end
 
 local function get_filtered_items(player, data)
@@ -322,25 +321,41 @@ local function get_filtered_items(player, data)
 	end
 end
 
-local function cache_recipes(output)
-	local recipes = get_all_recipes(output) or {}
-	local num = #recipes
+local function get_usages(item)
+	local usages, c = {}, 0
 
-	if num > 0 then
-		if recipes_cache[output] then
-			for i = 1, num do
-				insert(recipes_cache[output], 1, recipes[i])
-			end
+	for _, recipes in pairs(recipes_cache) do
+	for i = 1, #recipes do
+		local recipe = recipes[i]
+		if item_in_recipe(item, recipe) then
+			c = c + 1
+			usages[c] = recipe
 		else
-			recipes_cache[output] = recipes
+			recipe = groups_item_in_recipe(item, recipe)
+			if recipe then
+				c = c + 1
+				usages[c] = recipe
+			end
 		end
 	end
+	end
+
+	if fuel_cache[item] then
+		usages[#usages + 1] = {
+			type = "fuel",
+			width = 1,
+			items = {item},
+			replacements = fuel_cache[item].replacements,
+		}
+	end
+
+	return usages
 end
 
 local function cache_usages(item)
 	local usages = get_usages(item)
 	if #usages > 0 then
-		usages_cache[item] = usages
+		usages_cache[item] = table_merge(usages, usages_cache[item] or {})
 	end
 end
 
@@ -367,20 +382,8 @@ local function get_recipes(item, data, player)
 	return recipes
 end
 
-local function get_burntime(item)
-	return get_craft_result({method = "fuel", width = 1, items = {item}}).time
-end
-
-local function cache_fuel(item)
-	local burntime = get_burntime(item)
-	if burntime > 0 then
-		fuel_cache[item] = burntime
-		return true
-	end
-end
-
-local function groups_to_item(groups)
-	if #groups == 1 then
+local function groups_to_items(groups, get_all)
+	if not get_all and #groups == 1 then
 		local group = groups[1]
 		local def_gr = "default:" .. group
 		local stereotypes = craftguide.group_stereotypes
@@ -393,16 +396,17 @@ local function groups_to_item(groups)
 		end
 	end
 
+	local names = {}
 	for name, def in pairs(reg_items) do
 		if item_has_groups(def.groups, groups) then
-			return name
+			names[#names + 1] = name
 		end
 	end
 
-	return ""
+	return #names > 0 and concat(names, ",") or ""
 end
 
-local function get_tooltip(item, burntime, groups, cooktime)
+local function get_tooltip(item, burntime, groups, cooktime, replace)
 	local tooltip
 
 	if groups then
@@ -433,6 +437,12 @@ local function get_tooltip(item, burntime, groups, cooktime)
 			S("Burning time: @1", colorize("yellow", burntime))
 	end
 
+	if replace then
+		local def = reg_items[replace]
+		tooltip = tooltip .. "\n" ..
+			S("Replaced by: @1", colorize("yellow", def.description))
+	end
+
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
@@ -440,6 +450,7 @@ local function get_recipe_fs(data)
 	local fs = {}
 	local recipe = data.recipes[data.rnum]
 	local width = recipe.width
+	local replacements = recipe.replacements
 	local cooktime, shapeless
 
 	if recipe.type == "cooking" then
@@ -498,19 +509,30 @@ local function get_recipe_fs(data)
 
 		if sub(item, 1,6) == "group:" then
 			groups = extract_groups(item)
-			item = groups_to_item(groups)
+			item = groups_to_items(groups)
 		end
 
 		local label = groups and "\nG" or ""
+		local replace
+
+		if replacements then
+			for j = 1, #replacements do
+				local replacement = replacements[j]
+				if replacement[1] == item then
+					label = (label ~= "" and "\n" or "") .. label .. "\nR"
+					replace = replacement[2]
+				end
+			end
+		end
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
 			btn_size, btn_size, item, match(item, "%S*"), ESC(label))
 
-		local burntime = fuel_cache[item]
+		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
 		if groups or cooktime or burntime then
-			fs[#fs + 1] = get_tooltip(item, burntime, groups, cooktime)
+			fs[#fs + 1] = get_tooltip(item, burntime, groups, cooktime, replace)
 		end
 	end
 
@@ -549,7 +571,7 @@ local function get_recipe_fs(data)
 			1.1, 1.1, PNG.fire)
 	else
 		local output_name = match(recipe.output, "%S+")
-		local burntime = fuel_cache[output_name]
+		local burntime = fuel_cache[output_name] and fuel_cache[output_name].burntime
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
@@ -745,39 +767,112 @@ local function reset_data(data)
 	data.items       = data.items_raw
 end
 
-local function check_item(def)
+-- Because `core.get_craft_recipe` and `core.get_all_craft_recipes` do not return the replacements,
+-- we have to override `core.register_craft` and `core.register_alias` and do some reverse engineering.
+-- See engine's issue #4901.
+
+local old_register_alias = core.register_alias
+local current_alias = {}
+
+core.register_alias = function(old, new)
+	current_alias = {old, new}
+	old_register_alias(old, new)
+end
+
+local old_register_craft = core.register_craft
+
+core.register_craft = function(recipe)
+	old_register_craft(recipe)
+
+	local output = recipe.output or (is_str(recipe.recipe) and recipe.recipe or "")
+	if output == "" then return end
+	output = output:match(match(output, "%S*"))
+	local groups
+
+	if sub(output, 1,6) == "group:" then
+		groups = extract_groups(output)
+		output = groups_to_items(groups, true)
+	end
+
+	output = split(output, ",")
+
+	for i = 1, #output do
+		local item = output[i]
+		if item == current_alias[1] then
+			item = current_alias[2]
+		end
+
+		local rcp = copy(recipe)
+		rcp.items = {}
+
+		if rcp.type == "fuel" then
+			fuel_cache[item] = rcp
+
+		elseif rcp.type == "cooking" then
+			rcp.width = rcp.cooktime
+			rcp.cooktime = nil
+			rcp.items[1] = rcp.recipe
+
+		elseif rcp.type == "shapeless" then
+			rcp.width = 0
+			for j = 1, #rcp.recipe do
+				rcp.items[#rcp.items + 1] = rcp.recipe[j]
+			end
+		else
+			rcp.width = get_width(rcp.recipe)
+			local c = 1
+
+			for j = 1, #rcp.recipe do
+				if rcp.recipe[j] then
+					for h = 1, rcp.width do
+						local it = rcp.recipe[j][h]
+
+						if it and it ~= "" then
+							rcp.items[c] = it
+						end
+
+						c = c + 1
+					end
+				end
+			end
+		end
+
+		if rcp.type ~= "fuel" then
+			rcp.recipe = nil
+			recipes_cache[item] = recipes_cache[item] or {}
+			insert(recipes_cache[item], 1, rcp)
+		end
+	end
+end
+
+local function show_item(def)
 	return not (def.groups.not_in_craft_guide == 1 or
 		def.groups.not_in_creative_inventory == 1) and
 		def.description and def.description ~= ""
 end
 
 local function get_init_items()
-	local items, c = {}, 0
-
+	local c = 1
 	for name, def in pairs(reg_items) do
-		if check_item(def) then
-			cache_fuel(name)
-			cache_recipes(name)
+		if show_item(def) then
+			cache_usages(name)
 
-			c = c + 1
-			items[c] = name
-		end
-	end
-
-	c = 0
-
-	for i = 1, #items do
-		local name = items[i]
-		cache_usages(name)
-
-		if recipes_cache[name] or usages_cache[name] then
-			c = c + 1
-			init_items[c] = name
+			if recipes_cache[name] or usages_cache[name] then
+				init_items[c] = name
+				c = c + 1
+			end
 		end
 	end
 
 	sort(init_items)
 end
+
+on_mods_loaded(get_init_items)
+
+on_joinplayer(function(player)
+	local name = player:get_player_name()
+	init_data(name)
+end)
 
 local function _fields(player, fields)
 	local name = player:get_player_name()
@@ -852,13 +947,6 @@ local function _fields(player, fields)
 		return true
 	end
 end
-
-on_mods_loaded(get_init_items)
-
-on_joinplayer(function(player)
-	local name = player:get_player_name()
-	init_data(name)
-end)
 
 if sfinv_only then
 	sfinv.register_page("craftguide:craftguide", {
@@ -944,9 +1032,8 @@ else
 
 	core.register_craft({
 		output = "craftguide:book",
-		recipe = {
-			{"default:book"}
-		}
+		type   = "shapeless",
+		recipe = {"default:book"}
 	})
 
 	core.register_craft({
@@ -957,9 +1044,8 @@ else
 
 	core.register_craft({
 		output = "craftguide:sign",
-		recipe = {
-			{"default:sign_wall_wood"}
-		}
+		type   = "shapeless",
+		recipe = {"default:sign_wall_wood"}
 	})
 
 	core.register_craft({
@@ -983,6 +1069,32 @@ end
 if progressive_mode then
 	local PLAYERS = {}
 	local POLL_FREQ = 0.25
+
+	local function table_diff(t1, t2)
+		local hash = {}
+
+		for i = 1, #t1 do
+			local v = t1[i]
+			hash[v] = true
+		end
+
+		for i = 1, #t2 do
+			local v = t2[i]
+			hash[v] = nil
+		end
+
+		local diff, c = {}, 0
+
+		for i = 1, #t1 do
+			local v = t1[i]
+			if hash[v] then
+				c = c + 1
+				diff[c] = v
+			end
+		end
+
+		return diff
+	end
 
 	local function item_in_inv(item, inv_items)
 		local inv_items_size = #inv_items
@@ -1044,44 +1156,6 @@ if progressive_mode then
 		"craft",
 		"craftpreview",
 	}
-
-	local function table_merge(t, t2)
-		t, t2 = t or {}, t2 or {}
-		local c = #t
-
-		for i = 1, #t2 do
-			c = c + 1
-			t[c] = t2[i]
-		end
-
-		return t
-	end
-
-	local function table_diff(t, t2)
-		local hash = {}
-
-		for i = 1, #t do
-			local v = t[i]
-			hash[v] = true
-		end
-
-		for i = 1, #t2 do
-			local v = t2[i]
-			hash[v] = nil
-		end
-
-		local diff, c = {}, 0
-
-		for i = 1, #t do
-			local v = t[i]
-			if hash[v] then
-				c = c + 1
-				diff[c] = v
-			end
-		end
-
-		return diff
-	end
 
 	local function get_inv_items(player)
 		local inv = player:get_inventory()
