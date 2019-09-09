@@ -406,6 +406,12 @@ local function groups_to_items(groups, get_all)
 	return #names > 0 and concat(names, ",") or ""
 end
 
+local function get_description(item, def)
+	return def and def.description or
+		(def and match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
+		S("Unknown Item (@1)", item))
+end
+
 local function get_tooltip(item, burntime, groups, cooktime, replace)
 	local tooltip
 
@@ -421,10 +427,7 @@ local function get_tooltip(item, burntime, groups, cooktime, replace)
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
 	else
 		local def = reg_items[item]
-
-		tooltip = def and def.description or
-			(def and match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
-			 S("Unknown Item (@1)", item))
+		tooltip = get_description(item, def)
 	end
 
 	if cooktime then
@@ -440,7 +443,8 @@ local function get_tooltip(item, burntime, groups, cooktime, replace)
 	if replace then
 		local def = reg_items[replace]
 		tooltip = tooltip .. "\n" ..
-			S("Replaced by: @1", colorize("yellow", def.description))
+			S("Replaced by @1 on crafting",
+				colorize("yellow", get_description(replace, def)))
 	end
 
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
@@ -531,7 +535,7 @@ local function get_recipe_fs(data)
 
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
-		if groups or cooktime or burntime then
+		if groups or cooktime or burntime or replace then
 			fs[#fs + 1] = get_tooltip(item, burntime, groups, cooktime, replace)
 		end
 	end
