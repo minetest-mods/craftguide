@@ -458,7 +458,7 @@ local function get_recipe_fs(data)
 	elseif width == 0 then
 		shapeless = true
 		local n = #recipe.items
-		width = n <= 4 and 2 or min(3, n)
+		width = (n < 5 and n > 1) and 2 or min(3, max(1, n))
 	end
 
 	local rows = ceil(maxn(recipe.items) / width)
