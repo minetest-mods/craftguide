@@ -15,7 +15,7 @@ local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G
 
 local log = core.log
 local after = core.after
-local clrz = core.colorize
+local clr = core.colorize
 local reg_tools = core.registered_tools
 local reg_items = core.registered_items
 local show_formspec = core.show_formspec
@@ -418,18 +418,12 @@ local function groups_to_items(groups, get_all)
 	return names
 end
 
-local function not_repairable(tool)
+local function repairable(tool)
 	local def = reg_tools[tool]
-	return toolrepair and def and def.groups and def.groups.disable_repair == 1
+	return toolrepair and def and def.groups and def.groups.disable_repair ~= 1
 end
 
 local function get_tooltip(item, info)
-	local tooltip
-
-	local function add(str)
-		return tooltip .. "\n" .. str
-	end
-
 	local function get_desc(def, name)
 		name = name or item
 		return def and def.description or
@@ -437,36 +431,35 @@ local function get_tooltip(item, info)
 		      S("Unknown Item (@1)", name))
 	end
 
+	local tooltip = get_desc(reg_items[item])
+
+	local function add(str)
+		return tooltip .. "\n" .. str
+	end
+
 	if info.groups then
 		local groupstr, c = {}, 0
 
 		for i = 1, #info.groups do
 			c = c + 1
-			groupstr[c] = clrz("yellow", info.groups[i])
+			groupstr[c] = clr("yellow", info.groups[i])
 		end
 
 		groupstr = concat(groupstr, ", ")
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
-	else
-		local def = reg_items[item]
-		tooltip = get_desc(def)
-
-		if info.norepair then
-			tooltip = add(S("This tool cannot be repaired"))
-		end
 	end
 
 	if info.cooktime then
-		tooltip = add(S("Cooking time: @1", clrz("yellow", info.cooktime)))
+		tooltip = add(S("Cooking time: @1", clr("yellow", info.cooktime)))
 	end
 
 	if info.burntime then
-		tooltip = add(S("Burning time: @1", clrz("yellow", info.burntime)))
+		tooltip = add(S("Burning time: @1", clr("yellow", info.burntime)))
 	end
 
 	if info.replace then
 		local def = reg_items[info.replace]
-		local desc = clrz("yellow", get_desc(def, info.replace))
+		local desc = clr("yellow", get_desc(def, info.replace))
 
 		if info.cooktime then
 			tooltip = add(S("Replaced by @1 on smelting", desc))
@@ -475,6 +468,10 @@ local function get_tooltip(item, info)
 		else
 			tooltip = add(S("Replaced by @1 on crafting", desc))
 		end
+	end
+
+	if info.repair then
+		tooltip = add(S("Repairable by step of @1", clr("yellow", toolrepair .. "%")))
 	end
 
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
@@ -523,23 +520,23 @@ local function get_output_fs(fs, L)
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
 			1.1, 1.1, item, ESC(name), "")
 
-		local norepair = not_repairable(item)
+		local repair = repairable(item)
 
-		if burntime or norepair then
+		if burntime or repair then
 			fs[#fs + 1] = get_tooltip(name, {
 				burntime = burntime,
-				norepair = norepair,
+				repair = repair,
 			})
+		end
 
-			if burntime then
-				fs[#fs + 1] = fmt(FMT.image,
-					output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
-					0.6, 0.4, PNG.arrow)
+		if burntime then
+			fs[#fs + 1] = fmt(FMT.image,
+				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
+				0.6, 0.4, PNG.arrow)
 
-				fs[#fs + 1] = fmt(FMT.image,
-					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
-					0.6, 0.6, PNG.fire)
-			end
+			fs[#fs + 1] = fmt(FMT.image,
+				output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
+				0.6, 0.6, PNG.fire)
 		end
 	end
 end
@@ -635,7 +632,7 @@ local function get_recipe_fs(data, fs)
 			burntime = burntime,
 			cooktime = cooktime,
 			replace  = replace,
-			norepair = nil,
+			repair   = nil,
 		}
 
 		for _, v in pairs(infos) do
@@ -694,7 +691,7 @@ local function make_formspec(name)
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
 		sfinv_only and 6.35 or 7.85, 0.06,
-		clrz("yellow", data.pagenum), data.pagemax)
+		clr("yellow", data.pagenum), data.pagemax)
 
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
@@ -855,7 +852,7 @@ core.register_craft = function(recipe)
 	old_register_craft(recipe)
 
 	if recipe.type == "toolrepair" then
-		toolrepair = recipe.additional_wear ~= 0
+		toolrepair = recipe.additional_wear * -100
 	end
 
 	local output = recipe.output or
@@ -1433,7 +1430,7 @@ register_command("craft", {
 			end
 		end
 
-		local red = clrz("red", "[craftguide] ")
+		local red = clr("red", "[craftguide] ")
 
 		if not node_name then
 			return false, red .. S("No node pointed")
@@ -1450,7 +1447,7 @@ register_command("craft", {
 		end
 
 		if not recipes or #recipes == 0 then
-			local ylw = clrz("yellow", node_name)
+			local ylw = clr("yellow", node_name)
 			local msg = red .. "%s: " .. ylw
 
 			if usages then
