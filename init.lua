@@ -466,8 +466,15 @@ local function get_tooltip(item, info)
 
 	if info.replace then
 		local def = reg_items[info.replace]
-		tooltip = add(S("Replaced by @1 on crafting",
-			clrz("yellow", get_desc(def, info.replace))))
+		local desc = clrz("yellow", get_desc(def, info.replace))
+
+		if info.cooktime then
+			tooltip = add(S("Replaced by @1 on smelting", desc))
+		elseif info.burntime then
+			tooltip = add(S("Replaced by @1 on burning", desc))
+		else
+			tooltip = add(S("Replaced by @1 on crafting", desc))
+		end
 	end
 
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
