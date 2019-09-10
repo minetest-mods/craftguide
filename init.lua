@@ -155,18 +155,6 @@ function craftguide.register_craft_type(name, def)
 	craft_types[name] = def
 end
 
-local function get_width(recipe)
-	if is_table(recipe) then
-		sort(recipe, function(a, b)
-			return #a > #b
-		end)
-
-		return #recipe[1]
-	end
-
-	return 0
-end
-
 local function clean_name(item)
 	return match(item, "%S+")
 end
@@ -198,7 +186,11 @@ function craftguide.register_craft(def)
 		end
 
 		local cp = copy(def.grid)
-		def.width = get_width(cp)
+		sort(cp, function(a, b)
+			return #a > #b
+		end)
+
+		def.width = #cp[1]
 
 		for i = 1, #def.grid do
 			while #def.grid[i] < def.width do
@@ -294,6 +286,7 @@ local function groups_item_in_recipe(item, recipe)
 	for _, recipe_item in pairs(recipe.items) do
 		if is_group(recipe_item) then
 			local groups = extract_groups(recipe_item)
+
 			if item_has_groups(item_groups, groups) then
 				local usage = copy(recipe)
 				table_replace(usage.items, recipe_item, item)
@@ -338,6 +331,7 @@ local function get_usages(item)
 	for _, recipes in pairs(recipes_cache) do
 	for i = 1, #recipes do
 		local recipe = recipes[i]
+
 		if item_in_recipe(item, recipe) then
 			c = c + 1
 			usages[c] = recipe
@@ -424,18 +418,7 @@ local function repairable(tool)
 end
 
 local function get_tooltip(item, info)
-	local function get_desc(def, name)
-		name = name or item
-		return def and def.description or
-		      (def and match(name, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
-		      S("Unknown Item (@1)", name))
-	end
-
-	local tooltip = get_desc(reg_items[item])
-
-	local function add(str)
-		return tooltip .. "\n" .. str
-	end
+	local tooltip
 
 	if info.groups then
 		local groupstr, c = {}, 0
@@ -447,6 +430,21 @@ local function get_tooltip(item, info)
 
 		groupstr = concat(groupstr, ", ")
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
+
+		return fmt("tooltip[%s;%s]", item, ESC(tooltip))
+	end
+
+	local function get_desc(def, name)
+		name = name or item
+		return def and def.description or
+		      (def and match(name, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
+		      S("Unknown Item (@1)", name))
+	end
+
+	tooltip = get_desc(reg_items[item])
+
+	local function add(str)
+		return tooltip .. "\n" .. str
 	end
 
 	if info.cooktime then
@@ -614,7 +612,7 @@ local function get_recipe_fs(data, fs)
 			for j = 1, #replacements do
 				local replacement = replacements[j]
 				if replacement[1] == item then
-					label = (label ~= "" and "\n" or "") .. label .. "\nR"
+					label = label .. "\nR"
 					replace = replacement[2]
 				end
 			end
@@ -626,8 +624,7 @@ local function get_recipe_fs(data, fs)
 
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
-		local more_info
-		local infos = {
+		local info = {
 			groups   = groups,
 			burntime = burntime,
 			cooktime = cooktime,
@@ -635,15 +632,11 @@ local function get_recipe_fs(data, fs)
 			repair   = nil,
 		}
 
-		for _, v in pairs(infos) do
+		for _, v in pairs(info) do
 			if v then
-				more_info = true
+				fs[#fs + 1] = get_tooltip(item, info)
 				break
 			end
-		end
-
-		if more_info then
-			fs[#fs + 1] = get_tooltip(item, infos)
 		end
 	end
 
@@ -836,14 +829,14 @@ end
 
 -- As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not return the replacements,
 -- we have to override `core.register_craft` and `core.register_alias` and do some reverse engineering.
--- See engine's issue #4901.
+-- See engine's issues #4901 and #8920.
 
 local old_register_alias = core.register_alias
 local current_alias = {}
 
 core.register_alias = function(old, new)
-	current_alias = {old, new}
 	old_register_alias(old, new)
+	current_alias = {old, new}
 end
 
 local old_register_craft = core.register_craft
@@ -889,7 +882,7 @@ core.register_craft = function(recipe)
 				recipe.items[#recipe.items + 1] = recipe.recipe[j]
 			end
 		else
-			recipe.width = get_width(recipe.recipe)
+			recipe.width = #recipe.recipe[1]
 			local c = 1
 
 			for j = 1, #recipe.recipe do
@@ -944,10 +937,9 @@ on_joinplayer(function(player)
 	init_data(name)
 end)
 
-local function _fields(player, fields)
+local function fields(player, _f)
 	local name = player:get_player_name()
 	local data = pdata[name]
-	local _f   = fields
 
 	if _f.clear then
 		reset_data(data)
@@ -963,10 +955,10 @@ local function _fields(player, fields)
 		return true
 
 	elseif (_f.key_enter_field == "filter" or _f.search) and _f.filter ~= "" then
-		local fltr = lower(_f.filter)
-		if data.filter == fltr then return end
+		local str = lower(_f.filter)
+		if data.filter == str then return end
 
-		data.filter = fltr
+		data.filter = str
 		data.pagenum = 1
 		search(data)
 
@@ -1039,14 +1031,14 @@ if sfinv_only then
 			end
 		end,
 
-		on_player_receive_fields = function(self, player, context, fields)
-			_fields(player, fields)
+		on_player_receive_fields = function(self, player, context, _f)
+			fields(player, _f)
 		end,
 	})
 else
-	on_receive_fields(function(player, formname, fields)
+	on_receive_fields(function(player, formname, _f)
 		if formname == "craftguide" then
-			_fields(player, fields)
+			fields(player, _f)
 		end
 	end)
 
