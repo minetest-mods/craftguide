@@ -160,6 +160,8 @@ craftguide.group_stereotypes.radioactive = "mod:item"
 You can set a custom background theme by overriding this variable:
 
 ```Lua
-craftguide.background = "my_custom_bg.png"
+craftguide.background = "<file_name.png>:<middle>"
 
 ```
+
+`middle` (number) refers to a 9-sliced background. Read the engine's Lua API documentation for more info.

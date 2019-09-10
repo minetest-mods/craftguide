@@ -15,7 +15,7 @@ local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G
 
 local log = core.log
 local after = core.after
-local colorize = core.colorize
+local clrz = core.colorize
 local reg_tools = core.registered_tools
 local reg_items = core.registered_items
 local show_formspec = core.show_formspec
@@ -54,7 +54,7 @@ local YOFFSET = sfinv_only and 6 or 6.6
 
 local DEV_CORE = sub(core.get_version().string, -3) == "dev"
 
-craftguide.background = "craftguide_bg_full.png"
+craftguide.background = "craftguide_bg_full.png:10"
 
 local PNG = {
 	bg      = "craftguide_bg.png",
@@ -165,6 +165,10 @@ local function get_width(recipe)
 	end
 
 	return 0
+end
+
+local function clean_name(item)
+	return match(item, "%S+")
 end
 
 function craftguide.register_craft(def)
@@ -411,7 +415,7 @@ local function groups_to_items(groups, get_all)
 		end
 	end
 
-	return #names > 0 and concat(names, ",") or ""
+	return names
 end
 
 local function not_repairable(tool)
@@ -419,56 +423,121 @@ local function not_repairable(tool)
 	return toolrepair and def and def.groups and def.groups.disable_repair == 1
 end
 
-local function get_description(item, def)
-	return def and def.description or
-		(def and match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
-		S("Unknown Item (@1)", item))
-end
-
-local function get_tooltip(item, burntime, norepair, groups, cooktime, replace)
+local function get_tooltip(item, info)
 	local tooltip
 
-	if groups then
+	local function add(str)
+		return tooltip .. "\n" .. str
+	end
+
+	local function get_desc(def, name)
+		name = name or item
+		return def and def.description or
+		      (def and match(name, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
+		      S("Unknown Item (@1)", name))
+	end
+
+	if info.groups then
 		local groupstr, c = {}, 0
 
-		for i = 1, #groups do
+		for i = 1, #info.groups do
 			c = c + 1
-			groupstr[c] = colorize("yellow", groups[i])
+			groupstr[c] = clrz("yellow", info.groups[i])
 		end
 
 		groupstr = concat(groupstr, ", ")
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
 	else
 		local def = reg_items[item]
-		tooltip = get_description(item, def)
+		tooltip = get_desc(def)
 
-		if norepair then
-			tooltip = tooltip .. "\n" .. S("This tool cannot be repaired")
+		if info.norepair then
+			tooltip = add(S("This tool cannot be repaired"))
 		end
 	end
 
-	if cooktime then
-		tooltip = tooltip .. "\n" ..
-			S("Cooking time: @1", colorize("yellow", cooktime))
+	if info.cooktime then
+		tooltip = add(S("Cooking time: @1", clrz("yellow", info.cooktime)))
 	end
 
-	if burntime then
-		tooltip = tooltip .. "\n" ..
-			S("Burning time: @1", colorize("yellow", burntime))
+	if info.burntime then
+		tooltip = add(S("Burning time: @1", clrz("yellow", info.burntime)))
 	end
 
-	if replace then
-		local def = reg_items[replace]
-		tooltip = tooltip .. "\n" ..
-			S("Replaced by @1 on crafting",
-				colorize("yellow", get_description(replace, def)))
+	if info.replace then
+		local def = reg_items[info.replace]
+		tooltip = add(S("Replaced by @1 on crafting",
+			clrz("yellow", get_desc(def, info.replace))))
 	end
 
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
-local function get_recipe_fs(data)
-	local fs = {}
+local function get_output_fs(fs, L)
+	local custom_recipe = craft_types[L.recipe.type]
+
+	if custom_recipe or L.shapeless or L.recipe.type == "cooking" then
+		local icon = custom_recipe and custom_recipe.icon or
+			     L.shapeless and "shapeless" or "furnace"
+
+		if not custom_recipe then
+			icon = fmt("craftguide_%s.png^[resize:16x16", icon)
+		end
+
+		local pos_x = L.rightest + L.btn_size + 0.1
+		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
+
+		fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y, 0.5, 0.5, icon)
+
+		local tooltip = custom_recipe and custom_recipe.description or
+				L.shapeless and S("Shapeless") or S("Cooking")
+
+		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
+			pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
+	end
+
+	local arrow_X  = L.rightest + (L.s_btn_size or 1.1)
+	local output_X = arrow_X + 0.9
+
+	fs[#fs + 1] = fmt(FMT.image,
+		arrow_X, YOFFSET + (sfinv_only and 0.9 or 0.2),
+		0.9, 0.7, PNG.arrow)
+
+	if L.recipe.type == "fuel" then
+		fs[#fs + 1] = fmt(FMT.image,
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
+			1.1, 1.1, PNG.fire)
+	else
+		local item = L.recipe.output
+		local name = clean_name(item)
+		local burntime = fuel_cache[name] and fuel_cache[name].burntime
+
+		fs[#fs + 1] = fmt(FMT.item_image_button,
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
+			1.1, 1.1, item, ESC(name), "")
+
+		local norepair = not_repairable(item)
+
+		if burntime or norepair then
+			fs[#fs + 1] = get_tooltip(name, {
+				burntime = burntime,
+				norepair = norepair,
+			})
+
+			if burntime then
+				fs[#fs + 1] = fmt(FMT.image,
+					output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
+					0.6, 0.4, PNG.arrow)
+
+				fs[#fs + 1] = fmt(FMT.image,
+					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
+					0.6, 0.6, PNG.fire)
+			end
+		end
+	end
+end
+
+local function get_recipe_fs(data, fs)
 	local recipe = data.recipes[data.rnum]
 	local width = recipe.width
 	local replacements = recipe.replacements
@@ -530,7 +599,8 @@ local function get_recipe_fs(data)
 
 		if is_group(item) then
 			groups = extract_groups(item)
-			item = groups_to_items(groups)
+			local items = groups_to_items(groups)
+			item = items[1] or items
 		end
 
 		local label = groups and "\nG" or ""
@@ -548,75 +618,38 @@ local function get_recipe_fs(data)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, match(item, "%S*"), ESC(label))
+			btn_size, btn_size, item, clean_name(item), ESC(label))
 
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
-		if groups or cooktime or burntime or replace then
-			fs[#fs + 1] = get_tooltip(
-				item, burntime, nil, groups, cooktime, replace)
-		end
-	end
+		local more_info
+		local infos = {
+			groups   = groups,
+			burntime = burntime,
+			cooktime = cooktime,
+			replace  = replace,
+			norepair = nil,
+		}
 
-	local custom_recipe = craft_types[recipe.type]
-
-	if custom_recipe or shapeless or recipe.type == "cooking" then
-		local icon = custom_recipe and custom_recipe.icon or
-			     shapeless and "shapeless" or "furnace"
-
-		if not custom_recipe then
-			icon = fmt("craftguide_%s.png^[resize:16x16", icon)
-		end
-
-		local pos_x = rightest + btn_size + 0.1
-		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
-
-		fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y, 0.5, 0.5, icon)
-
-		local tooltip = custom_recipe and custom_recipe.description or
-				shapeless and S("Shapeless") or S("Cooking")
-
-		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
-			pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
-	end
-
-	local arrow_X  = rightest + (s_btn_size or 1.1)
-	local output_X = arrow_X + 0.9
-
-	fs[#fs + 1] = fmt(FMT.image,
-		arrow_X, YOFFSET + (sfinv_only and 0.9 or 0.2),
-		0.9, 0.7, PNG.arrow)
-
-	if recipe.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT.image,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
-			1.1, 1.1, PNG.fire)
-	else
-		local output_name = match(recipe.output, "%S+")
-		local burntime = fuel_cache[output_name] and fuel_cache[output_name].burntime
-
-		fs[#fs + 1] = fmt(FMT.item_image_button,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
-			1.1, 1.1, recipe.output, ESC(output_name), "")
-
-		local norepair = not_repairable(recipe.output)
-
-		if burntime or norepair then
-			fs[#fs + 1] = get_tooltip(output_name, burntime, norepair)
-
-			if burntime then
-				fs[#fs + 1] = fmt(FMT.image,
-					output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1),
-					0.6, 0.4, PNG.arrow)
-
-				fs[#fs + 1] = fmt(FMT.image,
-					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0),
-					0.6, 0.6, PNG.fire)
+		for _, v in pairs(infos) do
+			if v then
+				more_info = true
+				break
 			end
 		end
+
+		if more_info then
+			fs[#fs + 1] = get_tooltip(item, infos)
+		end
 	end
 
-	return concat(fs)
+	get_output_fs(fs, {
+		recipe     = recipe,
+		shapeless  = shapeless,
+		rightest   = rightest,
+		btn_size   = btn_size,
+		s_btn_size = s_btn_size,
+	})
 end
 
 local function make_formspec(name)
@@ -626,13 +659,17 @@ local function make_formspec(name)
 	local fs = {}
 
 	if not sfinv_only then
+		local bg, middle = match(craftguide.background, "(.-):(%d+)")
+		bg = bg or ""
+		middle = middle or "10"
+
 		fs[#fs + 1] = fmt([[
 			size[9.5,8.4]
 			no_prepend[]
 			bgcolor[#00000000;false]
 			background[1,1;1,1;%s;true%s]
 		]],
-		craftguide.background, DEV_CORE and ";10" or "")
+		bg, DEV_CORE and ";" .. middle or "")
 	end
 
 	fs[#fs + 1] = fmt([[
@@ -650,7 +687,7 @@ local function make_formspec(name)
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
 		sfinv_only and 6.35 or 7.85, 0.06,
-		colorize("yellow", data.pagenum), data.pagemax)
+		clrz("yellow", data.pagenum), data.pagemax)
 
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
@@ -687,7 +724,7 @@ local function make_formspec(name)
 	end
 
 	if data.recipes and #data.recipes > 0 then
-		fs[#fs + 1] = get_recipe_fs(data)
+		get_recipe_fs(data, fs)
 	end
 
 	return concat(fs)
@@ -818,15 +855,13 @@ core.register_craft = function(recipe)
 		(is_str(recipe.recipe) and recipe.recipe or "")
 
 	if output == "" then return end
-	output = output:match(match(output, "%S*"))
+	output = {clean_name(output)}
 	local groups
 
-	if is_group(output) then
-		groups = extract_groups(output)
+	if is_group(output[1]) then
+		groups = extract_groups(output[1])
 		output = groups_to_items(groups, true)
 	end
-
-	output = split(output, ",")
 
 	for i = 1, #output do
 		local item = output[i]
@@ -1391,7 +1426,7 @@ register_command("craft", {
 			end
 		end
 
-		local red = colorize("red", "[craftguide] ")
+		local red = clrz("red", "[craftguide] ")
 
 		if not node_name then
 			return false, red .. S("No node pointed")
@@ -1408,7 +1443,7 @@ register_command("craft", {
 		end
 
 		if not recipes or #recipes == 0 then
-			local ylw = colorize("yellow", node_name)
+			local ylw = clrz("yellow", node_name)
 			local msg = red .. "%s: " .. ylw
 
 			if usages then
