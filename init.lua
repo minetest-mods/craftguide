@@ -172,6 +172,10 @@ function craftguide.register_craft(def)
 		return log("error", "craftguide.register_craft(): output missing")
 	end
 
+	if not is_table(def.items) then
+		def.items = {}
+	end
+
 	if def.grid then
 		if not is_table(def.grid) then
 			def.grid = {}
@@ -195,20 +199,14 @@ function craftguide.register_craft(def)
 			c = c + 1
 		end
 	else
-		if not is_table(def.items) then
-			def.items = {}
-		end
-
 		local len = #def.items
 
 		for i = 1, len do
 			def.items[i] = def.items[i]:gsub(",,", ", ,")
+			local rlen = #split(def.items[i], ",")
 
-			local row = split(def.items[i], ",")
-			local l = #row
-
-			if l > def.width then
-				def.width = l
+			if rlen > def.width then
+				def.width = rlen
 			end
 		end
 
@@ -224,7 +222,7 @@ function craftguide.register_craft(def)
 		end
 	end
 
-	local output = match(def.output, "%S*")
+	local output = clean_name(def.output)
 	recipes_cache[output] = recipes_cache[output] or {}
 	insert(recipes_cache[output], def)
 end
@@ -860,18 +858,17 @@ end
 
 local old_register_craft = core.register_craft
 
-core.register_craft = function(recipe)
-	old_register_craft(recipe)
+core.register_craft = function(def)
+	old_register_craft(def)
 
-	if recipe.type == "toolrepair" then
-		toolrepair = recipe.additional_wear * -100
+	if def.type == "toolrepair" then
+		toolrepair = def.additional_wear * -100
 	end
 
-	local output = recipe.output or
-		(is_str(recipe.recipe) and recipe.recipe or "")
-
+	local output = def.output or (is_str(def.recipe) and def.recipe or "")
 	if output == "" then return end
 	output = {clean_name(output)}
+
 	local groups
 
 	if is_group(output[1]) then
@@ -880,37 +877,37 @@ core.register_craft = function(recipe)
 	end
 
 	for i = 1, #output do
-		local item = output[i]
-		if item == current_alias[1] then
-			item = current_alias[2]
+		local name = output[i]
+		if name == current_alias[1] then
+			name = current_alias[2]
 		end
 
-		recipe.items = {}
+		def.items = {}
 
-		if recipe.type == "fuel" then
-			fuel_cache[item] = recipe
+		if def.type == "fuel" then
+			fuel_cache[name] = def
 
-		elseif recipe.type == "cooking" then
-			recipe.width = recipe.cooktime
-			recipe.cooktime = nil
-			recipe.items[1] = recipe.recipe
+		elseif def.type == "cooking" then
+			def.width = def.cooktime
+			def.cooktime = nil
+			def.items[1] = def.recipe
 
-		elseif recipe.type == "shapeless" then
-			recipe.width = 0
-			for j = 1, #recipe.recipe do
-				recipe.items[#recipe.items + 1] = recipe.recipe[j]
+		elseif def.type == "shapeless" then
+			def.width = 0
+			for j = 1, #def.recipe do
+				def.items[#def.items + 1] = def.recipe[j]
 			end
 		else
-			recipe.width = #recipe.recipe[1]
+			def.width = #def.recipe[1]
 			local c = 1
 
-			for j = 1, #recipe.recipe do
-				if recipe.recipe[j] then
-					for h = 1, recipe.width do
-						local it = recipe.recipe[j][h]
+			for j = 1, #def.recipe do
+				if def.recipe[j] then
+					for h = 1, def.width do
+						local it = def.recipe[j][h]
 
 						if it and it ~= "" then
-							recipe.items[c] = it
+							def.items[c] = it
 						end
 
 						c = c + 1
@@ -919,10 +916,10 @@ core.register_craft = function(recipe)
 			end
 		end
 
-		if recipe.type ~= "fuel" then
-			recipe.recipe = nil
-			recipes_cache[item] = recipes_cache[item] or {}
-			insert(recipes_cache[item], 1, recipe)
+		if def.type ~= "fuel" then
+			def.recipe = nil
+			recipes_cache[name] = recipes_cache[name] or {}
+			insert(recipes_cache[name], 1, def)
 		end
 	end
 end

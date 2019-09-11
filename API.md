@@ -27,7 +27,7 @@ craftguide.register_craft({
 ```Lua
 craftguide.register_craft({
 	result = "default:cobble 16",
-	items  = {
+	items = {
 		"default:stone, default:stone, default:stone",
 		"default:stone,              , default:stone",
 		"default:stone, default:stone, default:stone",
