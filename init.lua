@@ -309,10 +309,10 @@ local function get_filtered_items(player, data)
 		usages  = #apply_recipe_filters(usages or {}, player)
 
 		if recipes > 0 or usages > 0 then
-			if not data then
-				c = c + 1
-				items[c] = item
-			else
+			c = c + 1
+			items[c] = item
+
+			if data then
 				known = known + recipes + usages
 			end
 		end
@@ -320,9 +320,9 @@ local function get_filtered_items(player, data)
 
 	if data then
 		data.known_recipes = known
-	else
-		return items
 	end
+
+	return items
 end
 
 local function get_usages(item)
@@ -1303,11 +1303,18 @@ if progressive_mode then
 				data.inv_items = table_merge(diff, data.inv_items)
 
 				local oldknown = data.known_recipes or 0
-				get_filtered_items(player, data)
+				local items = get_filtered_items(player, data)
+
 				data.discovered = data.known_recipes - oldknown
 
 				if data.show_hud == nil and data.discovered > 0 then
 					data.show_hud = true
+				end
+
+				if sfinv_only then
+					data.items_raw = items
+					search(data)
+					sfinv.set_player_inventory_formspec(player)
 				end
 			end
 		end
