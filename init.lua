@@ -1131,6 +1131,7 @@ end
 if progressive_mode then
 	local PLAYERS = {}
 	local POLL_FREQ = 0.25
+	local HUD_TIMER_MAX = 1.5
 
 	local function table_diff(t1, t2)
 		local hash = {}
@@ -1245,15 +1246,16 @@ if progressive_mode then
 		return inv_items
 	end
 
-	local function show_hud_success(player, data, dtime)
-		-- It'd better to have an engine function `hud_move` to do not
-		-- depend on the server dtime, and use the client dtime internally instead.
+	local function show_hud_success(player, data)
+		-- It'd better to have an engine function `hud_move` to only need
+		-- 2 calls for the notification's back and forth.
 
 		local hud_info_bg = player:hud_get(data.hud.bg)
+		local dt = 0.016
 
 		if hud_info_bg.position.y <= 0.9 then
 			data.show_hud = false
-			data.hud_timer = (data.hud_timer or 0) + dtime
+			data.hud_timer = (data.hud_timer or 0) + dt
 		end
 
 		if data.show_hud then
@@ -1262,7 +1264,7 @@ if progressive_mode then
 
 				player:hud_change(def, "position", {
 					x = hud_info.position.x,
-					y = hud_info.position.y - (dtime / 5)
+					y = hud_info.position.y - (dt / 5)
 				})
 			end
 
@@ -1270,13 +1272,13 @@ if progressive_mode then
 				S("@1 new recipe(s) discovered!", data.discovered))
 
 		elseif data.show_hud == false then
-			if data.hud_timer > 3 then
+			if data.hud_timer >= HUD_TIMER_MAX then
 				for _, def in pairs(data.hud) do
 					local hud_info = player:hud_get(def)
 
 					player:hud_change(def, "position", {
 						x = hud_info.position.x,
-						y = hud_info.position.y + (dtime / 5)
+						y = hud_info.position.y + (dt / 5)
 					})
 				end
 
@@ -1324,14 +1326,14 @@ if progressive_mode then
 
 	poll_new_items()
 
-	globalstep(function(dtime)
+	globalstep(function()
 		for i = 1, #PLAYERS do
 			local player = PLAYERS[i]
 			local name   = player:get_player_name()
 			local data   = pdata[name]
 
 			if data.show_hud ~= nil then
-				show_hud_success(player, data, dtime)
+				show_hud_success(player, data)
 			end
 		end
 	end)
