@@ -121,10 +121,6 @@ local function is_str(x)
 	return type(x) == "string"
 end
 
-local function is_num(x)
-	return type(x) == "number"
-end
-
 local function is_table(x)
 	return type(x) == "table"
 end
@@ -160,6 +156,10 @@ local function clean_name(item)
 end
 
 function craftguide.register_craft(def)
+	def.custom = true
+	def.width = 0
+	local c = 1
+
 	if not is_table(def) or not next(def) then
 		return log("error", "craftguide.register_craft(): craft definition missing")
 	end
@@ -170,14 +170,6 @@ function craftguide.register_craft(def)
 
 	if not is_str(def.output) or def.output == "" then
 		return log("error", "craftguide.register_craft(): output missing")
-	end
-
-	if not is_table(def.items) then
-		def.items = {}
-	end
-
-	if not is_num(def.width) then
-		def.width = 0
 	end
 
 	if def.grid then
@@ -198,9 +190,36 @@ function craftguide.register_craft(def)
 			end
 		end
 
-		local c = 1
 		for symbol in gmatch(concat(def.grid), ".") do
 			def.items[c] = def.key[symbol]
+			c = c + 1
+		end
+	else
+		if not is_table(def.items) then
+			def.items = {}
+		end
+
+		local len = #def.items
+
+		for i = 1, len do
+			def.items[i] = def.items[i]:gsub(",,", ", ,")
+
+			local row = split(def.items[i], ",")
+			local l = #row
+
+			if l > def.width then
+				def.width = l
+			end
+		end
+
+		for i = 1, len do
+			while #split(def.items[i], ",") < def.width do
+				def.items[i] = def.items[i] .. ", "
+			end
+		end
+
+		for name in gmatch(concat(def.items, ","), "[%s%w_:]+") do
+			def.items[c] = clean_name(name)
 			c = c + 1
 		end
 	end
@@ -547,7 +566,7 @@ local function get_recipe_fs(data, fs)
 
 	if recipe.type == "cooking" then
 		cooktime, width = width, 1
-	elseif width == 0 then
+	elseif width == 0 and not recipe.custom then
 		shapeless = true
 		local n = #recipe.items
 		width = (n < 5 and n > 1) and 2 or min(3, max(1, n))

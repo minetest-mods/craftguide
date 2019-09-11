@@ -19,9 +19,19 @@ craftguide.register_craft_type("digging", {
 ```Lua
 craftguide.register_craft({
 	type   = "digging",
-	width  = 1,
 	result = "default:cobble 2",
 	items  = {"default:stone"},
+})
+```
+
+```Lua
+craftguide.register_craft({
+	result = "default:cobble 16",
+	items  = {
+		"default:stone, default:stone, default:stone",
+		"default:stone,              , default:stone",
+		"default:stone, default:stone, default:stone",
+	}
 })
 ```
 
