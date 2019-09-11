@@ -644,11 +644,11 @@ local function get_recipe_fs(data, fs)
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
 		local info = {
+			unknown  = not reg_items[item],
 			groups   = groups,
 			burntime = burntime,
 			cooktime = cooktime,
 			replace  = replace,
-			repair   = nil,
 		}
 
 		for _, v in pairs(info) do
