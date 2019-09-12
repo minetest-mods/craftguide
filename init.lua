@@ -199,32 +199,25 @@ function craftguide.register_craft(def)
 			c = c + 1
 		end
 	else
-		local len = #def.items
+		local items, len = def.items, #def.items
+		def.items = {}
 
 		for i = 1, len do
-			local cc = 1
-			for char in gmatch(def.items[i], ".") do
-				if char == "," and sub(def.items[i], cc, cc) == "," then
-					def.items[i] = sub(def.items[i], 1, cc) .. " " ..
-						       sub(def.items[i], cc + 1)
-				end
+			items[i] = items[i]:gsub(",", ", ")
+			local rlen = #split(items[i], ",")
 
-				cc = cc + 1
-			end
-
-			local rlen = #split(def.items[i], ",")
 			if rlen > def.width then
 				def.width = rlen
 			end
 		end
 
 		for i = 1, len do
-			while #split(def.items[i], ",") < def.width do
-				def.items[i] = def.items[i] .. ", "
+			while #split(items[i], ",") < def.width do
+				items[i] = items[i] .. ", "
 			end
 		end
 
-		for name in gmatch(concat(def.items, ","), "[%s%w_:]+") do
+		for name in gmatch(concat(items, ","), "[%s%w_:]+") do
 			def.items[c] = clean_name(name)
 			c = c + 1
 		end
