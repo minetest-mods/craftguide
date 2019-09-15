@@ -630,7 +630,7 @@ local function get_recipe_fs(data, fs)
 			for j = 1, #replacements do
 				local replacement = replacements[j]
 				if replacement[1] == item then
-					label = label .. "\nR"
+					label = "\nR"
 					replace = replacement[2]
 				end
 			end
@@ -638,7 +638,7 @@ local function get_recipe_fs(data, fs)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, clean_name(item), ESC(label))
+			btn_size, btn_size, item, clean_name(item), ESC(label) or "")
 
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
