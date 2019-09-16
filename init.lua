@@ -700,16 +700,14 @@ local function make_formspec(name)
 		sfinv_only and 2.6 or 2.54, PNG.search, PNG.search,
 		sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear)
 
-	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 6.35 or 7.85, 0.06,
-		clr("yellow", data.pagenum), data.pagemax)
-
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
+		label[%f,%f;%s / %u]
 		image_button[%f,-0.05;0.8,0.8;%s;next;;;false;%s^\[colorize:yellow:255]
 		]],
 		sfinv_only and 5.45 or 6.83, PNG.prev, PNG.prev,
-		sfinv_only and 7.2 or 8.75, PNG.next, PNG.next)
+		sfinv_only and 6.35 or 7.85, 0.06, clr("yellow", data.pagenum), data.pagemax,
+		sfinv_only and 7.2  or 8.75, PNG.next, PNG.next)
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
