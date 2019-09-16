@@ -152,7 +152,7 @@ function craftguide.register_craft_type(name, def)
 end
 
 local function clean_name(item)
-	return match(item, "%S+")
+	return match(item, "%S*")
 end
 
 function craftguide.register_craft(def)
@@ -638,7 +638,7 @@ local function get_recipe_fs(data, fs)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, clean_name(item), ESC(label) or "")
+			btn_size, btn_size, item, clean_name(item), ESC(label))
 
 		local burntime = fuel_cache[item] and fuel_cache[item].burntime
 
