@@ -23,6 +23,7 @@ local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
 local get_players = core.get_connected_players
 local on_joinplayer = core.register_on_joinplayer
+local get_all_recipes = core.get_all_craft_recipes
 local register_command = core.register_chatcommand
 local get_player_by_name = core.get_player_by_name
 local on_mods_loaded = core.register_on_mods_loaded
@@ -379,6 +380,21 @@ local function cache_usages(item)
 	local usages = get_usages(item)
 	if #usages > 0 then
 		usages_cache[item] = table_merge(usages, usages_cache[item] or {})
+	end
+end
+
+local function cache_recipes(output)
+	local recipes = get_all_recipes(output) or {}
+	local num = #recipes
+
+	if num > 0 then
+		if recipes_cache[output] then
+			for i = 1, num do
+				insert(recipes_cache[output], 1, recipes[i])
+			end
+		else
+			recipes_cache[output] = recipes
+		end
 	end
 end
 
@@ -934,6 +950,10 @@ local function get_init_items()
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
 			cache_usages(name)
+
+			if not recipes_cache[name] then
+				cache_recipes(name)
+			end
 
 			if recipes_cache[name] or usages_cache[name] then
 				init_items[c] = name
