@@ -22,6 +22,7 @@ local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
 local get_players = core.get_connected_players
+local get_craft_result = core.get_craft_result
 local on_joinplayer = core.register_on_joinplayer
 local get_all_recipes = core.get_all_craft_recipes
 local register_command = core.register_chatcommand
@@ -58,15 +59,15 @@ local DEV_CORE = sub(core.get_version().string, -3) == "dev"
 craftguide.background = "craftguide_bg_full.png:10"
 
 local PNG = {
-	bg      = "craftguide_bg.png",
-	search  = "craftguide_search_icon.png",
-	clear   = "craftguide_clear_icon.png",
-	prev    = "craftguide_next_icon.png^\\[transformFX",
-	next    = "craftguide_next_icon.png",
-	arrow   = "craftguide_arrow.png",
-	fire    = "craftguide_fire.png",
-	book    = "craftguide_book.png",
-	sign    = "craftguide_sign.png",
+	bg     = "craftguide_bg.png",
+	search = "craftguide_search_icon.png",
+	clear  = "craftguide_clear_icon.png",
+	prev   = "craftguide_next_icon.png^\\[transformFX",
+	next   = "craftguide_next_icon.png",
+	arrow  = "craftguide_arrow.png",
+	fire   = "craftguide_fire.png",
+	book   = "craftguide_book.png",
+	sign   = "craftguide_sign.png",
 }
 
 local FMT = {
@@ -81,12 +82,12 @@ local FMT = {
 }
 
 craftguide.group_stereotypes = {
-	wool         = "wool:white",
-	dye          = "dye:white",
+	dye = "dye:white",
+	wool = "wool:white",
+	coal = "default:coal_lump",
+	vessel = "vessels:glass_bottle",
+	flower = "flowers:dandelion_yellow",
 	water_bucket = "bucket:bucket_water",
-	vessel       = "vessels:glass_bottle",
-	coal         = "default:coal_lump",
-	flower       = "flowers:dandelion_yellow",
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
@@ -159,7 +160,7 @@ end
 function craftguide.register_craft(def)
 	def.custom = true
 	def.width = 0
-	local c = 1
+	local c = 0
 
 	if not is_table(def) or not next(def) then
 		return log("error", "craftguide.register_craft(): craft definition missing")
@@ -196,8 +197,8 @@ function craftguide.register_craft(def)
 		end
 
 		for symbol in gmatch(concat(def.grid), ".") do
-			def.items[c] = def.key[symbol]
 			c = c + 1
+			def.items[c] = def.key[symbol]
 		end
 	else
 		local items, len = def.items, #def.items
@@ -219,8 +220,8 @@ function craftguide.register_craft(def)
 		end
 
 		for name in gmatch(concat(items, ","), "[%s%w_:]+") do
-			def.items[c] = clean_name(name)
 			c = c + 1
+			def.items[c] = clean_name(name)
 		end
 	end
 
@@ -316,8 +317,7 @@ local function groups_item_in_recipe(item, recipe)
 end
 
 local function get_filtered_items(player, data)
-	local items, c = {}, 0
-	local known = 0
+	local items, known, c = {}, 0, 0
 
 	for i = 1, #init_items do
 		local item = init_items[i]
@@ -350,7 +350,6 @@ local function get_usages(item)
 	for _, recipes in pairs(recipes_cache) do
 	for i = 1, #recipes do
 		local recipe = recipes[i]
-
 		if item_in_recipe(item, recipe) then
 			c = c + 1
 			usages[c] = recipe
@@ -367,13 +366,23 @@ local function get_usages(item)
 	if fuel_cache[item] then
 		usages[#usages + 1] = {
 			type = "fuel",
-			width = 1,
 			items = {item},
-			replacements = fuel_cache[item].replacements,
+			replacements = fuel_cache.replacements[item],
 		}
 	end
 
 	return usages
+end
+
+local function get_burntime(item)
+	return get_craft_result({method = "fuel", items = {item}}).time
+end
+
+local function cache_fuel(item)
+	local burntime = get_burntime(item)
+	if burntime > 0 then
+		fuel_cache[item] = burntime
+	end
 end
 
 local function cache_usages(item)
@@ -385,16 +394,8 @@ end
 
 local function cache_recipes(output)
 	local recipes = get_all_recipes(output) or {}
-	local num = #recipes
-
-	if num > 0 then
-		if recipes_cache[output] then
-			for i = 1, num do
-				insert(recipes_cache[output], 1, recipes[i])
-			end
-		else
-			recipes_cache[output] = recipes
-		end
+	if #recipes > 0 then
+		recipes_cache[output] = recipes
 	end
 end
 
@@ -478,7 +479,7 @@ local function get_tooltip(item, info)
 	tooltip = get_desc(reg_items[item])
 
 	local function add(str)
-		return tooltip .. "\n" .. str
+		return fmt("%s\n%s", tooltip, str)
 	end
 
 	if info.cooktime then
@@ -532,7 +533,7 @@ local function get_output_fs(fs, L)
 			pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
-	local arrow_X  = L.rightest + (L.s_btn_size or 1.1)
+	local arrow_X = L.rightest + (L.s_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
 	fs[#fs + 1] = fmt(FMT.image,
@@ -546,13 +547,13 @@ local function get_output_fs(fs, L)
 	else
 		local item = L.recipe.output
 		local name = clean_name(item)
-		local burntime = fuel_cache[name] and fuel_cache[name].burntime
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
 			1.1, 1.1, item, ESC(name), "")
 
-		local repair = repairable(item)
+		local burntime = fuel_cache[name]
+		local repair = repairable(name)
 
 		if burntime or repair then
 			fs[#fs + 1] = get_tooltip(name, {
@@ -575,7 +576,7 @@ end
 
 local function get_recipe_fs(data, fs)
 	local recipe = data.recipes[data.rnum]
-	local width = recipe.width
+	local width = recipe.width or 1
 	local replacements = recipe.replacements
 	local cooktime, shapeless
 
@@ -656,12 +657,10 @@ local function get_recipe_fs(data, fs)
 			X, Y + (sfinv_only and 0.7 or 0),
 			btn_size, btn_size, item, clean_name(item), ESC(label))
 
-		local burntime = fuel_cache[item] and fuel_cache[item].burntime
-
 		local info = {
 			unknown  = not reg_items[item],
 			groups   = groups,
-			burntime = burntime,
+			burntime = fuel_cache[item],
 			cooktime = cooktime,
 			replace  = replace,
 		}
@@ -718,11 +717,11 @@ local function make_formspec(name)
 
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
-		label[%f,%f;%s / %u]
+		label[%f,%f;%u / %u]
 		image_button[%f,-0.05;0.8,0.8;%s;next;;;false;%s^\[colorize:yellow:255]
 		]],
 		sfinv_only and 5.45 or 6.83, PNG.prev, PNG.prev,
-		sfinv_only and 6.35 or 7.85, 0.06, clr("yellow", data.pagenum), data.pagemax,
+		sfinv_only and 6.35 or 7.85, 0.06, data.pagenum, data.pagemax,
 		sfinv_only and 7.2  or 8.75, PNG.next, PNG.next)
 
 	if #data.items == 0 then
@@ -809,7 +808,7 @@ local function search(data)
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
 		local desc = (def and def.description) and lower(def.description) or ""
-		local search_in = item .. " " .. desc
+		local search_in = fmt("%s %s", item, desc)
 		local to_add
 
 		if search_filter then
@@ -863,6 +862,8 @@ end
 -- we have to override `core.register_craft` and `core.register_alias` and do some reverse engineering.
 -- See engine's issues #4901 and #8920.
 
+fuel_cache.replacements = {}
+
 local old_register_alias = core.register_alias
 local current_alias = {}
 
@@ -897,10 +898,13 @@ core.register_craft = function(def)
 			name = current_alias[2]
 		end
 
-		def.items = {}
+		if def.type ~= "fuel" then
+			def.items = {}
+		end
 
 		if def.type == "fuel" then
-			fuel_cache[name] = def
+			fuel_cache[name] = def.burntime
+			fuel_cache.replacements[name] = def.replacements
 
 		elseif def.type == "cooking" then
 			def.width = def.cooktime
@@ -914,18 +918,17 @@ core.register_craft = function(def)
 			end
 		else
 			def.width = #def.recipe[1]
-			local c = 1
+			local c = 0
 
 			for j = 1, #def.recipe do
 				if def.recipe[j] then
 					for h = 1, def.width do
+						c = c + 1
 						local it = def.recipe[j][h]
 
 						if it and it ~= "" then
 							def.items[c] = it
 						end
-
-						c = c + 1
 					end
 				end
 			end
@@ -946,18 +949,22 @@ local function show_item(def)
 end
 
 local function get_init_items()
-	local c = 1
+	local c = 0
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
-			cache_usages(name)
+			if not fuel_cache[name] then
+				cache_fuel(name)
+			end
 
 			if not recipes_cache[name] then
 				cache_recipes(name)
 			end
 
+			cache_usages(name)
+
 			if recipes_cache[name] or usages_cache[name] then
-				init_items[c] = name
 				c = c + 1
+				init_items[c] = name
 			end
 		end
 	end
