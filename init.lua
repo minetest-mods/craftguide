@@ -119,8 +119,16 @@ local function table_replace(t, val, new)
 	end
 end
 
+local function err(str)
+	return log("error", str)
+end
+
+local function clean_str(str)
+	return match(str, "%S*")
+end
+
 local function is_str(x)
-	return type(x) == "string"
+	return type(x) == "string" and clean_str(x)
 end
 
 local function is_table(x)
@@ -138,8 +146,8 @@ end
 local craft_types = {}
 
 function craftguide.register_craft_type(name, def)
-	if not is_str(name) or name == "" then
-		return log("error", "craftguide.register_craft_type(): name missing")
+	if not is_str(name) then
+		return err("craftguide.register_craft_type(): name missing")
 	end
 
 	if not is_str(def.description) then
@@ -153,25 +161,21 @@ function craftguide.register_craft_type(name, def)
 	craft_types[name] = def
 end
 
-local function clean_name(item)
-	return match(item, "%S*")
-end
-
 function craftguide.register_craft(def)
 	def.custom = true
 	def.width = 0
 	local c = 0
 
 	if not is_table(def) or not next(def) then
-		return log("error", "craftguide.register_craft(): craft definition missing")
+		return err("craftguide.register_craft(): craft definition missing")
 	end
 
 	if def.result then
 		def.output = def.result -- Backward compatibility
 	end
 
-	if not is_str(def.output) or def.output == "" then
-		return log("error", "craftguide.register_craft(): output missing")
+	if not is_str(def.output) then
+		return err("craftguide.register_craft(): output missing")
 	end
 
 	if not is_table(def.items) then
@@ -225,11 +229,11 @@ function craftguide.register_craft(def)
 
 		for name in gmatch(concat(items, ","), "[%s%w_:]+") do
 			c = c + 1
-			def.items[c] = clean_name(name)
+			def.items[c] = clean_str(name)
 		end
 	end
 
-	local output = clean_name(def.output)
+	local output = clean_str(def.output)
 	recipes_cache[output] = recipes_cache[output] or {}
 	insert(recipes_cache[output], def)
 end
@@ -237,10 +241,10 @@ end
 local recipe_filters = {}
 
 function craftguide.add_recipe_filter(name, f)
-	if not is_str(name) or name == "" then
-		return log("error", "craftguide.add_recipe_filter(): name missing")
+	if not is_str(name) then
+		return err("craftguide.add_recipe_filter(): name missing")
 	elseif not is_func(f) then
-		return log("error", "craftguide.add_recipe_filter(): function missing")
+		return err("craftguide.add_recipe_filter(): function missing")
 	end
 
 	recipe_filters[name] = f
@@ -265,10 +269,10 @@ end
 local search_filters = {}
 
 function craftguide.add_search_filter(name, f)
-	if not is_str(name) or name == "" then
-		return log("error", "craftguide.add_search_filter(): name missing")
+	if not is_str(name) then
+		return err("craftguide.add_search_filter(): name missing")
 	elseif not is_func(f) then
-		return log("error", "craftguide.add_search_filter(): function missing")
+		return err("craftguide.add_search_filter(): function missing")
 	end
 
 	search_filters[name] = f
@@ -550,7 +554,7 @@ local function get_output_fs(fs, L)
 			1.1, 1.1, PNG.fire)
 	else
 		local item = L.recipe.output
-		local name = clean_name(item)
+		local name = clean_str(item)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0),
@@ -659,7 +663,7 @@ local function get_recipe_fs(data, fs)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, clean_name(item), ESC(label))
+			btn_size, btn_size, item, clean_str(item), ESC(label))
 
 		local info = {
 			unknown  = not reg_items[item],
@@ -885,9 +889,9 @@ core.register_craft = function(def)
 		toolrepair = def.additional_wear * -100
 	end
 
-	local output = def.output or (is_str(def.recipe) and def.recipe or "")
-	if output == "" then return end
-	output = {clean_name(output)}
+	local output = def.output or is_str(def.recipe)
+	if not output then return end
+	output = {clean_str(output)}
 
 	local groups
 
@@ -1517,8 +1521,8 @@ register_command("craft", {
 })
 
 function craftguide.show(name, item, show_usages)
-	if not is_str(name) or name == "" then
-		return log("error", "craftguide.show(): player name missing")
+	if not is_str(name) then
+		return err("craftguide.show(): player name missing")
 	end
 
 	local data = pdata[name]
