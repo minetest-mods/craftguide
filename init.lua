@@ -183,6 +183,10 @@ function craftguide.register_craft(def)
 			def.grid = {}
 		end
 
+		if not is_table(def.key) then
+			def.key = {}
+		end
+
 		local cp = copy(def.grid)
 		sort(cp, function(a, b)
 			return #a > #b
