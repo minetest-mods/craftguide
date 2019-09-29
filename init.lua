@@ -1,5 +1,9 @@
 craftguide = {}
 
+local CORE_VERSION = core.get_version().string
+      CORE_VERSION = CORE_VERSION:match("[^%-]*"):gsub("%.", "")
+      CORE_VERSION = tonumber(CORE_VERSION)
+
 -- Caches
 local pdata         = {}
 local init_items    = {}
@@ -28,13 +32,22 @@ local on_joinplayer = core.register_on_joinplayer
 local get_all_recipes = core.get_all_craft_recipes
 local register_command = core.register_chatcommand
 local get_player_by_name = core.get_player_by_name
+local slz, dslz = core.serialize, core.deserialize
 local on_mods_loaded = core.register_on_mods_loaded
 local on_leaveplayer = core.register_on_leaveplayer
-local serialize, deserialize = core.serialize, core.deserialize
 local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
-local S = core.get_translator("craftguide")
+local S = CORE_VERSION >= 500 and core.get_translator("craftguide") or
+	function(...)
+		local args = {...}
+		local i = 1
+
+		return args[1]:gsub("@%d+", function()
+			i = i + 1
+			return args[i]
+		end)
+	end
 
 local maxn, sort, concat, copy, insert =
 	table.maxn, table.sort, table.concat, table.copy, table.insert
@@ -54,10 +67,6 @@ local WH_LIMIT = 8
 
 local XOFFSET = sfinv_only and 3.83 or 4.66
 local YOFFSET = sfinv_only and 6 or 6.6
-
-local CORE_VERSION = core.get_version().string
-      CORE_VERSION = match(CORE_VERSION, "[^%-]*"):gsub("%.", "")
-      CORE_VERSION = tonumber(CORE_VERSION)
 
 craftguide.background = "craftguide_bg_full.png#10"
 
@@ -550,8 +559,9 @@ local function get_output_fs(fs, L)
 		local tooltip = custom_recipe and custom_recipe.description or
 				L.shapeless and S("Shapeless") or S("Cooking")
 
-		fs[#fs + 1] = fmt("tooltip[%f,%f;%f,%f;%s]",
-			pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
+		if CORE_VERSION >= 500 then
+			fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
+		end
 	end
 
 	local arrow_X = L.rightest + (L.s_btn_size or 1.1)
@@ -862,25 +872,6 @@ local function search(data)
 	data.items = filtered_list
 end
 
-local function init_data(name)
-	pdata[name] = {
-		filter    = "",
-		pagenum   = 1,
-		items     = init_items,
-		items_raw = init_items,
-	}
-end
-
-local function reset_data(data)
-	data.filter      = ""
-	data.pagenum     = 1
-	data.rnum        = 1
-	data.query_item  = nil
-	data.show_usages = nil
-	data.recipes     = nil
-	data.items       = data.items_raw
-end
-
 local old_register_alias = core.register_alias
 
 core.register_alias = function(old, new)
@@ -1006,7 +997,31 @@ local function get_init_items()
 	sort(init_items)
 end
 
-on_mods_loaded(get_init_items)
+local function init_data(name)
+	local items = CORE_VERSION >= 500 and init_items or
+		(#init_items == 0 and get_init_items() or init_items)
+
+	pdata[name] = {
+		filter    = "",
+		pagenum   = 1,
+		items     = items,
+		items_raw = items,
+	}
+end
+
+local function reset_data(data)
+	data.filter      = ""
+	data.pagenum     = 1
+	data.rnum        = 1
+	data.query_item  = nil
+	data.show_usages = nil
+	data.recipes     = nil
+	data.items       = data.items_raw
+end
+
+if CORE_VERSION >= 500 then
+	on_mods_loaded(get_init_items)
+end
 
 on_joinplayer(function(player)
 	local name = player:get_player_name()
@@ -1419,12 +1434,17 @@ if progressive_mode then
 	on_joinplayer(function(player)
 		PLAYERS = get_players()
 
-		local meta = player:get_meta()
 		local name = player:get_player_name()
 		local data = pdata[name]
 
-		data.inv_items = deserialize(meta:get_string("inv_items")) or {}
-		data.known_recipes = deserialize(meta:get_string("known_recipes")) or 0
+		if CORE_VERSION >= 500 then
+			local meta = player:get_meta()
+			data.inv_items = dslz(meta:get_string("inv_items")) or {}
+			data.known_recipes = dslz(meta:get_string("known_recipes")) or 0
+		else
+			data.inv_items = dslz(player:get_attribute("inv_items")) or {}
+			data.known_recipes = dslz(player:get_attribute("known_recipes")) or 0
+		end
 
 		data.hud = {
 			bg = player:hud_add({
@@ -1459,13 +1479,22 @@ if progressive_mode then
 	}
 
 	local function save_meta(player)
-		local meta = player:get_meta()
+		local meta
 		local name = player:get_player_name()
 		local data = pdata[name]
 
+		if CORE_VERSION >= 500 then
+			meta = player:get_meta()
+		end
+
 		for i = 1, #to_save do
 			local meta_name = to_save[i]
-			meta:set_string(meta_name, serialize(data[meta_name]))
+
+			if CORE_VERSION >= 500 then
+				meta:set_string(meta_name, slz(data[meta_name]))
+			else
+				player:set_attribute(meta_name, slz(data[meta_name]))
+			end
 		end
 	end
 
