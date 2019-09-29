@@ -1,0 +1,23 @@
+# textdomain: craftguide
+
+Craft Guide=Guida di assemblaggio
+Crafting Guide=Guida d'assemblaggio
+Crafting Guide Sign=Cartello della guida d'assemblaggio
+Usage @1 of @2=Utilizzo @1 di @2
+Recipe @1 of @2=Ricetta @1 di @2
+Burning time: @1=Tempo di bruciatura: @1
+Cooking time: @1=Tempo di cottura: @1
+Replaced by @1 on smelting=Sostituito da @1 alla fusione
+Replaced by @1 on burning=Sostituito da @1 alla bruciatura
+Replaced by @1 on crafting=Sostituito da @1 all'assemblaggio
+Repairable by step of @1=Riparabile per passo di @1
+Any item belonging to the group(s): @1=Qualunque oggetto appartenente al gruppo: @1
+Recipe's too big to be displayed (@1x@2)=La ricetta è troppo grande per essere mostrata (@1x@2)
+Shapeless=Senza forma
+Cooking=Cottura
+No item to show=Nessun oggetto da mostrare
+Collect items to reveal more recipes=Raccogli oggetti per svelare più ricette
+Show recipe(s) of the pointed node=Mostra la ricetta del nodo puntato
+No node pointed=Nessun nodo puntato
+You don't know a recipe for this node=Non conosci una ricetta per questo nodo
+No recipe for this node=Nessuna ricetta per questo nodo
