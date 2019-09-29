@@ -7,6 +7,7 @@ local searches      = {}
 local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
+local alias_cache   = {}
 
 local toolrepair
 
@@ -873,14 +874,12 @@ end
 fuel_cache.replacements = {}
 
 local old_register_alias = core.register_alias
-local current_alias = {}
+local old_register_craft = core.register_craft
 
 core.register_alias = function(old, new)
 	old_register_alias(old, new)
-	current_alias = {old, new}
+	alias_cache[new] = old
 end
-
-local old_register_craft = core.register_craft
 
 core.register_craft = function(def)
 	old_register_craft(def)
@@ -902,9 +901,6 @@ core.register_craft = function(def)
 
 	for i = 1, #output do
 		local name = output[i]
-		if name == current_alias[1] then
-			name = current_alias[2]
-		end
 
 		if def.type ~= "fuel" then
 			def.items = {}
@@ -960,6 +956,20 @@ local function get_init_items()
 	local c = 0
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
+			local old_name = alias_cache[name]
+			if old_name then
+				local old_recipes = recipes_cache[old_name]
+				local old_usages = usages_cache[old_name]
+
+				if old_recipes then
+					recipes_cache[name] = old_recipes
+				end
+
+				if old_usages then
+					usages_cache[name] = old_usages
+				end
+			end
+
 			if not fuel_cache[name] then
 				cache_fuel(name)
 			end
