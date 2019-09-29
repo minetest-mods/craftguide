@@ -1,8 +1,11 @@
 craftguide = {}
 
-local CORE_VERSION = core.get_version().string
-      CORE_VERSION = CORE_VERSION:match("[^%-]*"):gsub("%.", "")
-      CORE_VERSION = tonumber(CORE_VERSION)
+local p = 0
+local CORE_VERSION = core.get_version().string:match("[^%-]*"):gsub("%.", function(a)
+	p = p + 1
+	return p == 3 and a or ""
+end)
+CORE_VERSION = tonumber(CORE_VERSION)
 
 -- Caches
 local pdata         = {}
@@ -40,8 +43,7 @@ local on_receive_fields = core.register_on_player_receive_fields
 local ESC = core.formspec_escape
 local S = CORE_VERSION >= 500 and core.get_translator("craftguide") or
 	function(...)
-		local args = {...}
-		local i = 1
+		local args, i = {...}, 1
 
 		return args[1]:gsub("@%d+", function()
 			i = i + 1
