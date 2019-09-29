@@ -726,11 +726,11 @@ local function make_formspec(name)
 
 	fs[#fs + 1] = fmt([[
 		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
-		label[%f,%f;%u / %u]
+		label[%f,%f;%s / %u]
 		image_button[%f,-0.05;0.8,0.8;%s;next;;;false;%s^\[colorize:yellow:255]
 		]],
 		sfinv_only and 5.45 or 6.83, PNG.prev, PNG.prev,
-		sfinv_only and 6.35 or 7.85, 0.06, data.pagenum, data.pagemax,
+		sfinv_only and 6.35 or 7.85, 0.06, clr("yellow", data.pagenum), data.pagemax,
 		sfinv_only and 7.2  or 8.75, PNG.next, PNG.next)
 
 	if #data.items == 0 then
