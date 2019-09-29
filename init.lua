@@ -251,6 +251,16 @@ function craftguide.add_recipe_filter(name, f)
 	recipe_filters[name] = f
 end
 
+function craftguide.set_recipe_filter(name, f)
+	if not is_str(name) then
+		return err("craftguide.set_recipe_filter(): name missing")
+	elseif not is_func(f) then
+		return err("craftguide.set_recipe_filter(): function missing")
+	end
+
+	recipe_filters = {[name] = f}
+end
+
 function craftguide.remove_recipe_filter(name)
 	recipe_filters[name] = nil
 end

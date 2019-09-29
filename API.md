@@ -82,6 +82,10 @@ craftguide.add_recipe_filter("Hide secretstuff", function(recipes)
 end)
 ```
 
+#### `craftguide.set_recipe_filter(name, function(recipe, player))`
+
+Removes all recipe filters and adds a new one.
+
 #### `craftguide.remove_recipe_filter(name)`
 
 Removes the recipe filter with the given name.
