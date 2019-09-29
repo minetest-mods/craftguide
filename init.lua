@@ -877,19 +877,21 @@ local function reset_data(data)
 	data.items       = data.items_raw
 end
 
--- As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not return the replacements,
--- we have to override `core.register_craft` and `core.register_alias` and do some reverse engineering.
--- See engine's issues #4901 and #8920.
-
-fuel_cache.replacements = {}
-
 local old_register_alias = core.register_alias
-local old_register_craft = core.register_craft
 
 core.register_alias = function(old, new)
 	old_register_alias(old, new)
 	alias_cache[new] = old
 end
+
+--[[	As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not
+	return the replacements and toolrepair, we have to override
+	`core.register_craft` and do some reverse engineering.
+	See engine's issues #4901 and #8920.	]]
+
+fuel_cache.replacements = {}
+
+local old_register_craft = core.register_craft
 
 core.register_craft = function(def)
 	old_register_craft(def)
