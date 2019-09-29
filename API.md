@@ -174,7 +174,7 @@ craftguide.group_stereotypes.radioactive = "mod:item"
 You can set a custom background theme by overriding this variable:
 
 ```Lua
-craftguide.background = "<file_name.png>:<middle>"
+craftguide.background = "<file_name.png>#<middle>"
 
 ```
 

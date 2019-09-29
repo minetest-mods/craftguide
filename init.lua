@@ -55,9 +55,11 @@ local WH_LIMIT = 8
 local XOFFSET = sfinv_only and 3.83 or 4.66
 local YOFFSET = sfinv_only and 6 or 6.6
 
-local DEV_CORE = sub(core.get_version().string, -3) == "dev"
+local CORE_VERSION = core.get_version().string
+      CORE_VERSION = match(CORE_VERSION, "[^%-]*"):gsub("%.", "")
+      CORE_VERSION = tonumber(CORE_VERSION)
 
-craftguide.background = "craftguide_bg_full.png:10"
+craftguide.background = "craftguide_bg_full.png#10"
 
 local PNG = {
 	bg     = "craftguide_bg.png",
@@ -708,17 +710,19 @@ local function make_formspec(name)
 	local fs = {}
 
 	if not sfinv_only then
-		local bg, middle = match(craftguide.background, "(.-):(%d+)")
+		local bg, middle = match(craftguide.background, "([%w_%.]*)([#%d]*)")
 		bg = bg or ""
-		middle = middle or "10"
+		middle = tonumber(sub(middle, 2)) or 10
 
-		fs[#fs + 1] = fmt([[
+		fs[#fs + 1] = [[
 			size[9.5,8.4]
 			no_prepend[]
-			bgcolor[#00000000;false]
-			background[1,1;1,1;%s;true%s]
-		]],
-		bg, DEV_CORE and ";" .. middle or "")
+			bgcolor[#0000]
+		]]
+
+		fs[#fs + 1] = CORE_VERSION >= 510 and
+			fmt("background9[1,1;1,1;%s;true;%d]", bg, middle) or
+			fmt("background[1,1;1,1;%s;true]", bg)
 	end
 
 	fs[#fs + 1] = fmt([[
