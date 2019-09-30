@@ -881,6 +881,13 @@ core.register_alias = function(old, new)
 	alias_cache[new] = old
 end
 
+local old_register_alias_force = core.register_alias_force
+
+core.register_alias_force = function(old, new)
+	old_register_alias_force(old, new)
+	alias_cache[new] = old
+end
+
 --[[	As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not
 	return the replacements and toolrepair, we have to override
 	`core.register_craft` and do some reverse engineering.
