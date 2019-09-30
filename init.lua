@@ -14,7 +14,6 @@ local searches      = {}
 local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
-local alias_cache   = {}
 
 local toolrepair
 
@@ -26,6 +25,7 @@ local after = core.after
 local clr = core.colorize
 local reg_tools = core.registered_tools
 local reg_items = core.registered_items
+local reg_alias = core.registered_aliases
 local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
@@ -874,20 +874,6 @@ local function search(data)
 	data.items = filtered_list
 end
 
-local old_register_alias = core.register_alias
-
-core.register_alias = function(old, new)
-	old_register_alias(old, new)
-	alias_cache[new] = old
-end
-
-local old_register_alias_force = core.register_alias_force
-
-core.register_alias_force = function(old, new)
-	old_register_alias_force(old, new)
-	alias_cache[new] = old
-end
-
 --[[	As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not
 	return the replacements and toolrepair, we have to override
 	`core.register_craft` and do some reverse engineering.
@@ -972,7 +958,7 @@ local function get_init_items()
 	local c = 0
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
-			local old_name = alias_cache[name]
+			local old_name = reg_alias[name]
 			if old_name then
 				local old_recipes = recipes_cache[old_name]
 				local old_usages = usages_cache[old_name]
