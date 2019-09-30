@@ -25,8 +25,8 @@ local after = core.after
 local clr = core.colorize
 local reg_tools = core.registered_tools
 local reg_items = core.registered_items
-local reg_alias = core.registered_aliases
 local show_formspec = core.show_formspec
+local reg_aliases = core.registered_aliases
 local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
 local get_players = core.get_connected_players
@@ -958,20 +958,6 @@ local function get_init_items()
 	local c = 0
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
-			local old_name = reg_alias[name]
-			if old_name then
-				local old_recipes = recipes_cache[old_name]
-				local old_usages = usages_cache[old_name]
-
-				if old_recipes then
-					recipes_cache[name] = old_recipes
-				end
-
-				if old_usages then
-					usages_cache[name] = old_usages
-				end
-			end
-
 			if not fuel_cache[name] then
 				cache_fuel(name)
 			end
@@ -983,6 +969,20 @@ local function get_init_items()
 			cache_usages(name)
 
 			if recipes_cache[name] or usages_cache[name] then
+				c = c + 1
+				init_items[c] = name
+			end
+		end
+	end
+
+	for name in pairs(reg_aliases) do
+		local def = reg_items[name]
+		if def and show_item(def) then
+			if not recipes_cache[name] then
+				cache_recipes(name)
+			end
+
+			if recipes_cache[name] then
 				c = c + 1
 				init_items[c] = name
 			end
