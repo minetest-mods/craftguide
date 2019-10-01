@@ -105,6 +105,32 @@ craftguide.group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
+local function table_diff(t1, t2)
+	local hash = {}
+
+	for i = 1, #t1 do
+		local v = t1[i]
+		hash[v] = true
+	end
+
+	for i = 1, #t2 do
+		local v = t2[i]
+		hash[v] = nil
+	end
+
+	local diff, c = {}, 0
+
+	for i = 1, #t1 do
+		local v = t1[i]
+		if hash[v] then
+			c = c + 1
+			diff[c] = v
+		end
+	end
+
+	return diff
+end
+
 local function table_merge(t1, t2, hash)
 	t1 = t1 or {}
 	t2 = t2 or {}
@@ -333,6 +359,7 @@ end
 
 local function groups_item_in_recipe(item, recipe)
 	local def = reg_items[item]
+	if not def then return end
 	local item_groups = def.groups
 
 	for _, recipe_item in pairs(recipe.items) do
@@ -955,7 +982,7 @@ local function show_item(def)
 end
 
 local function get_init_items()
-	local c = 0
+	local hash, c = {}, 0
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
 			if not fuel_cache[name] then
@@ -971,21 +998,42 @@ local function get_init_items()
 			if recipes_cache[name] or usages_cache[name] then
 				c = c + 1
 				init_items[c] = name
+				hash[name] = true
 			end
 		end
 	end
 
-	for name in pairs(reg_aliases) do
-		local def = reg_items[name]
-		if def and show_item(def) then
-			if not recipes_cache[name] then
-				cache_recipes(name)
+	for oldname, newname in pairs(reg_aliases) do
+		local recipes = recipes_cache[oldname]
+		if recipes then
+			if not recipes_cache[newname] then
+				recipes_cache[newname] = {}
 			end
 
-			if recipes_cache[name] then
-				c = c + 1
-				init_items[c] = name
+			local is_similar
+
+			for i = 1, #recipes_cache[oldname] do
+				local rcp_old = recipes_cache[oldname][i]
+
+				for j = 1, #recipes_cache[newname] do
+					local rcp_new = recipes_cache[newname][j]
+					local diff = table_diff(rcp_old, rcp_new)
+
+					if #diff == 0 then
+						is_similar = true
+						break
+					end
+				end
+
+				if not is_similar then
+					insert(recipes_cache[newname], rcp_old)
+				end
 			end
+		end
+
+		if recipes_cache[oldname] and not hash[newname] then
+			c = c + 1
+			init_items[c] = newname
 		end
 	end
 
@@ -1218,32 +1266,6 @@ if progressive_mode then
 	local PLAYERS = {}
 	local POLL_FREQ = 0.25
 	local HUD_TIMER_MAX = 1.5
-
-	local function table_diff(t1, t2)
-		local hash = {}
-
-		for i = 1, #t1 do
-			local v = t1[i]
-			hash[v] = true
-		end
-
-		for i = 1, #t2 do
-			local v = t2[i]
-			hash[v] = nil
-		end
-
-		local diff, c = {}, 0
-
-		for i = 1, #t1 do
-			local v = t1[i]
-			if hash[v] then
-				c = c + 1
-				diff[c] = v
-			end
-		end
-
-		return diff
-	end
 
 	local function item_in_inv(item, inv_items)
 		local inv_items_size = #inv_items
