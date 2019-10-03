@@ -51,15 +51,16 @@ local S = CORE_VERSION >= 500 and core.get_translator("craftguide") or
 		end)
 	end
 
-local maxn, sort, concat, copy, insert =
-	table.maxn, table.sort, table.concat, table.copy, table.insert
+local maxn, sort, concat, copy, insert, remove =
+	table.maxn, table.sort, table.concat, table.copy,
+	table.insert, table.remove
 
 local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next = pairs, next
+local pairs, next, type = pairs, next, type
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local ROWS  = sfinv_only and 9 or 11
@@ -105,7 +106,7 @@ craftguide.group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
-local function table_diff(t1, t2)
+local function array_diff(t1, t2)
 	local hash = {}
 
 	for i = 1, #t1 do
@@ -129,6 +130,60 @@ local function table_diff(t1, t2)
 	end
 
 	return diff
+end
+
+local function table_eq(T1, T2)
+	local avoid_loops = {}
+
+	local function recurse(t1, t2)
+		if type(t1) ~= type(t2) then return end
+		if type(t1) ~= "table" then
+			return t1 == t2
+		end
+
+		if avoid_loops[t1] then return
+			avoid_loops[t1] == t2
+		end
+
+		avoid_loops[t1] = t2
+		local t2keys = {}
+		local t2tablekeys = {}
+
+		for k in pairs(t2) do
+			if type(k) == "table" then
+				insert(t2tablekeys, k)
+			end
+
+			t2keys[k] = true
+		end
+
+		for k1, v1 in pairs(t1) do
+			local v2 = t2[k1]
+			if type(k1) == "table" then
+				local ok
+				for i = 1, #t2tablekeys do
+					local tk = t2tablekeys[i]
+					if table_eq(k1, tk) and recurse(v1, t2[tk]) then
+						remove(t2tablekeys, i)
+						t2keys[tk] = nil
+						ok = true
+						break
+					end
+				end
+
+				if not ok then return end
+			else
+				if v2 == nil then return end
+				t2keys[k1] = nil
+				if not recurse(v1, v2) then return end
+			end
+		end
+
+		if next(t2keys) then return end
+		return true
+	end
+
+	return recurse(T1, T2)
 end
 
 local function table_merge(t1, t2, hash)
@@ -1017,9 +1072,10 @@ local function get_init_items()
 
 				for j = 1, #recipes_cache[newname] do
 					local rcp_new = recipes_cache[newname][j]
-					local diff = table_diff(rcp_old, rcp_new)
+					rcp_new.type = nil
+					rcp_new.method = nil
 
-					if #diff == 0 then
+					if table_eq(rcp_old, rcp_new) then
 						is_similar = true
 						break
 					end
@@ -1407,7 +1463,7 @@ if progressive_mode then
 			local data   = pdata[name]
 
 			local inv_items = get_inv_items(player)
-			local diff = table_diff(inv_items, data.inv_items)
+			local diff = array_diff(inv_items, data.inv_items)
 
 			if #diff > 0 then
 				data.inv_items = table_merge(diff, data.inv_items)
