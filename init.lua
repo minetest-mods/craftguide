@@ -30,6 +30,7 @@ local reg_craftitems = core.registered_craftitems
 local log = core.log
 local after = core.after
 local clr = core.colorize
+local chat_send = core.chat_send_player
 local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
@@ -109,6 +110,34 @@ craftguide.group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
+local function err(str)
+	return log("error", str)
+end
+
+local function msg(name, str)
+	return chat_send(name, fmt("[craftguide] %s", clr("#FFFF00", str)))
+end
+
+local function clean_str(str)
+	return match(str, "%S*")
+end
+
+local function is_str(x)
+	return type(x) == "string" and clean_str(x)
+end
+
+local function is_table(x)
+	return type(x) == "table"
+end
+
+local function is_func(x)
+	return type(x) == "function"
+end
+
+local function is_group(item)
+	return sub(item, 1, 6) == "group:"
+end
+
 local function array_diff(t1, t2)
 	local hash = {}
 
@@ -140,7 +169,7 @@ local function table_eq(T1, T2)
 
 	local function recurse(t1, t2)
 		if type(t1) ~= type(t2) then return end
-		if type(t1) ~= "table" then
+		if not is_table(t1) then
 			return t1 == t2
 		end
 
@@ -215,30 +244,6 @@ local function table_replace(t, val, new)
 			t[k] = new
 		end
 	end
-end
-
-local function err(str)
-	return log("error", str)
-end
-
-local function clean_str(str)
-	return match(str, "%S*")
-end
-
-local function is_str(x)
-	return type(x) == "string" and clean_str(x)
-end
-
-local function is_table(x)
-	return type(x) == "table"
-end
-
-local function is_func(x)
-	return type(x) == "function"
-end
-
-local function is_group(item)
-	return sub(item, 1, 6) == "group:"
 end
 
 local craft_types = {}
@@ -708,7 +713,7 @@ local function get_itemdef_fs(fs, L)
 	local def = reg_items[L.item]
 	local namestr = fmt("%s (%s)", pretty_wrap(get_desc(L.item), 25), L.item)
 
-	local typestr = ""
+	local typestr
 	if reg_nodes[L.item] then
 		typestr = fmt("%s (%s)", ESC(S("Node")), def.drawtype)
 	elseif reg_entities[L.item] then
@@ -745,8 +750,8 @@ local function get_itemdef_fs(fs, L)
 	fs[#fs + 1] = fmt("table[8.1,%f;6.3,1.8;itemdef;" .. tstr .. ";0]",
 		L.y + 0.08,
 		namestr,
-		ESC(typestr),
-		ESC(groupstr))
+		ESC(typestr or S("Unknown")),
+		ESC(groupstr or S("None")))
 end
 
 local function get_info_fs(data, fs)
@@ -1746,6 +1751,20 @@ function craftguide.show(name, item, show_usages)
 
 	data.query_item = item
 	data.recipes, data.usages = get_recipes(item, data, player)
+
+	if not data.recipes and not data.usages then
+		if recipes_cache[item] then
+			return false, msg(name, S("You don't know a recipe for this node"))
+		end
+
+		if usages_cache[item] then
+			return false, msg(name, S("You don't know an usage for this node"))
+		end
+
+		if not recipes_cache[item] and not usages_cache[item] then
+			return false, msg(name, S("No recipe or usage for this node"))
+		end
+	end
 
 	if sfinv_only then
 		data.show_usages = show_usages
