@@ -1745,23 +1745,19 @@ function craftguide.show(name, item, show_usages)
 	reset_data(data)
 
 	item = reg_items[item] and item or query_item
+	local recipes, usages = get_recipes(item, data, player)
 
-	data.query_item = item
-	data.recipes, data.usages = get_recipes(item, data, player)
-
-	if not data.recipes and not data.usages then
-		if recipes_cache[item] then
-			return false, msg(name, S("You don't know a recipe for this node"))
-		end
-
-		if usages_cache[item] then
-			return false, msg(name, S("You don't know an usage for this node"))
-		end
-
+	if not recipes and not usages then
 		if not recipes_cache[item] and not usages_cache[item] then
 			return false, msg(name, S("No recipe or usage for this node"))
 		end
+
+		return false, msg(name, S("You don't know a recipe or usage for this node"))
 	end
+
+	data.query_item = item
+	data.recipes    = recipes
+	data.usages     = usages
 
 	if sfinv_only then
 		data.show_usages = show_usages
