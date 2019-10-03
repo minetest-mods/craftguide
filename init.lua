@@ -827,76 +827,73 @@ local function get_info_fs(data, fs)
 		end
 
 		for i = 1, width * rows do
-			local item = rcp.items[i]
+			local item = rcp.items[i] or ""
 			local X = ceil((i - 1) % width - width) + XOFFSET
 			local Y = ceil(i / width) + YOFFSET - min(2, rows) + spacing
 
-			if item or large_recipe then
-				if large_recipe then
-					item = item or ""
-					local xof = 1 - 4 / width
-					local yof = 1 - 4 / rows
-					local x_y = width > rows and xof or yof
+			if large_recipe then
+				local xof = 1 - 4 / width
+				local yof = 1 - 4 / rows
+				local x_y = width > rows and xof or yof
 
-					btn_size = width > rows and
-						(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
-					s_btn_size = btn_size
+				btn_size = width > rows and
+					(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
+				s_btn_size = btn_size
 
-					X = (btn_size * ((i - 1) % width) + XOFFSET -
-						(sfinv_only and 2.83 or 0.5)) * (0.83 - (x_y / 5))
-					Y = (btn_size * floor((i - 1) / width) +
-						(sfinv_only and 5.81 or 4) + x_y) * (0.86 - (x_y / 5))
-				end
+				X = (btn_size * ((i - 1) % width) + XOFFSET -
+					(sfinv_only and 2.83 or 0.5)) * (0.83 - (x_y / 5))
+				Y = (btn_size * floor((i - 1) / width) +
+					(sfinv_only and 5.81 or 4) + x_y) * (0.86 - (x_y / 5))
+			end
 
-				if X > rightest then
-					rightest = X
-				end
+			if X > rightest then
+				rightest = X
+			end
 
-				local groups
+			local groups
 
-				if is_group(item) then
-					groups = extract_groups(item)
-					local items = groups_to_items(groups)
-					item = items[1] or items
-				end
+			if is_group(item) then
+				groups = extract_groups(item)
+				local items = groups_to_items(groups)
+				item = items[1] or items
+			end
 
-				local label = groups and "\nG" or ""
-				local replace
+			local label = groups and "\nG" or ""
+			local replace
 
-				if replacements then
-					for j = 1, #replacements do
-						local replacement = replacements[j]
-						if replacement[1] == item then
-							label = "\nR"
-							replace = replacement[2]
-						end
+			if replacements then
+				for j = 1, #replacements do
+					local replacement = replacements[j]
+					if replacement[1] == item then
+						label = "\nR"
+						replace = replacement[2]
 					end
 				end
+			end
 
-				fs[#fs + 1] = fmt(FMT.item_image_button,
+			fs[#fs + 1] = fmt(FMT.item_image_button,
+				X, Y + (sfinv_only and 0.7 or 0),
+				btn_size, btn_size, item, clean_str(item), ESC(label))
+
+			local infos = {
+				unknown  = not reg_items[item],
+				groups   = groups,
+				burntime = fuel_cache[item],
+				cooktime = cooktime,
+				replace  = replace,
+			}
+
+			for _, info in pairs(infos) do
+				if info then
+					fs[#fs + 1] = get_tooltip(item, infos)
+					break
+				end
+			end
+
+			if not large_recipe then
+				fs[#fs + 1] = fmt(FMT.image,
 					X, Y + (sfinv_only and 0.7 or 0),
-					btn_size, btn_size, item, clean_str(item), ESC(label))
-
-				local infos = {
-					unknown  = not reg_items[item],
-					groups   = groups,
-					burntime = fuel_cache[item],
-					cooktime = cooktime,
-					replace  = replace,
-				}
-
-				for _, info in pairs(infos) do
-					if info then
-						fs[#fs + 1] = get_tooltip(item, infos)
-						break
-					end
-				end
-
-				if not large_recipe then
-					fs[#fs + 1] = fmt(FMT.image,
-						X, Y + (sfinv_only and 0.7 or 0),
-						btn_size, btn_size, "craftguide_selected.png")
-				end
+					btn_size, btn_size, "craftguide_selected.png")
 			end
 		end
 
