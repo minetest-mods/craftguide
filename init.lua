@@ -1791,7 +1791,7 @@ register_command("craft", {
 		end
 
 		if not node_name then
-			return false, clr("red", "[craftguide] ") .. S("No node pointed")
+			return false, msg(name, S("No node pointed"))
 		end
 
 		return true, craftguide.show(name, node_name)

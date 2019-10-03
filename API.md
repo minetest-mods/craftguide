@@ -168,14 +168,3 @@ You can add a stereotype like so:
 ```Lua
 craftguide.group_stereotypes.radioactive = "mod:item"
 ```
-
-#### `craftguide.background`
-
-You can set a custom background theme by overriding this variable:
-
-```Lua
-craftguide.background = "<file_name.png>#<middle>"
-
-```
-
-`middle` (number) refers to a 9-sliced background. Read the engine's Lua API documentation for more info.
