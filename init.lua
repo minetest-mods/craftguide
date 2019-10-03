@@ -724,11 +724,11 @@ local function get_itemdef_fs(fs, L)
 		typestr = ESC(S("Tool"))
 	end
 
-	local groupstr = ""
+	local groupstr
 	for k, v in pairs(def.groups or {}) do
-		groupstr = groupstr .. fmt("%s(%d), ", pretty_wrap(k, 13), v)
+		groupstr = (groupstr or "") .. fmt("%s(%d), ", pretty_wrap(k, 13), v)
 	end
-	groupstr = sub(groupstr, 1, -3)
+	groupstr = groupstr and sub(groupstr, 1, -3)
 
 	local specs = {
 		ESC(S("Name")),
