@@ -21,11 +21,8 @@ local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
 local reg_items = core.registered_items
-local reg_nodes = core.registered_nodes
 local reg_tools = core.registered_tools
-local reg_entities = core.registered_nodes
 local reg_aliases = core.registered_aliases
-local reg_craftitems = core.registered_craftitems
 
 local log = core.log
 local after = core.after
@@ -712,31 +709,11 @@ local function get_itemdef_fs(fs, L)
 			L.y, PNG.bg_full, 10) or
 		fmt("background[8.1,%f;6.6,2.19;%s;false]", L.y, PNG.bg_full)
 
-	local def = reg_items[L.item]
-	local namestr = fmt("%s (%s)", pretty_wrap(get_desc(L.item), 25), L.item)
-
-	local typestr
-	if reg_nodes[L.item] then
-		typestr = fmt("%s (%s)", ESC(S("Node")), def.drawtype)
-	elseif reg_entities[L.item] then
-		typestr = ESC(S("Entity"))
-	elseif reg_craftitems[L.item] then
-		typestr = ESC(S("Craftitem"))
-	elseif reg_tools[L.item] then
-		typestr = ESC(S("Tool"))
-	end
-
-	local groupstr
-	for k, v in pairs(def.groups or {}) do
-		groupstr = (groupstr or "") .. fmt("%s(%d), ", pretty_wrap(k, 13), v)
-	end
-	groupstr = groupstr and sub(groupstr, 1, -3)
-
 	local specs = {
 		ESC(S("Name")),
-		ESC(S("Type")),
-		ESC(S("Groups")),
 	}
+
+	local namestr = fmt("%s (%s)", pretty_wrap(get_desc(L.item), 25), L.item)
 
 	local tstr = ""
 	for i = 1, #specs do
@@ -750,10 +727,7 @@ local function get_itemdef_fs(fs, L)
 	]]
 
 	fs[#fs + 1] = fmt("table[8.1,%f;6.3,1.8;itemdef;" .. tstr .. ";0]",
-		L.y + 0.08,
-		namestr,
-		ESC(typestr or S("Unknown")),
-		ESC(groupstr or S("None")))
+		L.y + 0.08, namestr)
 end
 
 local function get_info_fs(data, fs)
@@ -810,25 +784,22 @@ local function get_info_fs(data, fs)
 				ESC(S("Recipe @1 of @2", data.rnum, #v))
 		end
 
+		fs[#fs + 1] = fmt(FMT.label,
+			XOFFSET + (sfinv_only and 2.3 or 1.6),
+			YOFFSET + (sfinv_only and 2.2 or 1.5 + spacing),
+			btn_lab)
+
 		if #v > 1 then
 			local btn_suffix = k == "recipes" and "recipe" or "usage"
+			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
+			local y_arrow = YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing)
 
 			fs[#fs + 1] = fmt([[
 				image_button[%f,%f;0.8,0.8;%s;prev_%s;;;false;%s^\[colorize:yellow:255]
-				label[%f,%f;%s]
 				image_button[%f,%f;0.8,0.8;%s;next_%s;;;false;%s^\[colorize:yellow:255]
 				]],
-				XOFFSET + (sfinv_only and 1.7 or 1),
-				YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing),
-				PNG.prev, btn_suffix, PNG.prev,
-
-				XOFFSET + (sfinv_only and 2.3 or 1.6),
-				YOFFSET + (sfinv_only and 2.2 or 1.5 + spacing),
-				btn_lab,
-
-				XOFFSET + (sfinv_only and 3.5 or 2.8),
-				YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing),
-				PNG.next, btn_suffix, PNG.next)
+				x_arrow, y_arrow, PNG.prev, btn_suffix, PNG.prev,
+				x_arrow + 1.8, y_arrow, PNG.next, btn_suffix, PNG.next)
 		end
 
 		if width > WH_LIMIT or rows > WH_LIMIT then
