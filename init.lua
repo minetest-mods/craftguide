@@ -1161,29 +1161,20 @@ core.register_craft = function(def)
 	end
 end
 
-local function register_drops(name, def)
+local function handle_drops_table(name, drop)
 	-- Code borrowed and modified from unified_inventory
 	-- https://github.com/minetest-mods/unified_inventory/blob/master/api.lua
-	local drop = def.drop
+	local drop_sure, drop_maybe = {}, {}
+	local drop_items = drop.items or {}
+	local max_items_left = drop.max_items
+	local max_start = true
 
-	if is_str(drop) and drop ~= name then
-		craftguide.register_craft({
-			type = "digging",
-			items = {name},
-			output = drop,
-		})
+	for i = 1, #drop_items do
+		if max_items_left and max_items_left <= 0 then break end
+		local di = drop_items[i]
 
-	elseif is_table(drop) then
-		local drop_sure, drop_maybe = {}, {}
-		local drop_items = drop.items or {}
-		local max_items_left = drop.max_items
-		local max_start = true
-
-		for i = 1, #drop_items do
-			if max_items_left and max_items_left <= 0 then break end
-			local di = drop_items[i]
-
-			for j = 1, #di.items do
+		for j = 1, #di.items do
+			if is_str(di.items[j]) then
 				local dname, dcount = match(di.items[j], "(.*)%s*(%d*)")
 				dcount = dcount and tonumber(dcount) or 1
 
@@ -1213,22 +1204,36 @@ local function register_drops(name, def)
 				end
 			end
 		end
+	end
 
-		for item, count in pairs(drop_sure) do
-			craftguide.register_craft({
-				type = "digging",
-				items = {name},
-				output = fmt("%s %u", item, count),
-			})
-		end
+	for item, count in pairs(drop_sure) do
+		craftguide.register_craft({
+			type = "digging",
+			items = {name},
+			output = fmt("%s %u", item, count),
+		})
+	end
 
-		for item, count in pairs(drop_maybe) do
-			craftguide.register_craft({
-				type = "digging_chance",
-				items = {name},
-				output = fmt("%s %u", item, count),
-			})
-		end
+	for item, count in pairs(drop_maybe) do
+		craftguide.register_craft({
+			type = "digging_chance",
+			items = {name},
+			output = fmt("%s %u", item, count),
+		})
+	end
+end
+
+local function register_drops(name, def)
+	local drop = def.drop
+
+	if is_str(drop) and drop ~= name then
+		craftguide.register_craft({
+			type = "digging",
+			items = {name},
+			output = drop,
+		})
+	elseif is_table(drop) then
+		handle_drops_table(name, drop)
 	end
 end
 
