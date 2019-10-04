@@ -176,26 +176,25 @@ local function table_eq(T1, T2)
 		end
 
 		avoid_loops[t1] = t2
-		local t2keys = {}
-		local t2tablekeys = {}
+		local t2k, t2kv = {}, {}
 
 		for k in pairs(t2) do
-			if type(k) == "table" then
-				insert(t2tablekeys, k)
+			if is_table(k) then
+				insert(t2kv, k)
 			end
 
-			t2keys[k] = true
+			t2k[k] = true
 		end
 
 		for k1, v1 in pairs(t1) do
 			local v2 = t2[k1]
 			if type(k1) == "table" then
 				local ok
-				for i = 1, #t2tablekeys do
-					local tk = t2tablekeys[i]
+				for i = 1, #t2kv do
+					local tk = t2kv[i]
 					if table_eq(k1, tk) and recurse(v1, t2[tk]) then
-						remove(t2tablekeys, i)
-						t2keys[tk] = nil
+						remove(t2kv, i)
+						t2k[tk] = nil
 						ok = true
 						break
 					end
@@ -204,12 +203,12 @@ local function table_eq(T1, T2)
 				if not ok then return end
 			else
 				if v2 == nil then return end
-				t2keys[k1] = nil
+				t2k[k1] = nil
 				if not recurse(v1, v2) then return end
 			end
 		end
 
-		if next(t2keys) then return end
+		if next(t2k) then return end
 		return true
 	end
 
@@ -1174,33 +1173,32 @@ local function handle_drops_table(name, drop)
 		local di = drop_items[i]
 
 		for j = 1, #di.items do
-			if is_str(di.items[j]) then
-				local dname, dcount = match(di.items[j], "(.*)%s*(%d*)")
-				dcount = dcount and tonumber(dcount) or 1
+			if not is_str(di.items[j]) then break end
+			local dname, dcount = match(di.items[j], "(.*)%s*(%d*)")
+			dcount = dcount and tonumber(dcount) or 1
 
-				if dname ~= name then
-					if #di.items == 1 and di.rarity == 1 and max_start then
-						if not drop_sure[dname] then
-							drop_sure[dname] = 0
-						end
-
-						drop_sure[dname] = drop_sure[dname] + dcount
-
-						if max_items_left then
-							max_items_left = max_items_left - 1
-							if max_items_left <= 0 then break end
-						end
-					else
-						if max_items_left then
-							max_start = false
-						end
-
-						if not drop_maybe[dname] then
-							drop_maybe[dname] = 0
-						end
-
-						drop_maybe[dname] = drop_maybe[dname] + dcount
+			if dname ~= name then
+				if #di.items == 1 and di.rarity == 1 and max_start then
+					if not drop_sure[dname] then
+						drop_sure[dname] = 0
 					end
+
+					drop_sure[dname] = drop_sure[dname] + dcount
+
+					if max_items_left then
+						max_items_left = max_items_left - 1
+						if max_items_left <= 0 then break end
+					end
+				else
+					if max_items_left then
+						max_start = false
+					end
+
+					if not drop_maybe[dname] then
+						drop_maybe[dname] = 0
+					end
+
+					drop_maybe[dname] = drop_maybe[dname] + dcount
 				end
 			end
 		end
