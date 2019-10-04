@@ -674,9 +674,11 @@ local function get_output_fs(fs, L)
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
 			1.1, 1.1, item, ESC(name), "")
 
-		fs[#fs + 1] = fmt(FMT.image,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, "craftguide_selected.png")
+		if CORE_VERSION >= 510 then
+			fs[#fs + 1] = fmt(FMT.image,
+				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
+				1.1, 1.1, "craftguide_selected.png")
+		end
 
 		local burntime = fuel_cache[name]
 		local repair = repairable(name)
@@ -755,15 +757,16 @@ local function get_itemdef_fs(fs, L)
 end
 
 local function get_info_fs(data, fs)
-	local t = {recipes = data.recipes, usages = data.usages}
+	local panels = {recipes = data.recipes, usages = data.usages}
 	local infonum = 0
 	local last_y
 
 	if sfinv_only then
-		t = data.show_usages and {usages = data.usages} or {recipes = data.recipes}
+		panels = data.show_usages and
+			{usages = data.usages} or {recipes = data.recipes}
 	end
 
-	for k, v in pairs(t) do
+	for k, v in pairs(panels) do
 		infonum = infonum + 1
 		local spacing = (infonum - 1) * 3.6
 		last_y = -0.2 + infonum * 3.6
@@ -890,7 +893,7 @@ local function get_info_fs(data, fs)
 				end
 			end
 
-			if not large_recipe then
+			if CORE_VERSION >= 510 and not large_recipe then
 				fs[#fs + 1] = fmt(FMT.image,
 					X, Y + (sfinv_only and 0.7 or 0),
 					btn_size, btn_size, "craftguide_selected.png")
@@ -990,7 +993,7 @@ local function make_formspec(name)
 			Y - (Y * 0.1) - 0.1,
 			1, 1, item, item)
 
-		if data.query_item == item then
+		if CORE_VERSION >= 510 and data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image,
 				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 				Y - (Y * 0.1) - 0.1,
