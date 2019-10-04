@@ -1218,7 +1218,7 @@ local function register_drops(name, def)
 			craftguide.register_craft({
 				type = "digging",
 				items = {name},
-				output = item .. " " .. count,
+				output = fmt("%s %u", item, count),
 			})
 		end
 
@@ -1226,7 +1226,7 @@ local function register_drops(name, def)
 			craftguide.register_craft({
 				type = "digging_chance",
 				items = {name},
-				output = item .. " " .. count,
+				output = fmt("%s %u", item, count),
 			})
 		end
 	end
