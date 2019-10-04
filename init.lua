@@ -1019,6 +1019,16 @@ craftguide.add_search_filter("groups", function(item, groups)
 	return has_groups
 end)
 
+craftguide.register_craft_type("digging", {
+	description = ESC(S("Digging")),
+	icon = "default_tool_steelpick.png",
+})
+
+craftguide.register_craft_type("digging_chance", {
+	description = ESC(S("Digging Chance")),
+	icon = "default_tool_mesepick.png",
+})
+
 local function search(data)
 	local filter = data.filter
 
@@ -1151,34 +1161,78 @@ core.register_craft = function(def)
 	end
 end
 
-local function show_item(def)
-	return not (def.groups.not_in_craft_guide == 1 or
-		def.groups.not_in_creative_inventory == 1) and
-		def.description and def.description ~= ""
-end
+local function register_drops(name, def)
+	-- Code borrowed and modified from unified_inventory
+	-- https://github.com/minetest-mods/unified_inventory/blob/master/api.lua
+	local drop = def.drop
 
-local function get_init_items()
-	local hash, c = {}, 0
-	for name, def in pairs(reg_items) do
-		if show_item(def) then
-			if not fuel_cache[name] then
-				cache_fuel(name)
-			end
+	if is_str(drop) and drop ~= name then
+		craftguide.register_craft({
+			type = "digging",
+			items = {name},
+			output = drop,
+		})
 
-			if not recipes_cache[name] then
-				cache_recipes(name)
-			end
+	elseif is_table(drop) then
+		local drop_sure, drop_maybe = {}, {}
+		local drop_items = drop.items or {}
+		local max_items_left = drop.max_items
+		local max_start = true
 
-			cache_usages(name)
+		for i = 1, #drop_items do
+			if max_items_left and max_items_left <= 0 then break end
+			local di = drop_items[i]
 
-			if recipes_cache[name] or usages_cache[name] then
-				c = c + 1
-				init_items[c] = name
-				hash[name] = true
+			for j = 1, #di.items do
+				local dname, dcount = match(di.items[j], "(.*)%s*(%d*)")
+				dcount = dcount and tonumber(dcount) or 1
+
+				if dname ~= name then
+					if #di.items == 1 and di.rarity == 1 and max_start then
+						if not drop_sure[dname] then
+							drop_sure[dname] = 0
+						end
+
+						drop_sure[dname] = drop_sure[dname] + dcount
+
+						if max_items_left then
+							max_items_left = max_items_left - 1
+							if max_items_left <= 0 then break end
+						end
+					else
+						if max_items_left then
+							max_start = false
+						end
+
+						if not drop_maybe[dname] then
+							drop_maybe[dname] = 0
+						end
+
+						drop_maybe[dname] = drop_maybe[dname] + dcount
+					end
+				end
 			end
 		end
-	end
 
+		for item, count in pairs(drop_sure) do
+			craftguide.register_craft({
+				type = "digging",
+				items = {name},
+				output = item .. " " .. count,
+			})
+		end
+
+		for item, count in pairs(drop_maybe) do
+			craftguide.register_craft({
+				type = "digging_chance",
+				items = {name},
+				output = item .. " " .. count,
+			})
+		end
+	end
+end
+
+local function handle_aliases(hash)
 	for oldname, newname in pairs(reg_aliases) do
 		local recipes = recipes_cache[oldname]
 		if recipes then
@@ -1209,11 +1263,40 @@ local function get_init_items()
 		end
 
 		if recipes_cache[oldname] and not hash[newname] then
-			c = c + 1
-			init_items[c] = newname
+			init_items[#init_items + 1] = newname
+		end
+	end
+end
+
+local function show_item(def)
+	return not (def.groups.not_in_craft_guide == 1 or
+		def.groups.not_in_creative_inventory == 1) and
+		def.description and def.description ~= ""
+end
+
+local function get_init_items()
+	local hash = {}
+	for name, def in pairs(reg_items) do
+		if show_item(def) then
+			if not fuel_cache[name] then
+				cache_fuel(name)
+			end
+
+			if not recipes_cache[name] then
+				cache_recipes(name)
+			end
+
+			cache_usages(name)
+			register_drops(name, def)
+
+			if recipes_cache[name] or usages_cache[name] then
+				init_items[#init_items + 1] = name
+				hash[name] = true
+			end
 		end
 	end
 
+	handle_aliases(hash)
 	sort(init_items)
 end
 
