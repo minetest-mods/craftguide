@@ -800,20 +800,36 @@ local function get_info_fs(data, fs)
 		if (not sfinv_only and k == "recipes") or
 				(sfinv_only and not data.show_usages) then
 			btn_lab = ESC(S("Recipe @1 of @2", data.rnum, #v))
+
 		elseif not sfinv_only or (sfinv_only and data.show_usages) then
 			btn_lab = ESC(S("Usage @1 of @2", data.unum, #v))
-		end
 
-		if sfinv_only then
+		elseif sfinv_only then
 			btn_lab = data.show_usages and
-				ESC(S("Usage @1 of @2", data.rnum, #v)) or
+				ESC(S("Usage @1 of @2", data.unum, #v)) or
 				ESC(S("Recipe @1 of @2", data.rnum, #v))
 		end
 
-		fs[#fs + 1] = fmt(FMT.button,
-			XOFFSET + (sfinv_only and 1.98 or 1.12),
-			YOFFSET + (sfinv_only and 1.9 or 1.2 + spacing),
-			2.2, 1, "alternate_" .. (k == "recipes" and "recipe" or "usage"), btn_lab)
+		if #v > 1 then
+			local btn_suffix = k == "recipes" and "recipe" or "usage"
+
+			fs[#fs + 1] = fmt([[
+				image_button[%f,%f;0.8,0.8;%s;prev_%s;;;false;%s^\[colorize:yellow:255]
+				label[%f,%f;%s]
+				image_button[%f,%f;0.8,0.8;%s;next_%s;;;false;%s^\[colorize:yellow:255]
+				]],
+				XOFFSET + (sfinv_only and 1.7 or 1),
+				YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing),
+				PNG.prev, btn_suffix, PNG.prev,
+
+				XOFFSET + (sfinv_only and 2.3 or 1.6),
+				YOFFSET + (sfinv_only and 2.2 or 1.5 + spacing),
+				btn_lab,
+
+				XOFFSET + (sfinv_only and 3.5 or 2.8),
+				YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing),
+				PNG.next, btn_suffix, PNG.next)
+		end
 
 		if width > WH_LIMIT or rows > WH_LIMIT then
 			fs[#fs + 1] = fmt(FMT.label,
@@ -1268,24 +1284,27 @@ local function fields(player, _f)
 
 	if _f.clear then
 		reset_data(data)
-		show_fs(player, name)
-		return true
+		return true, show_fs(player, name)
 
-	elseif _f.alternate_recipe then
-		if #data.recipes == 1 then return end
+	elseif _f.prev_recipe then
+		local num_prev = data.rnum - 1
+		data.rnum = data.recipes[num_prev] and num_prev or #data.recipes
+		return true, show_fs(player, name)
+
+	elseif _f.next_recipe then
 		local num_next = data.rnum + 1
 		data.rnum = data.recipes[num_next] and num_next or 1
+		return true, show_fs(player, name)
 
-		show_fs(player, name)
-		return true
+	elseif _f.prev_usage then
+		local num_prev = data.unum - 1
+		data.unum = data.usages[num_prev] and num_prev or #data.usages
+		return true, show_fs(player, name)
 
-	elseif _f.alternate_usage then
-		if #data.usages == 1 then return end
+	elseif _f.next_usage then
 		local num_next = data.unum + 1
 		data.unum = data.usages[num_next] and num_next or 1
-
-		show_fs(player, name)
-		return true
+		return true, show_fs(player, name)
 
 	elseif (_f.key_enter_field == "filter" or _f.search) and _f.filter ~= "" then
 		local str = lower(_f.filter)
@@ -1295,8 +1314,7 @@ local function fields(player, _f)
 		data.pagenum = 1
 		search(data)
 
-		show_fs(player, name)
-		return true
+		return true, show_fs(player, name)
 
 	elseif _f.prev or _f.next then
 		if data.pagemax == 1 then return end
@@ -1308,8 +1326,7 @@ local function fields(player, _f)
 			data.pagenum = data.pagemax
 		end
 
-		show_fs(player, name)
-		return true
+		return true, show_fs(player, name)
 	else
 		local item
 		for field in pairs(_f) do
@@ -1342,8 +1359,7 @@ local function fields(player, _f)
 		data.rnum       = 1
 		data.unum       = 1
 
-		show_fs(player, name)
-		return true
+		return true, show_fs(player, name)
 	end
 end
 
