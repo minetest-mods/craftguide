@@ -95,6 +95,7 @@ local FMT = {
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
+	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s^\\[colorize:yellow:255]"
 }
 
 craftguide.group_stereotypes = {
@@ -794,12 +795,11 @@ local function get_info_fs(data, fs)
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 			local y_arrow = YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing)
 
-			fs[#fs + 1] = fmt([[
-				image_button[%f,%f;0.8,0.8;%s;prev_%s;;;false;%s^\[colorize:yellow:255]
-				image_button[%f,%f;0.8,0.8;%s;next_%s;;;false;%s^\[colorize:yellow:255]
-				]],
-				x_arrow, y_arrow, PNG.prev, btn_suffix, PNG.prev,
-				x_arrow + 1.8, y_arrow, PNG.next, btn_suffix, PNG.next)
+			fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
+				x_arrow, y_arrow, PNG.prev,
+					fmt("prev_%s", btn_suffix), PNG.prev,
+				x_arrow + 1.8, y_arrow, PNG.next,
+					fmt("next_%s", btn_suffix), PNG.next)
 		end
 
 		if width > WH_LIMIT or rows > WH_LIMIT then
@@ -945,14 +945,15 @@ local function make_formspec(name)
 		sfinv_only and 2.6 or 2.54, PNG.search, PNG.search,
 		sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear)
 
-	fs[#fs + 1] = fmt([[
-		image_button[%f,-0.05;0.8,0.8;%s;prev;;;false;%s^\[colorize:yellow:255]
-		label[%f,%f;%s / %u]
-		image_button[%f,-0.05;0.8,0.8;%s;next;;;false;%s^\[colorize:yellow:255]
-		]],
-		sfinv_only and 5.45 or (ROWS * 6.83) / 11, PNG.prev, PNG.prev,
-		sfinv_only and 6.35 or (ROWS * 7.85) / 11, 0.06, clr("yellow", data.pagenum), data.pagemax,
-		sfinv_only and 7.2  or (ROWS * 8.75) / 11, PNG.next, PNG.next)
+	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
+		sfinv_only and 6.35 or (ROWS * 7.85) / 11,
+			0.06, clr("yellow", data.pagenum), data.pagemax)
+
+	fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
+		sfinv_only and 5.45 or (ROWS * 6.83) / 11,
+			-0.05, PNG.prev, "prev_page", PNG.prev,
+		sfinv_only and 7.2  or (ROWS * 8.75) / 11,
+			-0.05, PNG.next, "next_page", PNG.next)
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
@@ -1257,24 +1258,14 @@ local function fields(player, _f)
 		reset_data(data)
 		return true, show_fs(player, name)
 
-	elseif _f.prev_recipe then
-		local num_prev = data.rnum - 1
-		data.rnum = data.recipes[num_prev] and num_prev or #data.recipes
+	elseif _f.prev_recipe or _f.next_recipe then
+		local num = data.rnum + (_f.prev_recipe and -1 or 1)
+		data.rnum = data.recipes[num] and num or (_f.prev_recipe and #data.recipes or 1)
 		return true, show_fs(player, name)
 
-	elseif _f.next_recipe then
-		local num_next = data.rnum + 1
-		data.rnum = data.recipes[num_next] and num_next or 1
-		return true, show_fs(player, name)
-
-	elseif _f.prev_usage then
-		local num_prev = data.unum - 1
-		data.unum = data.usages[num_prev] and num_prev or #data.usages
-		return true, show_fs(player, name)
-
-	elseif _f.next_usage then
-		local num_next = data.unum + 1
-		data.unum = data.usages[num_next] and num_next or 1
+	elseif _f.prev_usage or _f.next_usage then
+		local num = data.unum + (_f.prev_usage and -1 or 1)
+		data.unum = data.usages[num] and num or (_f.prev_usage and #data.usages or 1)
 		return true, show_fs(player, name)
 
 	elseif (_f.key_enter_field == "filter" or _f.search) and _f.filter ~= "" then
@@ -1287,9 +1278,9 @@ local function fields(player, _f)
 
 		return true, show_fs(player, name)
 
-	elseif _f.prev or _f.next then
+	elseif _f.prev_page or _f.next_page then
 		if data.pagemax == 1 then return end
-		data.pagenum = data.pagenum - (_f.prev and 1 or -1)
+		data.pagenum = data.pagenum - (_f.prev_page and 1 or -1)
 
 		if data.pagenum > data.pagemax then
 			data.pagenum = 1
