@@ -535,10 +535,12 @@ local function get_recipes(item, data, player)
 
 	if not sfinv_only or (sfinv_only and data.show_usages) then
 		usages = apply_recipe_filters(usages, player)
-		if usages and #usages == 0 then return end
 	end
 
-	return recipes, usages
+	local no_usages = not usages or #usages == 0
+
+	return not no_recipes and recipes or nil,
+	       not no_usages  and usages or nil
 end
 
 local function groups_to_items(groups, get_all)
@@ -652,7 +654,7 @@ local function get_output_fs(fs, L)
 		end
 	end
 
-	local arrow_X = L.rightest + (L.s_btn_size or 1.1)
+	local arrow_X = L.rightest + (L._btn_size or 1.1)
 	local output_X = arrow_X + 0.9
 
 	fs[#fs + 1] = fmt(FMT.image,
@@ -703,17 +705,17 @@ local function pretty_wrap(str, limit)
 	return #str > limit + 3 and sub(str, 1, limit) .. "..." or str
 end
 
-local function get_itemdef_fs(fs, L)
+local function get_itemdef_fs(fs, item, last_y)
 	fs[#fs + 1] = CORE_VERSION >= 510 and
 		fmt("background9[8.1,%f;6.6,2.19;%s;false;%d]",
-			L.y, PNG.bg_full, 10) or
-		fmt("background[8.1,%f;6.6,2.19;%s;false]", L.y, PNG.bg_full)
+			last_y, PNG.bg_full, 10) or
+		fmt("background[8.1,%f;6.6,2.19;%s;false]", last_y, PNG.bg_full)
 
 	local specs = {
 		ESC(S("Name")),
 	}
 
-	local namestr = fmt("%s (%s)", pretty_wrap(get_desc(L.item), 25), L.item)
+	local namestr = fmt("%s (%s)", pretty_wrap(get_desc(item), 25), item)
 
 	local tstr = ""
 	for i = 1, #specs do
@@ -727,13 +729,129 @@ local function get_itemdef_fs(fs, L)
 	]]
 
 	fs[#fs + 1] = fmt("table[8.1,%f;6.3,1.8;itemdef;" .. tstr .. ";0]",
-		L.y + 0.08, namestr)
+		last_y + 0.08, namestr)
 end
 
-local function get_info_fs(data, fs)
+local function get_grid_fs(fs, rcp, spacing)
+	local width = rcp.width or 1
+	local replacements = rcp.replacements
+	local rightest, btn_size, _btn_size = 0, 1.1
+	local cooktime, shapeless
+
+	if rcp.type == "cooking" then
+		cooktime, width = width, 1
+	elseif width == 0 and not rcp.custom then
+		shapeless = true
+		local n = #rcp.items
+		width = (n < 5 and n > 1) and 2 or min(3, max(1, n))
+	end
+
+	local rows = ceil(maxn(rcp.items) / width)
+
+	if width > WH_LIMIT or rows > WH_LIMIT then
+		fs[#fs + 1] = fmt(FMT.label,
+			XOFFSET + (sfinv_only and -1.5 or -1.6),
+			YOFFSET + (sfinv_only and 0.5 or spacing),
+			ESC(S("Recipe's too big to be displayed (@1x@2)",
+				width, rows)))
+
+		return concat(fs)
+	end
+
+	local large_recipe = width > 3 or rows > 3
+
+	if large_recipe then
+		fs[#fs + 1] = "style_type[item_image_button;border=true]"
+	end
+
+	for i = 1, width * rows do
+		local item = rcp.items[i] or ""
+		local X = ceil((i - 1) % width - width) + XOFFSET
+		local Y = ceil(i / width) + YOFFSET - min(2, rows) + spacing
+
+		if large_recipe then
+			local xof = 1 - 4 / width
+			local yof = 1 - 4 / rows
+			local x_y = width > rows and xof or yof
+
+			btn_size = width > rows and
+				(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
+			_btn_size = btn_size
+
+			X = (btn_size * ((i - 1) % width) + XOFFSET -
+				(sfinv_only and 2.83 or 0.5)) * (0.83 - (x_y / 5))
+			Y = (btn_size * floor((i - 1) / width) +
+				(sfinv_only and 5.81 or 4) + x_y) * (0.86 - (x_y / 5))
+		end
+
+		if X > rightest then
+			rightest = X
+		end
+
+		local groups
+
+		if is_group(item) then
+			groups = extract_groups(item)
+			local items = groups_to_items(groups)
+			item = items[1] or items
+		end
+
+		local label = groups and "\nG" or ""
+		local replace
+
+		if replacements then
+			for j = 1, #replacements do
+				local replacement = replacements[j]
+				if replacement[1] == item then
+					label = "\nR"
+					replace = replacement[2]
+				end
+			end
+		end
+
+		fs[#fs + 1] = fmt(FMT.item_image_button,
+			X, Y + (sfinv_only and 0.7 or 0),
+			btn_size, btn_size, item, clean_str(item), ESC(label))
+
+		local infos = {
+			unknown  = not reg_items[item],
+			groups   = groups,
+			burntime = fuel_cache[item],
+			cooktime = cooktime,
+			replace  = replace,
+		}
+
+		for _, info in pairs(infos) do
+			if info then
+				fs[#fs + 1] = get_tooltip(item, infos)
+				break
+			end
+		end
+
+		if CORE_VERSION >= 510 and not large_recipe then
+			fs[#fs + 1] = fmt(FMT.image,
+				X, Y + (sfinv_only and 0.7 or 0),
+				btn_size, btn_size, "craftguide_selected.png")
+		end
+
+		if large_recipe then
+			fs[#fs + 1] = "style_type[item_image_button;border=false]"
+		end
+	end
+
+	get_output_fs(fs, {
+		recipe    = rcp,
+		shapeless = shapeless,
+		rightest  = rightest,
+		btn_size  = btn_size,
+		_btn_size = _btn_size,
+		spacing   = spacing,
+	})
+end
+
+local function get_panels(data, fs)
 	local panels = {recipes = data.recipes, usages = data.usages}
-	local infonum = 0
-	local last_y
+	local x, last_y = 0
 
 	if sfinv_only then
 		panels = data.show_usages and
@@ -741,25 +859,9 @@ local function get_info_fs(data, fs)
 	end
 
 	for k, v in pairs(panels) do
-		infonum = infonum + 1
-		local spacing = (infonum - 1) * 3.6
-		last_y = -0.2 + infonum * 3.6
-
-		local rcp = k == "recipes" and v[data.rnum] or v[data.unum]
-		local width = rcp.width or 1
-		local replacements = rcp.replacements
-		local cooktime, shapeless
-
-		if rcp.type == "cooking" then
-			cooktime, width = width, 1
-		elseif width == 0 and not rcp.custom then
-			shapeless = true
-			local n = #rcp.items
-			width = (n < 5 and n > 1) and 2 or min(3, max(1, n))
-		end
-
-		local rows = ceil(maxn(rcp.items) / width)
-		local rightest, btn_size, s_btn_size = 0, 1.1
+		x = x + 1
+		local spacing = (x - 1) * 3.6
+		last_y = -0.2 + x * 3.6
 
 		if not sfinv_only then
 			fs[#fs + 1] = CORE_VERSION >= 510 and
@@ -801,110 +903,12 @@ local function get_info_fs(data, fs)
 					fmt("next_%s", btn_suffix), PNG.next)
 		end
 
-		if width > WH_LIMIT or rows > WH_LIMIT then
-			fs[#fs + 1] = fmt(FMT.label,
-				sfinv_only and 2 or 3, 7,
-				ESC(S("Recipe's too big to be displayed (@1x@2)", width, rows)))
-
-			return concat(fs)
-		end
-
-		local large_recipe = width > 3 or rows > 3
-
-		if large_recipe then
-			fs[#fs + 1] = "style_type[item_image_button;border=true]"
-		end
-
-		for i = 1, width * rows do
-			local item = rcp.items[i] or ""
-			local X = ceil((i - 1) % width - width) + XOFFSET
-			local Y = ceil(i / width) + YOFFSET - min(2, rows) + spacing
-
-			if large_recipe then
-				local xof = 1 - 4 / width
-				local yof = 1 - 4 / rows
-				local x_y = width > rows and xof or yof
-
-				btn_size = width > rows and
-					(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
-				s_btn_size = btn_size
-
-				X = (btn_size * ((i - 1) % width) + XOFFSET -
-					(sfinv_only and 2.83 or 0.5)) * (0.83 - (x_y / 5))
-				Y = (btn_size * floor((i - 1) / width) +
-					(sfinv_only and 5.81 or 4) + x_y) * (0.86 - (x_y / 5))
-			end
-
-			if X > rightest then
-				rightest = X
-			end
-
-			local groups
-
-			if is_group(item) then
-				groups = extract_groups(item)
-				local items = groups_to_items(groups)
-				item = items[1] or items
-			end
-
-			local label = groups and "\nG" or ""
-			local replace
-
-			if replacements then
-				for j = 1, #replacements do
-					local replacement = replacements[j]
-					if replacement[1] == item then
-						label = "\nR"
-						replace = replacement[2]
-					end
-				end
-			end
-
-			fs[#fs + 1] = fmt(FMT.item_image_button,
-				X, Y + (sfinv_only and 0.7 or 0),
-				btn_size, btn_size, item, clean_str(item), ESC(label))
-
-			local infos = {
-				unknown  = not reg_items[item],
-				groups   = groups,
-				burntime = fuel_cache[item],
-				cooktime = cooktime,
-				replace  = replace,
-			}
-
-			for _, info in pairs(infos) do
-				if info then
-					fs[#fs + 1] = get_tooltip(item, infos)
-					break
-				end
-			end
-
-			if CORE_VERSION >= 510 and not large_recipe then
-				fs[#fs + 1] = fmt(FMT.image,
-					X, Y + (sfinv_only and 0.7 or 0),
-					btn_size, btn_size, "craftguide_selected.png")
-			end
-		end
-
-		if large_recipe then
-			fs[#fs + 1] = "style_type[item_image_button;border=false]"
-		end
-
-		get_output_fs(fs, {
-			recipe     = rcp,
-			shapeless  = shapeless,
-			rightest   = rightest,
-			btn_size   = btn_size,
-			s_btn_size = s_btn_size,
-			spacing    = spacing,
-		})
+		local rcp = k == "recipes" and v[data.rnum] or v[data.unum]
+		get_grid_fs(fs, rcp, spacing)
 	end
 
 	if not sfinv_only then
-		get_itemdef_fs(fs, {
-			item = data.query_item,
-			y = last_y,
-		})
+		get_itemdef_fs(fs, data.query_item, last_y)
 	end
 end
 
@@ -989,7 +993,7 @@ local function make_formspec(name)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
-		get_info_fs(data, fs)
+		get_panels(data, fs)
 	end
 
 	return concat(fs)
