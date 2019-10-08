@@ -1869,3 +1869,12 @@ register_command("craft", {
 		return true, craftguide.show(name, node_name)
 	end,
 })
+
+print(core.write_json({
+	result = "default:cobble 16",
+	items = {
+		"default:stone, default:stone, default:stone",
+		"default:stone,              , default:stone",
+		"default:stone, default:stone, default:stone",
+	}
+}))
