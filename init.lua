@@ -20,6 +20,8 @@ local toolrepair
 local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
 
+local http = core.request_http_api()
+
 local reg_items = core.registered_items
 local reg_tools = core.registered_tools
 local reg_aliases = core.registered_aliases
@@ -1870,11 +1872,11 @@ register_command("craft", {
 	end,
 })
 
-print(core.write_json({
-	result = "default:cobble 16",
-	items = {
-		"default:stone, default:stone, default:stone",
-		"default:stone,              , default:stone",
-		"default:stone, default:stone, default:stone",
-	}
-}))
+if http then
+	local data = http.fetch_async({
+		url = "https://raw.githubusercontent.com/minetest-mods/craftguide/master/test.json",	
+	})
+
+	print(type(data))
+	print(core.parse_json(data))
+end
