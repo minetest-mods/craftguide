@@ -74,16 +74,17 @@ local XOFFSET = sfinv_only and 3.83 or 11.2
 local YOFFSET = sfinv_only and 6 or 1
 
 local PNG = {
-	bg      = "craftguide_bg.png",
-	bg_full = "craftguide_bg_full.png",
-	search  = "craftguide_search_icon.png",
-	clear   = "craftguide_clear_icon.png",
-	prev    = "craftguide_next_icon.png^\\[transformFX",
-	next    = "craftguide_next_icon.png",
-	arrow   = "craftguide_arrow.png",
-	fire    = "craftguide_fire.png",
-	book    = "craftguide_book.png",
-	sign    = "craftguide_sign.png",
+	bg       = "craftguide_bg.png",
+	bg_full  = "craftguide_bg_full.png",
+	search   = "craftguide_search_icon.png",
+	clear    = "craftguide_clear_icon.png",
+	prev     = "craftguide_next_icon.png^\\[transformFX",
+	next     = "craftguide_next_icon.png",
+	arrow    = "craftguide_arrow.png",
+	fire     = "craftguide_fire.png",
+	book     = "craftguide_book.png",
+	sign     = "craftguide_sign.png",
+	selected = "craftguide_selected.png",
 }
 
 local FMT = {
@@ -95,7 +96,7 @@ local FMT = {
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s^\\[colorize:yellow:255]"
+	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s^\\[colorize:yellow:255]",
 }
 
 craftguide.group_stereotypes = {
@@ -676,7 +677,7 @@ local function get_output_fs(fs, L)
 		if CORE_VERSION >= 510 then
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-				1.1, 1.1, "craftguide_selected.png")
+				1.1, 1.1, PNG.selected)
 		end
 
 		local burntime = fuel_cache[name]
@@ -831,7 +832,7 @@ local function get_grid_fs(fs, rcp, spacing)
 		if CORE_VERSION >= 510 and not large_recipe then
 			fs[#fs + 1] = fmt(FMT.image,
 				X, Y + (sfinv_only and 0.7 or 0),
-				btn_size, btn_size, "craftguide_selected.png")
+				btn_size, btn_size, PNG.selected)
 		end
 
 		if large_recipe then
@@ -988,7 +989,7 @@ local function make_formspec(name)
 			fs[#fs + 1] = fmt(FMT.image,
 				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 				Y - (Y * 0.1) - 0.1,
-				1, 1, "craftguide_selected.png")
+				1, 1, PNG.selected)
 		end
 	end
 
