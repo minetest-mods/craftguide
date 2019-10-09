@@ -35,7 +35,7 @@ craftguide.register_craft({
 })
 ```
 
-Recipes can also be registered in a Minecraft-like way:
+Recipes can be registered in a Minecraft-like way:
 
 ```Lua
 craftguide.register_craft({
@@ -50,6 +50,47 @@ craftguide.register_craft({
 		['X'] = "default:glass",
 	},
 	result = "default:mese 3",
+})
+```
+
+Multiples recipes can also be registered:
+
+```Lua
+craftguide.register_craft({
+	{
+		result = "default:mese",
+		items = {
+			"default:mese_crystal, default:mese_crystal",
+			"default:mese_crystal, default:mese_crystal",
+		}
+	},
+
+	{
+		result = "default:mese 2",
+		items = {
+			"default:mese_crystal, default:mese_crystal",
+			"default:mese_crystal, default:mese_crystal",
+			"default:mese_crystal, default:mese_crystal",
+		}
+	},
+
+	big = {
+		result = "default:mese 4",
+		items = {
+			"default:mese_crystal, default:mese_crystal",
+			"default:mese_crystal, default:mese_crystal",
+			"default:mese_crystal, default:mese_crystal",
+			"default:mese_crystal, default:mese_crystal",
+		}
+	},
+})
+```
+
+Recipes can be registered via an URL (HTTP support is required¹):
+
+```Lua
+craftguide.register_craft({
+	url = https://raw.githubusercontent.com/minetest-mods/craftguide/master/test.json
 })
 ```
 
@@ -168,3 +209,12 @@ You can add a stereotype like so:
 ```Lua
 craftguide.group_stereotypes.radioactive = "mod:item"
 ```
+
+#### `craftguide.http_post_data`
+
+If set, the mod will export all the cached recipes and usages in a JSON format
+to the given URL (HTTP support is required¹).
+
+---
+
+**¹** Add `craftguide` to the `secure.http_mods` or `secure.trusted_mods` setting in `minetest.conf`.

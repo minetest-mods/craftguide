@@ -29,6 +29,8 @@ local reg_aliases = core.registered_aliases
 local log = core.log
 local after = core.after
 local clr = core.colorize
+local parse_json = core.parse_json
+local write_json = core.write_json
 local chat_send = core.chat_send_player
 local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
@@ -119,12 +121,13 @@ local function msg(name, str)
 	return chat_send(name, fmt("[craftguide] %s", clr("#FFFF00", str)))
 end
 
-local function clean_str(str)
-	return match(str, "%S*")
-end
 
 local function is_str(x)
-	return type(x) == "string" and clean_str(x)
+	return type(x) == "string"
+end
+
+local function true_str(str)
+	return is_str(str) and str ~= ""
 end
 
 local function is_table(x)
@@ -249,7 +252,7 @@ end
 local craft_types = {}
 
 function craftguide.register_craft_type(name, def)
-	if not is_str(name) then
+	if not true_str(name) then
 		return err("craftguide.register_craft_type(): name missing")
 	end
 
@@ -265,19 +268,43 @@ function craftguide.register_craft_type(name, def)
 end
 
 function craftguide.register_craft(def)
-	def.custom = true
-	def.width = 0
-	local c = 0
+	local width, c = 0, 0
+
+	if true_str(def.url) then
+		if not http then
+			return err("No HTTP support for this mod. " ..
+				"Add it to the `secure.http_mods` or `secure.trusted_mods` setting.")
+		end
+
+		http.fetch({url = def.url}, function(result)
+			if result.succeeded then
+				local t = parse_json(result.data)
+				if is_table(t) then
+					return craftguide.register_craft(t)
+				end
+			end
+		end)
+
+		return
+	end
 
 	if not is_table(def) or not next(def) then
 		return err("craftguide.register_craft(): craft definition missing")
 	end
 
-	if def.result then
-		def.output = def.result -- Backward compatibility
+	if #def > 1 then
+		for _, v in pairs(def) do
+			craftguide.register_craft(v)
+		end
+		return
 	end
 
-	if not is_str(def.output) then
+	if def.result then
+		def.output = def.result -- Backward compatibility
+		def.result = nil
+	end
+
+	if not true_str(def.output) then
 		return err("craftguide.register_craft(): output missing")
 	end
 
@@ -299,10 +326,10 @@ function craftguide.register_craft(def)
 			return #a > #b
 		end)
 
-		def.width = #cp[1]
+		width = #cp[1]
 
 		for i = 1, #def.grid do
-			while #def.grid[i] < def.width do
+			while #def.grid[i] < width do
 				def.grid[i] = def.grid[i] .. " "
 			end
 		end
@@ -319,32 +346,35 @@ function craftguide.register_craft(def)
 			items[i] = items[i]:gsub(",", ", ")
 			local rlen = #split(items[i], ",")
 
-			if rlen > def.width then
-				def.width = rlen
+			if rlen > width then
+				width = rlen
 			end
 		end
 
 		for i = 1, len do
-			while #split(items[i], ",") < def.width do
+			while #split(items[i], ",") < width do
 				items[i] = items[i] .. ", "
 			end
 		end
 
 		for name in gmatch(concat(items, ","), "[%s%w_:]+") do
 			c = c + 1
-			def.items[c] = clean_str(name)
+			def.items[c] = match(name, "%S+")
 		end
 	end
 
-	local output = clean_str(def.output)
+	local output = match(def.output, "%S+")
 	recipes_cache[output] = recipes_cache[output] or {}
+
+	def.custom = true
+	def.width = width
 	insert(recipes_cache[output], def)
 end
 
 local recipe_filters = {}
 
 function craftguide.add_recipe_filter(name, f)
-	if not is_str(name) then
+	if not true_str(name) then
 		return err("craftguide.add_recipe_filter(): name missing")
 	elseif not is_func(f) then
 		return err("craftguide.add_recipe_filter(): function missing")
@@ -382,7 +412,7 @@ end
 local search_filters = {}
 
 function craftguide.add_search_filter(name, f)
-	if not is_str(name) then
+	if not true_str(name) then
 		return err("craftguide.add_search_filter(): name missing")
 	elseif not is_func(f) then
 		return err("craftguide.add_search_filter(): function missing")
@@ -630,6 +660,11 @@ local function get_tooltip(item, info)
 		tooltip = add(S("Repairable by step of @1", clr("yellow", toolrepair .. "%")))
 	end
 
+	if info.rarity then
+		local chance = (1 / info.rarity) * 100
+		tooltip = add(S("@1 of chance to drop", clr("yellow", chance .. "%")))
+	end
+
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
@@ -670,7 +705,7 @@ local function get_output_fs(fs, L)
 			1.1, 1.1, PNG.fire)
 	else
 		local item = L.recipe.output
-		local name = clean_str(item)
+		local name = match(item, "%S*")
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
@@ -682,17 +717,17 @@ local function get_output_fs(fs, L)
 				1.1, 1.1, PNG.selected)
 		end
 
-		local burntime = fuel_cache[name]
-		local repair = repairable(name)
+		local infos = {
+			burntime = fuel_cache[name],
+			repair   = repairable(name),
+			rarity   = L.rarity,
+		}
 
-		if burntime or repair then
-			fs[#fs + 1] = get_tooltip(name, {
-				burntime = burntime,
-				repair = repair,
-			})
+		if next(infos) then
+			fs[#fs + 1] = get_tooltip(name, infos)
 		end
 
-		if burntime then
+		if infos.burntime then
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1) + L.spacing,
 				0.6, 0.4, PNG.arrow)
@@ -704,40 +739,11 @@ local function get_output_fs(fs, L)
 	end
 end
 
-local function pretty_wrap(str, limit)
-	return #str > limit + 3 and sub(str, 1, limit) .. "..." or str
-end
-
-local function get_itemdef_fs(fs, item, last_y)
-	fs[#fs + 1] = CORE_VERSION >= 510 and
-		fmt("background9[8.1,%f;6.6,2.19;%s;false;%d]",
-			last_y, PNG.bg_full, 10) or
-		fmt("background[8.1,%f;6.6,2.19;%s;false]", last_y, PNG.bg_full)
-
-	local specs = {
-		ESC(S("Name")),
-	}
-
-	local namestr = fmt("%s (%s)", pretty_wrap(get_desc(item), 25), item)
-
-	local tstr = ""
-	for i = 1, #specs do
-		tstr = tstr .. "#6389FF," .. specs[i] .. ",#FFFFFF,%s,"
-	end
-	tstr = sub(tstr, 1, -2)
-
-	fs[#fs + 1] = [[
-		tableoptions[background=#00000000;highlight=#00000000;border=false]
-		tablecolumns[color;text]
-	]]
-
-	fs[#fs + 1] = fmt("table[8.1,%f;6.3,1.8;itemdef;" .. tstr .. ";0]",
-		last_y + 0.08, namestr)
-end
-
 local function get_grid_fs(fs, rcp, spacing)
+	if not rcp then return end
 	local width = rcp.width or 1
 	local replacements = rcp.replacements
+	local rarity = rcp.rarity
 	local rightest, btn_size, _btn_size = 0, 1.1
 	local cooktime, shapeless
 
@@ -755,8 +761,7 @@ local function get_grid_fs(fs, rcp, spacing)
 		fs[#fs + 1] = fmt(FMT.label,
 			XOFFSET + (sfinv_only and -1.5 or -1.6),
 			YOFFSET + (sfinv_only and 0.5 or spacing),
-			ESC(S("Recipe's too big to be displayed (@1x@2)",
-				width, rows)))
+			ESC(S("Recipe's too big to be displayed (@1x@2)", width, rows)))
 
 		return concat(fs)
 	end
@@ -784,7 +789,7 @@ local function get_grid_fs(fs, rcp, spacing)
 			X = (btn_size * ((i - 1) % width) + XOFFSET -
 				(sfinv_only and 2.83 or 0.5)) * (0.83 - (x_y / 5))
 			Y = (btn_size * floor((i - 1) / width) +
-				(sfinv_only and 5.81 or 4) + x_y) * (0.86 - (x_y / 5))
+				(sfinv_only and 5.81 or 5.5) + x_y) * (0.86 - (x_y / 5))
 		end
 
 		if X > rightest then
@@ -814,21 +819,18 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, clean_str(item), ESC(label))
+			btn_size, btn_size, item, match(item, "%S*"), ESC(label))
 
 		local infos = {
-			unknown  = not reg_items[item],
+			unknown  = reg_items[item] and nil,
 			groups   = groups,
 			burntime = fuel_cache[item],
 			cooktime = cooktime,
 			replace  = replace,
 		}
 
-		for _, info in pairs(infos) do
-			if info then
-				fs[#fs + 1] = get_tooltip(item, infos)
-				break
-			end
+		if next(infos) then
+			fs[#fs + 1] = get_tooltip(item, infos)
 		end
 
 		if CORE_VERSION >= 510 and not large_recipe then
@@ -836,10 +838,10 @@ local function get_grid_fs(fs, rcp, spacing)
 				X, Y + (sfinv_only and 0.7 or 0),
 				btn_size, btn_size, PNG.selected)
 		end
+	end
 
-		if large_recipe then
-			fs[#fs + 1] = "style_type[item_image_button;border=false]"
-		end
+	if large_recipe then
+		fs[#fs + 1] = "style_type[item_image_button;border=false]"
 	end
 
 	get_output_fs(fs, {
@@ -849,12 +851,13 @@ local function get_grid_fs(fs, rcp, spacing)
 		btn_size  = btn_size,
 		_btn_size = _btn_size,
 		spacing   = spacing,
+		rarity    = rarity,
 	})
 end
 
 local function get_panels(data, fs)
-	local panels = {recipes = data.recipes, usages = data.usages}
-	local x, last_y = 0
+	local panels = {recipes = data.recipes or {}, usages = data.usages or {}}
+	local x = 0.33
 
 	if sfinv_only then
 		panels = data.show_usages and
@@ -864,7 +867,6 @@ local function get_panels(data, fs)
 	for k, v in pairs(panels) do
 		x = x + 1
 		local spacing = (x - 1) * 3.6
-		last_y = -0.2 + x * 3.6
 
 		if not sfinv_only then
 			fs[#fs + 1] = CORE_VERSION >= 510 and
@@ -876,7 +878,11 @@ local function get_panels(data, fs)
 
 		local btn_lab
 
-		if (not sfinv_only and k == "recipes") or
+		if not sfinv_only and #v == 0 then
+			btn_lab = clr("red", k == "recipes" and
+				ESC(S("No recipes")) or ESC(S("No usages")))
+
+		elseif (not sfinv_only and k == "recipes") or
 				(sfinv_only and not data.show_usages) then
 			btn_lab = ESC(S("Recipe @1 of @2", data.rnum, #v))
 
@@ -908,10 +914,6 @@ local function get_panels(data, fs)
 
 		local rcp = k == "recipes" and v[data.rnum] or v[data.unum]
 		get_grid_fs(fs, rcp, spacing)
-	end
-
-	if not sfinv_only then
-		get_itemdef_fs(fs, data.query_item, last_y)
 	end
 end
 
@@ -1109,9 +1111,9 @@ core.register_craft = function(def)
 		toolrepair = def.additional_wear * -100
 	end
 
-	local output = def.output or is_str(def.recipe)
+	local output = def.output or (true_str(def.recipe) and def.recipe) or nil
 	if not output then return end
-	output = {clean_str(output)}
+	output = {match(output, "%S+")}
 
 	local groups
 
@@ -1180,11 +1182,12 @@ local function handle_drops_table(name, drop)
 		local di = drop_items[i]
 
 		for j = 1, #di.items do
-			if not is_str(di.items[j]) then break end
-			local dname, dcount = match(di.items[j], "(.*)%s*(%d*)")
-			dcount = dcount and tonumber(dcount) or 1
+			local dstack = ItemStack(di.items[j])
+			local dname = dstack:get_name()
 
-			if dname ~= name then
+			if not dstack:is_empty() and dname ~= name then
+				local dcount = dstack:get_count()
+
 				if #di.items == 1 and di.rarity == 1 and max_start then
 					if not drop_sure[dname] then
 						drop_sure[dname] = 0
@@ -1202,10 +1205,17 @@ local function handle_drops_table(name, drop)
 					end
 
 					if not drop_maybe[dname] then
-						drop_maybe[dname] = 0
+						drop_maybe[dname] = {}
 					end
 
-					drop_maybe[dname] = drop_maybe[dname] + dcount
+					if not drop_maybe[dname].output then
+						drop_maybe[dname].output = 0
+					end
+
+					drop_maybe[dname] = {
+						output = drop_maybe[dname].output + dcount,
+						rarity = di.rarity,
+					}
 				end
 			end
 		end
@@ -1219,19 +1229,21 @@ local function handle_drops_table(name, drop)
 		})
 	end
 
-	for item, count in pairs(drop_maybe) do
+	for item, data in pairs(drop_maybe) do
 		craftguide.register_craft({
 			type = "digging_chance",
 			items = {name},
-			output = fmt("%s %u", item, count),
+			output = fmt("%s %u", item, data.output),
+			rarity = data.rarity,
 		})
 	end
 end
 
 local function register_drops(name, def)
 	local drop = def.drop
+	local dstack = ItemStack(drop)
 
-	if is_str(drop) and drop ~= name then
+	if not dstack:is_empty() and dstack:get_name() ~= name then
 		craftguide.register_craft({
 			type = "digging",
 			items = {name},
@@ -1308,6 +1320,19 @@ local function get_init_items()
 
 	handle_aliases(hash)
 	sort(init_items)
+
+	if http and true_str(craftguide.http_post_data) then
+		local post_data = {
+			recipes = recipes_cache,
+			usages  = usages_cache,
+			fuel    = fuel_cache,
+		}
+
+		http.fetch_async({
+			url = craftguide.http_post_data,
+			post_data = write_json(post_data),
+		})
+	end
 end
 
 local function init_data(name)
@@ -1808,7 +1833,7 @@ on_leaveplayer(function(player)
 end)
 
 function craftguide.show(name, item, show_usages)
-	if not is_str(name) then
+	if not true_str(name)then
 		return err("craftguide.show(): player name missing")
 	end
 
@@ -1871,12 +1896,3 @@ register_command("craft", {
 		return true, craftguide.show(name, node_name)
 	end,
 })
-
-if http then
-	local data = http.fetch_async({
-		url = "https://raw.githubusercontent.com/minetest-mods/craftguide/master/test.json",	
-	})
-
-	print(type(data))
-	print(core.parse_json(data))
-end
