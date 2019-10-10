@@ -740,7 +740,6 @@ local function get_output_fs(fs, L)
 end
 
 local function get_grid_fs(fs, rcp, spacing)
-	if not rcp then return end
 	local width = rcp.width or 1
 	local replacements = rcp.replacements
 	local rarity = rcp.rarity
@@ -913,7 +912,9 @@ local function get_panels(data, fs)
 		end
 
 		local rcp = k == "recipes" and v[data.rnum] or v[data.unum]
-		get_grid_fs(fs, rcp, spacing)
+		if rcp then
+			get_grid_fs(fs, rcp, spacing)
+		end
 	end
 end
 

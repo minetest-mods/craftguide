@@ -65,15 +65,6 @@ craftguide.register_craft({
 		}
 	},
 
-	{
-		result = "default:mese 2",
-		items = {
-			"default:mese_crystal, default:mese_crystal",
-			"default:mese_crystal, default:mese_crystal",
-			"default:mese_crystal, default:mese_crystal",
-		}
-	},
-
 	big = {
 		result = "default:mese 4",
 		items = {
@@ -90,7 +81,7 @@ Recipes can be registered via an URL (HTTP support is required¹):
 
 ```Lua
 craftguide.register_craft({
-	url = https://raw.githubusercontent.com/minetest-mods/craftguide/master/test.json
+	url = "https://raw.githubusercontent.com/minetest-mods/craftguide/master/test.json"
 })
 ```
 
