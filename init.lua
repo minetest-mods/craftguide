@@ -121,7 +121,6 @@ local function msg(name, str)
 	return chat_send(name, fmt("[craftguide] %s", clr("#FFFF00", str)))
 end
 
-
 local function is_str(x)
 	return type(x) == "string"
 end

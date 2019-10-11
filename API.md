@@ -5,6 +5,9 @@
 Custom recipes are nonconventional crafts outside the main crafting grid.
 They can be registered in-game dynamically and have a size beyond 3x3 items.
 
+**Note:** the registration format differs from the default registration format in everything.
+The width is automatically calculated depending where you place the commas. Look at the examples attentively.
+
 #### Registering a custom crafting type (example)
 
 ```Lua
@@ -77,7 +80,7 @@ craftguide.register_craft({
 })
 ```
 
-Recipes can be registered via an URL (HTTP support is required¹):
+Recipes can be registered from a given URL containing a JSON file (HTTP support is required¹):
 
 ```Lua
 craftguide.register_craft({
