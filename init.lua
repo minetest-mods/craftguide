@@ -592,11 +592,15 @@ local function groups_to_items(groups, get_all)
 	local names = {}
 	for name, def in pairs(reg_items) do
 		if item_has_groups(def.groups, groups) then
-			names[#names + 1] = name
+			if get_all then
+				names[#names + 1] = name
+			else
+				return name
+			end
 		end
 	end
 
-	return names
+	return get_all and names or ""
 end
 
 local function repairable(tool)
@@ -798,8 +802,7 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		if is_group(item) then
 			groups = extract_groups(item)
-			local items = groups_to_items(groups)
-			item = items[1] or items
+			item = groups_to_items(groups)
 		end
 
 		local label = groups and "\nG" or ""
