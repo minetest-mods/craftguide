@@ -75,7 +75,7 @@ local IPP   = ROWS * LINES
 local WH_LIMIT = 8
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
-local YOFFSET = sfinv_only and 6 or 1
+local YOFFSET = sfinv_only and 4.9 or 1
 
 local PNG = {
 	bg       = "craftguide_bg.png",
@@ -898,13 +898,13 @@ local function get_panels(data, fs)
 
 		fs[#fs + 1] = fmt(FMT.label,
 			XOFFSET + (sfinv_only and 2.3 or 1.6),
-			YOFFSET + (sfinv_only and 2.2 or 1.5 + spacing),
+			YOFFSET + (sfinv_only and 3.35 or 1.5 + spacing),
 			btn_lab)
 
 		if #v > 1 then
 			local btn_suffix = k == "recipes" and "recipe" or "usage"
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
-			local y_arrow = YOFFSET + (sfinv_only and 2.1 or 1.4 + spacing)
+			local y_arrow = YOFFSET + (sfinv_only and 3.25 or 1.4 + spacing)
 
 			fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
 				x_arrow, y_arrow, PNG.prev,
