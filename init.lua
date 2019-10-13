@@ -66,7 +66,7 @@ local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next, type = pairs, next, type
+local pairs, next, type, tostring = pairs, next, type, tostring
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local ROWS  = 9
@@ -139,6 +139,14 @@ end
 
 local function is_group(item)
 	return sub(item, 1, 6) == "group:"
+end
+
+local function clean_item(item)
+	if sub(item, 1, 1) == ":" then
+		item = sub(item, 2)
+	end
+
+	return item
 end
 
 local function array_diff(t1, t2)
@@ -616,7 +624,7 @@ local function get_desc(name)
 	      S("Unknown Item (@1)", name))
 end
 
-local function get_tooltip(item, info)
+local function get_tooltip(name, info)
 	local tooltip
 
 	if info.groups then
@@ -630,10 +638,10 @@ local function get_tooltip(item, info)
 		groupstr = concat(groupstr, ", ")
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
 
-		return fmt("tooltip[%s;%s]", item, ESC(tooltip))
+		return fmt("tooltip[%s;%s]", name, ESC(tooltip))
 	end
 
-	tooltip = get_desc(item)
+	tooltip = get_desc(name)
 
 	local function add(str)
 		return fmt("%s\n%s", tooltip, str)
@@ -668,7 +676,7 @@ local function get_tooltip(item, info)
 		tooltip = add(S("@1 of chance to drop", clr("yellow", chance .. "%")))
 	end
 
-	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
+	return fmt("tooltip[%s;%s]", name, ESC(tooltip))
 end
 
 local function get_output_fs(fs, L)
@@ -708,11 +716,12 @@ local function get_output_fs(fs, L)
 			1.1, 1.1, PNG.fire)
 	else
 		local item = L.recipe.output
+		item = clean_item(item)
 		local name = match(item, "%S*")
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, item, ESC(name), "")
+			1.1, 1.1, item, name, "")
 
 		if CORE_VERSION >= 510 then
 			fs[#fs + 1] = fmt(FMT.image,
@@ -721,6 +730,7 @@ local function get_output_fs(fs, L)
 		end
 
 		local infos = {
+			unknown  = not reg_items[name] or nil,
 			burntime = fuel_cache[name],
 			repair   = repairable(name),
 			rarity   = L.rarity,
@@ -776,6 +786,9 @@ local function get_grid_fs(fs, rcp, spacing)
 
 	for i = 1, width * rows do
 		local item = rcp.items[i] or ""
+		item = clean_item(item)
+		local name = match(item, "%S*")
+
 		local X = ceil((i - 1) % width - width) + XOFFSET
 		local Y = ceil(i / width) + YOFFSET - min(2, rows) + spacing
 
@@ -800,8 +813,8 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		local groups
 
-		if is_group(item) then
-			groups = extract_groups(item)
+		if is_group(name) then
+			groups = extract_groups(name)
 			item = groups_to_items(groups)
 		end
 
@@ -811,7 +824,7 @@ local function get_grid_fs(fs, rcp, spacing)
 		if replacements then
 			for j = 1, #replacements do
 				local replacement = replacements[j]
-				if replacement[1] == item then
+				if replacement[1] == name then
 					label = "\nR"
 					replace = replacement[2]
 				end
@@ -820,18 +833,18 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, match(item, "%S*"), ESC(label))
+			btn_size, btn_size, item, name, ESC(label))
 
 		local infos = {
-			unknown  = reg_items[item] and nil,
+			unknown  = not reg_items[name] or nil,
 			groups   = groups,
-			burntime = fuel_cache[item],
+			burntime = fuel_cache[name],
 			cooktime = cooktime,
 			replace  = replace,
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(item, infos)
+			fs[#fs + 1] = get_tooltip(name, infos)
 		end
 
 		if CORE_VERSION >= 510 and not large_recipe then
@@ -877,43 +890,51 @@ local function get_panels(data, fs)
 					-0.2 + spacing, PNG.bg_full)
 		end
 
+		local rn = #v
+		local _rn = tostring(rn)
+		local xof_u = tostring(data.unum) .. _rn
+		local xof_r = tostring(data.rnum) .. _rn
+		xof_u = max(-0.3, -((#xof_u - 3) * 0.15))
+		xof_r = max(-0.3, -((#xof_r - 3) * 0.15))
+
+		local is_recipe = k == "recipes"
 		local btn_lab
 
-		if not sfinv_only and #v == 0 then
-			btn_lab = clr("red", k == "recipes" and
+		if not sfinv_only and rn == 0 then
+			btn_lab = clr("red", is_recipe and
 				ESC(S("No recipes")) or ESC(S("No usages")))
 
-		elseif (not sfinv_only and k == "recipes") or
+		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
-			btn_lab = ESC(S("Recipe @1 of @2", data.rnum, #v))
+			btn_lab = ESC(S("Recipe @1 of @2", data.rnum, rn))
 
 		elseif not sfinv_only or (sfinv_only and data.show_usages) then
-			btn_lab = ESC(S("Usage @1 of @2", data.unum, #v))
+			btn_lab = ESC(S("Usage @1 of @2", data.unum, rn))
 
 		elseif sfinv_only then
 			btn_lab = data.show_usages and
-				ESC(S("Usage @1 of @2", data.unum, #v)) or
-				ESC(S("Recipe @1 of @2", data.rnum, #v))
+				ESC(S("Usage @1 of @2", data.unum, rn)) or
+				ESC(S("Recipe @1 of @2", data.rnum, rn))
 		end
 
 		fs[#fs + 1] = fmt(FMT.label,
-			XOFFSET + (sfinv_only and 2.3 or 1.6),
+			XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xof_r or xof_u),
 			YOFFSET + (sfinv_only and 3.35 or 1.5 + spacing),
 			btn_lab)
 
-		if #v > 1 then
-			local btn_suffix = k == "recipes" and "recipe" or "usage"
+		if rn > 1 then
+			local btn_suffix = is_recipe and "recipe" or "usage"
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 			local y_arrow = YOFFSET + (sfinv_only and 3.25 or 1.4 + spacing)
 
 			fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
-				x_arrow, y_arrow, PNG.prev,
+				x_arrow + (is_recipe and xof_r or xof_u), y_arrow, PNG.prev,
 					fmt("prev_%s", btn_suffix), PNG.prev,
 				x_arrow + 1.8, y_arrow, PNG.next,
 					fmt("next_%s", btn_suffix), PNG.next)
 		end
 
-		local rcp = k == "recipes" and v[data.rnum] or v[data.unum]
+		local rcp = is_recipe and v[data.rnum] or v[data.unum]
 		if rcp then
 			get_grid_fs(fs, rcp, spacing)
 		end
@@ -1287,7 +1308,7 @@ local function handle_aliases(hash)
 			end
 		end
 
-		if recipes_cache[oldname] and not hash[newname] then
+		if newname ~= "" and recipes_cache[oldname] and not hash[newname] then
 			init_items[#init_items + 1] = newname
 		end
 	end
@@ -1300,6 +1321,8 @@ local function show_item(def)
 end
 
 local function get_init_items()
+	print("[craftguide] Caching data. This may take a while...")
+
 	local hash = {}
 	for name, def in pairs(reg_items) do
 		if show_item(def) then
@@ -1314,7 +1337,7 @@ local function get_init_items()
 			cache_usages(name)
 			register_drops(name, def)
 
-			if recipes_cache[name] or usages_cache[name] then
+			if name ~= "" and recipes_cache[name] or usages_cache[name] then
 				init_items[#init_items + 1] = name
 				hash[name] = true
 			end
