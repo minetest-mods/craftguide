@@ -21,3 +21,6 @@ Show recipe(s) of the pointed node=Mostra la ricetta del nodo puntato
 No node pointed=Nessun nodo puntato
 You don't know a recipe for this node=Non conosci una ricetta per questo nodo
 No recipe for this node=Nessuna ricetta per questo nodo
+Digging=Scavando
+Digging Chance=Probabilità di scavare
+@1 of chance to drop=@1 di probabilità di rilascio
