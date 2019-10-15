@@ -637,11 +637,9 @@ local function get_tooltip(name, info)
 
 		groupstr = concat(groupstr, ", ")
 		tooltip = S("Any item belonging to the group(s): @1", groupstr)
-
-		return fmt("tooltip[%s;%s]", name, ESC(tooltip))
+	else
+		tooltip = get_desc(name)
 	end
-
-	tooltip = get_desc(name)
 
 	local function add(str)
 		return fmt("%s\n%s", tooltip, str)
@@ -825,7 +823,7 @@ local function get_grid_fs(fs, rcp, spacing)
 			for j = 1, #replacements do
 				local replacement = replacements[j]
 				if replacement[1] == name then
-					label = "\nR"
+					label = (label ~= "" and "\n" or "") .. label .. "\nR"
 					replace = replacement[2]
 				end
 			end
@@ -833,7 +831,7 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, name, ESC(label))
+			btn_size, btn_size, item, item, ESC(label))
 
 		local infos = {
 			unknown  = not reg_items[name] or nil,
@@ -844,7 +842,7 @@ local function get_grid_fs(fs, rcp, spacing)
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(name, infos)
+			fs[#fs + 1] = get_tooltip(item, infos)
 		end
 
 		if CORE_VERSION >= 510 and not large_recipe then
