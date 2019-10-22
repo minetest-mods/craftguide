@@ -1034,21 +1034,6 @@ local show_fs = function(player, name)
 	end
 end
 
-craftguide.add_search_filter("groups", function(item, groups)
-	local itemdef = reg_items[item]
-	local has_groups = true
-
-	for i = 1, #groups do
-		local group = groups[i]
-		if not itemdef.groups[group] then
-			has_groups = nil
-			break
-		end
-	end
-
-	return has_groups
-end)
-
 craftguide.register_craft_type("digging", {
 	description = ESC(S("Digging")),
 	icon = "default_tool_steelpick.png",
@@ -1067,7 +1052,7 @@ local function search(data)
 		return
 	end
 
-	local opt = "^(.-)%+([%w_]+)=([%w_,]+)"
+	local opt = "^(.-)%+([%w_]*)=*([%w_,]*)"
 	local search_filter = next(search_filters) and match(filter, opt)
 	local filters = {}
 
@@ -1091,9 +1076,11 @@ local function search(data)
 
 		if search_filter then
 			for filter_name, values in pairs(filters) do
-				local func = search_filters[filter_name]
-				to_add = func(item, values) and (search_filter == "" or
-					find(search_in, search_filter, 1, true))
+				if values then
+					local func = search_filters[filter_name]
+					to_add = func(item, values) and (search_filter == "" or
+						find(search_in, search_filter, 1, true))
+				end
 			end
 		else
 			to_add = find(search_in, filter, 1, true)
@@ -1116,6 +1103,21 @@ local function search(data)
 
 	data.items = filtered_list
 end
+
+craftguide.add_search_filter("groups", function(item, groups)
+	local def = reg_items[item]
+	local has_groups = true
+
+	for i = 1, #groups do
+		local group = groups[i]
+		if not def.groups[group] then
+			has_groups = nil
+			break
+		end
+	end
+
+	return has_groups
+end)
 
 --[[	As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not
 	return the replacements and toolrepair, we have to override
@@ -1278,7 +1280,7 @@ end
 
 local function handle_aliases(hash)
 	for oldname, newname in pairs(reg_aliases) do
-		local recipes = recipes_cache[oldname]
+		local recipes = recipes_cache[oldname] or get_all_recipes(oldname)
 		if recipes then
 			if not recipes_cache[newname] then
 				recipes_cache[newname] = {}
