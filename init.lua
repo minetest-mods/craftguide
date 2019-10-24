@@ -89,6 +89,11 @@ local PNG = {
 	book     = "craftguide_book.png",
 	sign     = "craftguide_sign.png",
 	selected = "craftguide_selected.png",
+
+	search_hover = "craftguide_search_icon_hover.png",
+	clear_hover  = "craftguide_clear_icon_hover.png",
+	prev_hover   = "craftguide_next_icon_hover.png^\\[transformFX",
+	next_hover   = "craftguide_next_icon_hover.png",
 }
 
 local FMT = {
@@ -100,7 +105,7 @@ local FMT = {
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s^\\[colorize:yellow:255]",
+	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
 
 craftguide.group_stereotypes = {
@@ -922,14 +927,29 @@ local function get_panels(data, fs)
 
 		if rn > 1 then
 			local btn_suffix = is_recipe and "recipe" or "usage"
+			local prev_name = fmt("prev_%s", btn_suffix)
+			local next_name = fmt("next_%s", btn_suffix)
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 			local y_arrow = YOFFSET + (sfinv_only and 3.25 or 1.4 + spacing)
 
-			fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
-				x_arrow + (is_recipe and xof_r or xof_u), y_arrow, PNG.prev,
-					fmt("prev_%s", btn_suffix), PNG.prev,
-				x_arrow + 1.8, y_arrow, PNG.next,
-					fmt("next_%s", btn_suffix), PNG.next)
+			if CORE_VERSION >= 520 then
+				fs[#fs + 1] = fmt([[
+					style[%s;border=false;bgimg=%s;bgimg_hovered=%s]
+					style[%s;border=false;bgimg=%s;bgimg_hovered=%s]
+				]],
+				prev_name, PNG.prev, PNG.prev_hover,
+				next_name, PNG.next, PNG.next_hover)
+
+				fs[#fs + 1] = fmt(FMT.button .. FMT.button,
+					x_arrow + (is_recipe and xof_r or xof_u),
+						y_arrow, 0.8, 0.8, prev_name, "",
+					x_arrow + 1.8, y_arrow, 0.8, 0.8, next_name, "")
+			else
+				fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
+					x_arrow + (is_recipe and xof_r or xof_u),
+						y_arrow, PNG.prev, prev_name, PNG.prev_hover,
+					x_arrow + 1.8, y_arrow, PNG.next, next_name, PNG.next_hover)
+			end
 		end
 
 		local rcp = is_recipe and v[data.rnum] or v[data.unum]
@@ -968,22 +988,41 @@ local function make_formspec(name)
 		]],
 		sfinv_only and 2.76 or 2.72, ESC(data.filter))
 
-	fs[#fs + 1] = fmt([[
-		image_button[%f,-0.05;0.85,0.85;%s;search;;;false;%s^\[colorize:yellow:255]
-		image_button[%f,-0.05;0.85,0.85;%s;clear;;;false;%s^\[colorize:red:255]
+	if CORE_VERSION >= 520 then
+		fs[#fs + 1] = fmt([[
+			style[search;border=false;bgimg=%s;bgimg_hovered=%s]
+			style[clear;border=false;bgimg=%s;bgimg_hovered=%s]
+			style[prev_page;border=false;bgimg=%s;bgimg_hovered=%s]
+			style[next_page;border=false;bgimg=%s;bgimg_hovered=%s]
 		]],
-		sfinv_only and 2.6 or 2.54, PNG.search, PNG.search,
-		sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear)
+		PNG.search, PNG.search_hover,
+		PNG.clear, PNG.clear_hover,
+		PNG.prev, PNG.prev_hover,
+		PNG.next, PNG.next_hover)
+
+		fs[#fs + 1] = fmt(FMT.button .. FMT.button .. FMT.button .. FMT.button,
+			sfinv_only and 2.6 or 2.54, -0.12, 0.85, 1, "search", "",
+			sfinv_only and 3.3 or 3.25, -0.12, 0.85, 1, "clear", "",
+			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.12, 0.85, 1, "prev_page", "",
+			sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.12, 0.85, 1, "next_page", "")
+	else
+		fs[#fs + 1] = fmt([[
+			image_button[%f,-0.12;0.85,1;%s;search;;;false;%s]
+			image_button[%f,-0.12;0.85,1;%s;clear;;;false;%s]
+			]],
+			sfinv_only and 2.6 or 2.54, PNG.search, PNG.search_hover,
+			sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear_hover)
+
+		fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
+			sfinv_only and 5.45 or (ROWS * 6.83) / 11,
+				-0.05, PNG.prev, "prev_page", PNG.prev,
+			sfinv_only and 7.2  or (ROWS * 8.75) / 11,
+				-0.05, PNG.next, "next_page", PNG.next)
+	end
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
 		sfinv_only and 6.35 or (ROWS * 7.85) / 11,
 			0.06, clr("yellow", data.pagenum), data.pagemax)
-
-	fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
-		sfinv_only and 5.45 or (ROWS * 6.83) / 11,
-			-0.05, PNG.prev, "prev_page", PNG.prev,
-		sfinv_only and 7.2  or (ROWS * 8.75) / 11,
-			-0.05, PNG.next, "next_page", PNG.next)
 
 	if #data.items == 0 then
 		local no_item = S("No item to show")
