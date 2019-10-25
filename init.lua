@@ -66,7 +66,7 @@ local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next, type, tostring = pairs, next, type, tostring
+local pairs, next, type, tostring, io = pairs, next, type, tostring, io
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local ROWS  = 9
@@ -1331,7 +1331,9 @@ end
 
 local function handle_aliases(hash)
 	for oldname, newname in pairs(reg_aliases) do
-		local recipes = recipes_cache[oldname] or get_all_recipes(oldname)
+		cache_recipes(oldname)
+		local recipes = recipes_cache[oldname]
+
 		if recipes then
 			if not recipes_cache[newname] then
 				recipes_cache[newname] = {}
@@ -1371,11 +1373,34 @@ local function show_item(def)
 		def.description and def.description ~= ""
 end
 
-local function get_init_items()
-	print("[craftguide] Caching data. This may take a while...")
+local function tablelen(t)
+	local c = 0
+	for _ in pairs(t) do
+		c = c + 1
+	end
 
+	return c
+end
+
+local function get_init_items()
+	local ic, it, last_str = 0, tablelen(reg_items), ""
 	local hash = {}
+
+	local function iop(str)
+		io.write(("\b \b"):rep(#last_str))
+		io.write(str)
+		io.flush()
+		last_str = str
+	end
+
 	for name, def in pairs(reg_items) do
+		ic = ic + 1
+		if ic < it then
+			iop(fmt("[craftguide] Caching data: %u/%u items", ic, it))
+		else
+			iop("[craftguide] Caching data: done\r\n")
+		end
+
 		if show_item(def) then
 			if not fuel_cache[name] then
 				cache_fuel(name)
