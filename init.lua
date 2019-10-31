@@ -108,6 +108,17 @@ local FMT = {
 	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
 
+local function mul_elem(elem, n)
+	local fstr, elems = "", {}
+
+	for i = 1, n do
+		fstr = fstr .. "%s"
+		elems[i] = elem
+	end
+
+	return fmt(fstr, unpack(elems))
+end
+
 craftguide.group_stereotypes = {
 	dye = "dye:white",
 	wool = "wool:white",
@@ -940,12 +951,12 @@ local function get_panels(data, fs)
 				prev_name, PNG.prev, PNG.prev_hover,
 				next_name, PNG.next, PNG.next_hover)
 
-				fs[#fs + 1] = fmt(FMT.button .. FMT.button,
+				fs[#fs + 1] = fmt(mul_elem(FMT.button, 2),
 					x_arrow + (is_recipe and xof_r or xof_u),
 						y_arrow, 0.8, 0.8, prev_name, "",
 					x_arrow + 1.8, y_arrow, 0.8, 0.8, next_name, "")
 			else
-				fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
+				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 					x_arrow + (is_recipe and xof_r or xof_u),
 						y_arrow, PNG.prev, prev_name, PNG.prev_hover,
 					x_arrow + 1.8, y_arrow, PNG.next, next_name, PNG.next_hover)
@@ -1000,7 +1011,7 @@ local function make_formspec(name)
 		PNG.prev, PNG.prev_hover,
 		PNG.next, PNG.next_hover)
 
-		fs[#fs + 1] = fmt(FMT.button .. FMT.button .. FMT.button .. FMT.button,
+		fs[#fs + 1] = fmt(mul_elem(FMT.button, 4),
 			sfinv_only and 2.6 or 2.54, -0.12, 0.85, 1, "search", "",
 			sfinv_only and 3.3 or 3.25, -0.12, 0.85, 1, "clear", "",
 			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.12, 0.85, 1, "prev_page", "",
@@ -1013,7 +1024,7 @@ local function make_formspec(name)
 			sfinv_only and 2.6 or 2.54, PNG.search, PNG.search_hover,
 			sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear_hover)
 
-		fs[#fs + 1] = fmt(FMT.arrow .. FMT.arrow,
+		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 			sfinv_only and 5.45 or (ROWS * 6.83) / 11,
 				-0.05, PNG.prev, "prev_page", PNG.prev,
 			sfinv_only and 7.2  or (ROWS * 8.75) / 11,
