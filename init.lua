@@ -189,8 +189,8 @@ local function table_eq(T1, T2)
 			return t1 == t2
 		end
 
-		if avoid_loops[t1] then return
-			avoid_loops[t1] == t2
+		if avoid_loops[t1] then
+			return avoid_loops[t1] == t2
 		end
 
 		avoid_loops[t1] = t2
@@ -1393,13 +1393,21 @@ local function get_init_items()
 		last_str = str
 	end
 
+	local full_char, empty_char = "▰", "▱"
+
 	for name, def in pairs(reg_items) do
 		ic = ic + 1
-		if ic < it then
-			iop(fmt("[craftguide] Caching data: %u/%u items", ic, it))
-		else
-			iop("[craftguide] Caching data: done\r\n")
+		local percent, bar, len = (ic * 100) / it, "", 20
+
+		for i = 1, len do
+			if i <= percent / (100 / len) then
+				bar = bar .. full_char
+			else
+				bar = bar .. empty_char
+			end
 		end
+
+		iop(fmt("[craftguide] Caching data  %s  (%u%%)\r", bar, percent))
 
 		if show_item(def) then
 			if not fuel_cache[name] then
@@ -1435,6 +1443,8 @@ local function get_init_items()
 			post_data = write_json(post_data),
 		})
 	end
+
+	print()
 end
 
 local function init_data(name)
