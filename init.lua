@@ -1438,7 +1438,7 @@ local function get_init_items()
 	handle_aliases(hash)
 	sort(init_items)
 
-	if http and true_str(craftguide.http_post_data) then
+	if http and true_str(craftguide.export_url) then
 		local post_data = {
 			recipes = recipes_cache,
 			usages  = usages_cache,
@@ -1446,7 +1446,7 @@ local function get_init_items()
 		}
 
 		http.fetch_async({
-			url = craftguide.http_post_data,
+			url = craftguide.export_url,
 			post_data = write_json(post_data),
 		})
 	end

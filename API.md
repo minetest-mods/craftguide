@@ -204,7 +204,7 @@ You can add a stereotype like so:
 craftguide.group_stereotypes.radioactive = "mod:item"
 ```
 
-#### `craftguide.http_post_data`
+#### `craftguide.export_url`
 
 If set, the mod will export all the cached recipes and usages in a JSON format
 to the given URL (HTTP support is required¹).
