@@ -1414,7 +1414,7 @@ local function get_init_items()
 			bar = bar .. (i <= percent / (100 / len) and full_char or empty_char)
 		end
 
-		iop(fmt("[craftguide] Caching data  %s  (%u%%)\r", bar, percent))
+		iop(fmt("[craftguide] Caching data  %s  %u%%\r", bar, percent))
 
 		if show_item(def) then
 			if not fuel_cache[name] then
