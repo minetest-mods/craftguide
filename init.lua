@@ -733,15 +733,15 @@ local function get_output_fs(fs, L)
 		item = clean_item(item)
 		local name = match(item, "%S*")
 
-		fs[#fs + 1] = fmt(FMT.item_image_button,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, item, name, "")
-
 		if CORE_VERSION >= 510 then
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
 				1.1, 1.1, PNG.selected)
 		end
+
+		fs[#fs + 1] = fmt(FMT.item_image_button,
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
+			1.1, 1.1, item, name, "")
 
 		local infos = {
 			unknown  = not reg_items[name] or nil,
@@ -845,6 +845,12 @@ local function get_grid_fs(fs, rcp, spacing)
 			end
 		end
 
+		if CORE_VERSION >= 510 and not large_recipe then
+			fs[#fs + 1] = fmt(FMT.image,
+				X, Y + (sfinv_only and 0.7 or 0),
+				btn_size, btn_size, PNG.selected)
+		end
+
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y + (sfinv_only and 0.7 or 0),
 			btn_size, btn_size, item, item, ESC(label))
@@ -859,12 +865,6 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		if next(infos) then
 			fs[#fs + 1] = get_tooltip(item, infos)
-		end
-
-		if CORE_VERSION >= 510 and not large_recipe then
-			fs[#fs + 1] = fmt(FMT.image,
-				X, Y + (sfinv_only and 0.7 or 0),
-				btn_size, btn_size, PNG.selected)
 		end
 	end
 
@@ -1056,17 +1056,17 @@ local function make_formspec(name)
 		local X = i % ROWS
 		local Y = (i % IPP - X) / ROWS + 1
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
-			X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
-			Y - (Y * 0.1) - 0.1,
-			1, 1, item, item)
-
 		if CORE_VERSION >= 510 and data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image,
 				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 				Y - (Y * 0.1) - 0.1,
 				1, 1, PNG.selected)
 		end
+
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
+			X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
+			Y - (Y * 0.1) - 0.1,
+			1, 1, item, item)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
@@ -1350,7 +1350,7 @@ local function handle_aliases(hash)
 				recipes_cache[newname] = {}
 			end
 
-			local is_similar
+			local similar
 
 			for i = 1, #recipes_cache[oldname] do
 				local rcp_old = recipes_cache[oldname][i]
@@ -1361,12 +1361,12 @@ local function handle_aliases(hash)
 					rcp_new.method = nil
 
 					if table_eq(rcp_old, rcp_new) then
-						is_similar = true
+						similar = true
 						break
 					end
 				end
 
-				if not is_similar then
+				if not similar then
 					insert(recipes_cache[newname], rcp_old)
 				end
 			end
