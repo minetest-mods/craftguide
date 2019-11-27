@@ -671,13 +671,12 @@ local function get_tooltip(name, info)
 
 	if info.replace then
 		local desc = clr("yellow", get_desc(info.replace))
+		tooltip = add(S("Replaced by @1 on crafting", desc))
 
 		if info.cooktime then
 			tooltip = add(S("Replaced by @1 on smelting", desc))
 		elseif info.burntime then
 			tooltip = add(S("Replaced by @1 on burning", desc))
-		else
-			tooltip = add(S("Replaced by @1 on crafting", desc))
 		end
 	end
 
@@ -710,7 +709,7 @@ local function get_output_fs(fs, L)
 		fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y + L.spacing, 0.5, 0.5, icon)
 
 		local tooltip = custom_recipe and custom_recipe.description or
-				L.shapeless and S("Shapeless") or S("Cooking")
+				L.shapeless and S"Shapeless" or S"Cooking"
 
 		if CORE_VERSION >= 500 then
 			fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y + L.spacing, 0.5, 0.5, ESC(tooltip))
@@ -916,7 +915,7 @@ local function get_panels(data, fs)
 
 		if not sfinv_only and rn == 0 then
 			btn_lab = clr("red", is_recipe and
-				ESC(S("No recipes")) or ESC(S("No usages")))
+				ESC(S"No recipes") or ESC(S"No usages"))
 
 		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
@@ -1027,7 +1026,7 @@ local function make_formspec(name)
 		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 			sfinv_only and 5.45 or (ROWS * 6.83) / 11,
 				-0.05, PNG.prev, "prev_page", PNG.prev,
-			sfinv_only and 7.2  or (ROWS * 8.75) / 11,
+			sfinv_only and 7.2 or (ROWS * 8.75) / 11,
 				-0.05, PNG.next, "next_page", PNG.next)
 	end
 
@@ -1036,11 +1035,11 @@ local function make_formspec(name)
 			0.06, clr("yellow", data.pagenum), data.pagemax)
 
 	if #data.items == 0 then
-		local no_item = S("No item to show")
+		local no_item = S"No item to show"
 		local pos = ROWS / 3
 
 		if next(recipe_filters) and #init_items > 0 and data.filter == "" then
-			no_item = S("Collect items to reveal more recipes")
+			no_item = S"Collect items to reveal more recipes"
 			pos = pos - 1
 		end
 
@@ -1085,12 +1084,12 @@ local show_fs = function(player, name)
 end
 
 craftguide.register_craft_type("digging", {
-	description = ESC(S("Digging")),
+	description = ESC(S"Digging"),
 	icon = "default_tool_steelpick.png",
 })
 
 craftguide.register_craft_type("digging_chance", {
-	description = ESC(S("Digging Chance")),
+	description = ESC(S"Digging Chance"),
 	icon = "default_tool_mesepick.png",
 })
 
@@ -1564,7 +1563,7 @@ end
 
 if sfinv_only then
 	sfinv.register_page("craftguide:craftguide", {
-		title = S("Craft Guide"),
+		title = S"Craft Guide",
 
 		get = function(self, player, context)
 			local name = player:get_player_name()
@@ -1607,7 +1606,7 @@ else
 	end
 
 	core.register_craftitem("craftguide:book", {
-		description = S("Crafting Guide"),
+		description = S"Crafting Guide",
 		inventory_image = PNG.book,
 		wield_image = PNG.book,
 		stack_max = 1,
@@ -1618,7 +1617,7 @@ else
 	})
 
 	core.register_node("craftguide:sign", {
-		description = S("Crafting Guide Sign"),
+		description = S"Crafting Guide Sign",
 		drawtype = "nodebox",
 		tiles = {PNG.sign},
 		inventory_image = PNG.sign,
@@ -1670,8 +1669,8 @@ else
 
 	if rawget(_G, "sfinv_buttons") then
 		sfinv_buttons.register_button("craftguide", {
-			title = S("Crafting Guide"),
-			tooltip = S("Shows a list of available crafting recipes, cooking recipes and fuels"),
+			title = S"Crafting Guide",
+			tooltip = S"Shows a list of available crafting recipes, cooking recipes and fuels",
 			image = PNG.book,
 			action = function(player)
 				on_use(player)
@@ -1968,12 +1967,12 @@ function craftguide.show(name, item, show_usages)
 	if not recipes and not usages then
 		if not recipes_cache[item] and not usages_cache[item] then
 			return false, msg(name, fmt("%s: %s",
-				S("No recipe or usage for this item"),
+				S"No recipe or usage for this item",
 				get_desc(item)))
 		end
 
 		return false, msg(name, fmt("%s: %s",
-			S("You don't know a recipe or usage for this item"),
+			S"You don't know a recipe or usage for this item",
 			get_desc(item)))
 	end
 
@@ -1989,7 +1988,7 @@ function craftguide.show(name, item, show_usages)
 end
 
 register_command("craft", {
-	description = S("Show recipe(s) of the pointed node"),
+	description = S"Show recipe(s) of the pointed node",
 	func = function(name)
 		local player = get_player_by_name(name)
 		local dir    = player:get_look_dir()
@@ -2009,7 +2008,7 @@ register_command("craft", {
 		end
 
 		if not node_name then
-			return false, msg(name, S("No node pointed"))
+			return false, msg(name, S"No node pointed")
 		end
 
 		return true, craftguide.show(name, node_name)
