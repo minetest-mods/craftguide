@@ -466,8 +466,10 @@ local function extract_groups(str)
 end
 
 local function item_in_recipe(item, recipe)
+	local clean_item = reg_aliases[item] or item
 	for _, recipe_item in pairs(recipe.items) do
-		if recipe_item == item then
+		local clean_recipe_item = reg_aliases[recipe_item] or recipe_item
+		if clean_recipe_item == clean_item then
 			return true
 		end
 	end
@@ -575,9 +577,9 @@ local function cache_recipes(output)
 end
 
 local function get_recipes(item, data, player)
-	local recipes = recipes_cache[item]
-	local usages = usages_cache[item]
-
+	local clean_item = reg_aliases[item] or item
+	local recipes = recipes_cache[clean_item]
+	local usages = usages_cache[clean_item]
 	if recipes then
 		recipes = apply_recipe_filters(recipes, player)
 	end
@@ -1539,6 +1541,8 @@ local function fields(player, _f)
 		elseif sub(item, -4) == "_inv" then
 			item = sub(item, 1, -5)
 		end
+
+		item = reg_aliases[item] or item
 
 		if sfinv_only then
 			if item ~= data.query_item then
