@@ -905,35 +905,33 @@ local function get_panels(data, fs)
 
 		local rn = #v
 		local _rn = tostring(rn)
-		local xof_u = tostring(data.unum) .. _rn
-		local xof_r = tostring(data.rnum) .. _rn
-		xof_u = max(-0.3, -((#xof_u - 3) * 0.15))
-		xof_r = max(-0.3, -((#xof_r - 3) * 0.15))
+		local xu = tostring(data.unum) .. _rn
+		local xr = tostring(data.rnum) .. _rn
+		xu = max(-0.3, -((#xu - 3) * 0.15))
+		xr = max(-0.3, -((#xr - 3) * 0.15))
 
 		local is_recipe = k == "recipes"
-		local btn_lab
+		local lbl
 
 		if not sfinv_only and rn == 0 then
-			btn_lab = clr("red", is_recipe and
-				ESC(S"No recipes") or ESC(S"No usages"))
+			lbl = clr("red", is_recipe and ESC(S"No recipes") or ESC(S"No usages"))
 
 		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
-			btn_lab = ESC(S("Recipe @1 of @2", data.rnum, rn))
+			lbl = ESC(S("Recipe @1 of @2", data.rnum, rn))
 
 		elseif not sfinv_only or (sfinv_only and data.show_usages) then
-			btn_lab = ESC(S("Usage @1 of @2", data.unum, rn))
+			lbl = ESC(S("Usage @1 of @2", data.unum, rn))
 
 		elseif sfinv_only then
-			btn_lab = data.show_usages and
+			lbl = data.show_usages and
 				ESC(S("Usage @1 of @2", data.unum, rn)) or
 				ESC(S("Recipe @1 of @2", data.rnum, rn))
 		end
 
 		fs[#fs + 1] = fmt(FMT.label,
-			XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xof_r or xof_u),
-			YOFFSET + (sfinv_only and 3.35 or 1.5 + spacing),
-			btn_lab)
+			XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
+			YOFFSET + (sfinv_only and 3.35 or 1.5 + spacing), lbl)
 
 		if rn > 1 then
 			local btn_suffix = is_recipe and "recipe" or "usage"
@@ -951,12 +949,12 @@ local function get_panels(data, fs)
 				next_name, PNG.next, PNG.next_hover)
 
 				fs[#fs + 1] = fmt(mul_elem(FMT.button, 2),
-					x_arrow + (is_recipe and xof_r or xof_u),
+					x_arrow + (is_recipe and xr or xu),
 						y_arrow, 0.8, 0.8, prev_name, "",
 					x_arrow + 1.8, y_arrow, 0.8, 0.8, next_name, "")
 			else
 				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-					x_arrow + (is_recipe and xof_r or xof_u),
+					x_arrow + (is_recipe and xr or xu),
 						y_arrow, PNG.prev, prev_name, PNG.prev_hover,
 					x_arrow + 1.8, y_arrow, PNG.next, next_name, PNG.next_hover)
 			end
