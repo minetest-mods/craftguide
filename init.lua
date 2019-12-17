@@ -1010,17 +1010,17 @@ local function make_formspec(name)
 			sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
 	else
 		fs[#fs + 1] = fmt([[
-			image_button[%f,-0.12;0.85,1;%s;search;;;false;%s]
-			image_button[%f,-0.12;0.85,1;%s;clear;;;false;%s]
+			image_button[%f,-0.06;0.85,0.85;%s;search;;;false;%s]
+			image_button[%f,-0.06;0.85,0.85;%s;clear;;;false;%s]
 			]],
 			sfinv_only and 2.6 or 2.54, PNG.search, PNG.search_hover,
 			sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear_hover)
 
 		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-			sfinv_only and 5.45 or (ROWS * 6.83) / 11,
-				-0.05, PNG.prev, "prev_page", PNG.prev,
-			sfinv_only and 7.2 or (ROWS * 8.75) / 11,
-				-0.05, PNG.next, "next_page", PNG.next)
+			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.05,
+				PNG.prev, "prev_page", PNG.prev,
+			sfinv_only and 7.2 or (ROWS * 8.75) / 11, -0.05,
+				PNG.next, "next_page", PNG.next)
 	end
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
