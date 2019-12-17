@@ -1249,6 +1249,20 @@ core.register_craft = function(def)
 	end
 end
 
+local old_clear_craft = core.clear_craft
+
+core.clear_craft = function(def)
+	old_clear_craft(def)
+
+	if true_str(def) then
+		recipes_cache[def] = nil
+		fuel_cache[def] = nil
+
+	elseif is_table(def) then
+		return -- TODO
+	end
+end
+
 local function handle_drops_table(name, drop)
 	-- Code borrowed and modified from unified_inventory
 	-- https://github.com/minetest-mods/unified_inventory/blob/master/api.lua
