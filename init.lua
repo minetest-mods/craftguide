@@ -57,6 +57,10 @@ local S = CORE_VERSION >= 500 and core.get_translator("craftguide") or
 		end)
 	end
 
+local ES = function(...)
+	return ESC(S(...))
+end
+
 local maxn, sort, concat, copy, insert, remove =
 	table.maxn, table.sort, table.concat, table.copy,
 	table.insert, table.remove
@@ -276,7 +280,7 @@ local craft_types = {}
 
 function craftguide.register_craft_type(name, def)
 	if not true_str(name) then
-		return err("craftguide.register_craft_type(): name missing")
+		return err"craftguide.register_craft_type(): name missing"
 	end
 
 	if not is_str(def.description) then
@@ -295,8 +299,8 @@ function craftguide.register_craft(def)
 
 	if true_str(def.url) then
 		if not http then
-			return err("No HTTP support for this mod. " ..
-				"Add it to the `secure.http_mods` or `secure.trusted_mods` setting.")
+			return err"No HTTP support for this mod. " ..
+				"Add it to the `secure.http_mods` or `secure.trusted_mods` setting."
 		end
 
 		http.fetch({url = def.url}, function(result)
@@ -312,7 +316,7 @@ function craftguide.register_craft(def)
 	end
 
 	if not is_table(def) or not next(def) then
-		return err("craftguide.register_craft(): craft definition missing")
+		return err"craftguide.register_craft(): craft definition missing"
 	end
 
 	if #def > 1 then
@@ -328,7 +332,7 @@ function craftguide.register_craft(def)
 	end
 
 	if not true_str(def.output) then
-		return err("craftguide.register_craft(): output missing")
+		return err"craftguide.register_craft(): output missing"
 	end
 
 	if not is_table(def.items) then
@@ -398,9 +402,9 @@ local recipe_filters = {}
 
 function craftguide.add_recipe_filter(name, f)
 	if not true_str(name) then
-		return err("craftguide.add_recipe_filter(): name missing")
+		return err"craftguide.add_recipe_filter(): name missing"
 	elseif not is_func(f) then
-		return err("craftguide.add_recipe_filter(): function missing")
+		return err"craftguide.add_recipe_filter(): function missing"
 	end
 
 	recipe_filters[name] = f
@@ -408,9 +412,9 @@ end
 
 function craftguide.set_recipe_filter(name, f)
 	if not is_str(name) then
-		return err("craftguide.set_recipe_filter(): name missing")
+		return err"craftguide.set_recipe_filter(): name missing"
 	elseif not is_func(f) then
-		return err("craftguide.set_recipe_filter(): function missing")
+		return err"craftguide.set_recipe_filter(): function missing"
 	end
 
 	recipe_filters = {[name] = f}
@@ -436,9 +440,9 @@ local search_filters = {}
 
 function craftguide.add_search_filter(name, f)
 	if not true_str(name) then
-		return err("craftguide.add_search_filter(): name missing")
+		return err"craftguide.add_search_filter(): name missing"
 	elseif not is_func(f) then
-		return err("craftguide.add_search_filter(): function missing")
+		return err"craftguide.add_search_filter(): function missing"
 	end
 
 	search_filters[name] = f
@@ -790,7 +794,7 @@ local function get_grid_fs(fs, rcp, spacing)
 		fs[#fs + 1] = fmt(FMT.label,
 			XOFFSET + (sfinv_only and -1.5 or -1.6),
 			YOFFSET + (sfinv_only and 0.5 or spacing),
-			ESC(S("Recipe's too big to be displayed (@1x@2)", width, rows)))
+			ES("Recipe's too big to be displayed (@1x@2)", width, rows))
 
 		return concat(fs)
 	end
@@ -891,8 +895,7 @@ local function get_panels(data, fs)
 	local x = 0.33
 
 	if sfinv_only then
-		panels = data.show_usages and
-			{usages = data.usages} or {recipes = data.recipes}
+		panels = data.show_usages and {usages = data.usages} or {recipes = data.recipes}
 	end
 
 	for k, v in pairs(panels) do
@@ -918,19 +921,19 @@ local function get_panels(data, fs)
 		local lbl
 
 		if not sfinv_only and rn == 0 then
-			lbl = clr("#f00", is_recipe and ESC(S"No recipes") or ESC(S"No usages"))
+			lbl = clr("#f00", is_recipe and ES"No recipes" or ES"No usages")
 
 		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
-			lbl = ESC(S("Recipe @1 of @2", data.rnum, rn))
+			lbl = ES("Recipe @1 of @2", data.rnum, rn)
 
 		elseif not sfinv_only or (sfinv_only and data.show_usages) then
-			lbl = ESC(S("Usage @1 of @2", data.unum, rn))
+			lbl = ES("Usage @1 of @2", data.unum, rn)
 
 		elseif sfinv_only then
 			lbl = data.show_usages and
-				ESC(S("Usage @1 of @2", data.unum, rn)) or
-				ESC(S("Recipe @1 of @2", data.rnum, rn))
+				ES("Usage @1 of @2", data.unum, rn) or
+				ES("Recipe @1 of @2", data.rnum, rn)
 		end
 
 		fs[#fs + 1] = fmt(FMT.label,
@@ -1079,12 +1082,12 @@ local show_fs = function(player, name)
 end
 
 craftguide.register_craft_type("digging", {
-	description = ESC(S"Digging"),
+	description = ES"Digging",
 	icon = "default_tool_steelpick.png",
 })
 
 craftguide.register_craft_type("digging_chance", {
-	description = ESC(S"Digging Chance"),
+	description = ES"Digging Chance",
 	icon = "default_tool_mesepick.png",
 })
 
@@ -1963,7 +1966,7 @@ end)
 
 function craftguide.show(name, item, show_usages)
 	if not true_str(name)then
-		return err("craftguide.show(): player name missing")
+		return err"craftguide.show(): player name missing"
 	end
 
 	local data = pdata[name]
