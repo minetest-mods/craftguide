@@ -134,7 +134,7 @@ local function err(str)
 end
 
 local function msg(name, str)
-	return chat_send(name, fmt("[craftguide] %s", clr("#FFFF00", str)))
+	return chat_send(name, fmt("[craftguide] %s", clr("#f00", str)))
 end
 
 local function is_str(x)
@@ -157,7 +157,7 @@ local function is_group(item)
 	return sub(item, 1, 6) == "group:"
 end
 
-local function clean_item(item)
+local function clean_name(item)
 	if sub(item, 1, 1) == ":" then
 		item = sub(item, 2)
 	end
@@ -580,6 +580,7 @@ local function get_recipes(item, data, player)
 	local clean_item = reg_aliases[item] or item
 	local recipes = recipes_cache[clean_item]
 	local usages = usages_cache[clean_item]
+
 	if recipes then
 		recipes = apply_recipe_filters(recipes, player)
 	end
@@ -650,7 +651,7 @@ local function get_tooltip(name, info)
 
 		for i = 1, #info.groups do
 			c = c + 1
-			groupstr[c] = clr("yellow", info.groups[i])
+			groupstr[c] = clr("#ff0", info.groups[i])
 		end
 
 		groupstr = concat(groupstr, ", ")
@@ -664,31 +665,32 @@ local function get_tooltip(name, info)
 	end
 
 	if info.cooktime then
-		tooltip = add(S("Cooking time: @1", clr("yellow", info.cooktime)))
+		tooltip = add(S("Cooking time: @1", clr("#ff0", info.cooktime)))
 	end
 
 	if info.burntime then
-		tooltip = add(S("Burning time: @1", clr("yellow", info.burntime)))
+		tooltip = add(S("Burning time: @1", clr("#ff0", info.burntime)))
 	end
 
 	if info.replace then
-		local desc = clr("yellow", get_desc(info.replace))
-		tooltip = add(S("Replaced by @1 on crafting", desc))
+		local desc = clr("#ff0", get_desc(info.replace))
 
 		if info.cooktime then
 			tooltip = add(S("Replaced by @1 on smelting", desc))
 		elseif info.burntime then
 			tooltip = add(S("Replaced by @1 on burning", desc))
+		else
+			tooltip = add(S("Replaced by @1 on crafting", desc))
 		end
 	end
 
 	if info.repair then
-		tooltip = add(S("Repairable by step of @1", clr("yellow", toolrepair .. "%")))
+		tooltip = add(S("Repairable by step of @1", clr("#ff0", toolrepair .. "%")))
 	end
 
 	if info.rarity then
 		local chance = (1 / info.rarity) * 100
-		tooltip = add(S("@1 of chance to drop", clr("yellow", chance .. "%")))
+		tooltip = add(S("@1 of chance to drop", clr("#ff0", chance .. "%")))
 	end
 
 	return fmt("tooltip[%s;%s]", name, ESC(tooltip))
@@ -731,7 +733,7 @@ local function get_output_fs(fs, L)
 			1.1, 1.1, PNG.fire)
 	else
 		local item = L.recipe.output
-		item = clean_item(item)
+		item = clean_name(item)
 		local name = match(item, "%S*")
 
 		if CORE_VERSION >= 510 then
@@ -801,7 +803,7 @@ local function get_grid_fs(fs, rcp, spacing)
 
 	for i = 1, width * rows do
 		local item = rcp.items[i] or ""
-		item = clean_item(item)
+		item = clean_name(item)
 		local name = match(item, "%S*")
 
 		local X = ceil((i - 1) % width - width) + XOFFSET
@@ -916,7 +918,7 @@ local function get_panels(data, fs)
 		local lbl
 
 		if not sfinv_only and rn == 0 then
-			lbl = clr("red", is_recipe and ESC(S"No recipes") or ESC(S"No usages"))
+			lbl = clr("#f00", is_recipe and ESC(S"No recipes") or ESC(S"No usages"))
 
 		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
@@ -943,17 +945,10 @@ local function get_panels(data, fs)
 			local y_arrow = YOFFSET + (sfinv_only and 3.25 or 1.4 + spacing)
 
 			if CORE_VERSION >= 520 then
-				fs[#fs + 1] = fmt([[
-					style[%s;border=false;bgimg=%s;bgimg_hovered=%s]
-					style[%s;border=false;bgimg=%s;bgimg_hovered=%s]
-				]],
-				prev_name, PNG.prev, PNG.prev_hover,
-				next_name, PNG.next, PNG.next_hover)
-
-				fs[#fs + 1] = fmt(mul_elem(FMT.button, 2),
-					x_arrow + (is_recipe and xr or xu),
-						y_arrow, 0.8, 0.8, prev_name, "",
-					x_arrow + 1.8, y_arrow, 0.8, 0.8, next_name, "")
+				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
+					x_arrow + (is_recipe and xr or xu), y_arrow,
+						PNG.prev, prev_name, "",
+					x_arrow + 1.8, y_arrow, PNG.next, next_name, "")
 			else
 				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 					x_arrow + (is_recipe and xr or xu),
@@ -971,8 +966,6 @@ end
 
 local function make_formspec(name)
 	local data = pdata[name]
-	data.pagemax = max(1, ceil(#data.items / IPP))
-
 	local fs = {}
 
 	if not sfinv_only then
@@ -980,9 +973,10 @@ local function make_formspec(name)
 			size[%f,%f]
 			no_prepend[]
 			bgcolor[#0000]
+			style_type[image_button;border=false]
+			style_type[item_image_button;border=false;bgimg_hovered=%s]
 		]],
-		ROWS + (data.query_item and 6.7 or 0) - 1.2,
-		LINES - 0.3)
+		ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3, PNG.selected)
 
 		fs[#fs + 1] = CORE_VERSION >= 510 and
 			fmt("background9[-0.15,-0.2;%f,%f;%s;false;%d]",
@@ -992,29 +986,28 @@ local function make_formspec(name)
 	end
 
 	fs[#fs + 1] = fmt([[
-		style_type[item_image_button;border=false]
 		field[0.25,0.2;%f,1;filter;;%s]
 		field_close_on_enter[filter;false]
-		]],
-		sfinv_only and 2.76 or 2.72, ESC(data.filter))
+	]],
+	sfinv_only and 2.76 or 2.72, ESC(data.filter))
 
 	if CORE_VERSION >= 520 then
 		fs[#fs + 1] = fmt([[
-			style[search;border=false;bgimg=%s;bgimg_hovered=%s]
-			style[clear;border=false;bgimg=%s;bgimg_hovered=%s]
-			style[prev_page;border=false;bgimg=%s;bgimg_hovered=%s]
-			style[next_page;border=false;bgimg=%s;bgimg_hovered=%s]
+			style[search;fgimg=%s;fgimg_hovered=%s]
+			style[clear;fgimg=%s;fgimg_hovered=%s]
+			style[prev_page;fgimg=%s;fgimg_hovered=%s]
+			style[next_page;fgimg=%s;fgimg_hovered=%s]
 		]],
 		PNG.search, PNG.search_hover,
-		PNG.clear, PNG.clear_hover,
-		PNG.prev, PNG.prev_hover,
-		PNG.next, PNG.next_hover)
+		PNG.clear,  PNG.clear_hover,
+		PNG.prev,   PNG.prev_hover,
+		PNG.next,   PNG.next_hover)
 
-		fs[#fs + 1] = fmt(mul_elem(FMT.button, 4),
-			sfinv_only and 2.6 or 2.54, -0.12, 0.85, 1, "search", "",
-			sfinv_only and 3.3 or 3.25, -0.12, 0.85, 1, "clear", "",
-			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.12, 0.85, 1, "prev_page", "",
-			sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.12, 0.85, 1, "next_page", "")
+		fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
+			sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
+			sfinv_only and 3.3 or 3.25, -0.06, 0.85, 0.85, "", "clear", "",
+			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
+			sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
 	else
 		fs[#fs + 1] = fmt([[
 			image_button[%f,-0.12;0.85,1;%s;search;;;false;%s]
@@ -1030,9 +1023,11 @@ local function make_formspec(name)
 				-0.05, PNG.next, "next_page", PNG.next)
 	end
 
+	data.pagemax = max(1, ceil(#data.items / IPP))
+
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
 		sfinv_only and 6.35 or (ROWS * 7.85) / 11,
-			0.06, clr("yellow", data.pagenum), data.pagemax)
+			0.06, clr("#ff0", data.pagenum), data.pagemax)
 
 	if #data.items == 0 then
 		local no_item = S"No item to show"
@@ -1903,7 +1898,7 @@ if progressive_mode then
 				hud_elem_type = "text",
 				position      = {x = 0.84, y = 1.04},
 				alignment     = {x = 1,    y = 1},
-				number        = 0xFFFFFF,
+				number        = 0xfff,
 				text          = "",
 			}),
 		}
