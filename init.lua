@@ -1258,6 +1258,7 @@ core.clear_craft = function(def)
 	old_clear_craft(def)
 
 	if true_str(def) then
+		def = match(def, "%S*")
 		recipes_cache[def] = nil
 		fuel_cache[def] = nil
 
