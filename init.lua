@@ -79,7 +79,7 @@ local IPP   = ROWS * LINES
 local WH_LIMIT = 8
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
-local YOFFSET = sfinv_only and 4.9 or 1
+local YOFFSET = sfinv_only and 6 or 1
 
 local PNG = {
 	bg       = "craftguide_bg.png",
@@ -639,6 +639,19 @@ local function repairable(tool)
 	return toolrepair and def and def.groups and def.groups.disable_repair ~= 1
 end
 
+local function is_fav(data)
+	local fav, i
+	for j = 1, #data.favs do
+		if data.favs[j] == data.query_item then
+			fav = true
+			i = j
+			break
+		end
+	end
+
+	return fav, i
+end
+
 local function get_desc(name)
 	local def = reg_items[name]
 
@@ -854,8 +867,7 @@ local function get_grid_fs(fs, rcp, spacing)
 
 		if CORE_VERSION >= 510 and not large_recipe then
 			fs[#fs + 1] = fmt(FMT.image,
-				X, Y + (sfinv_only and 0.7 or 0),
-				btn_size, btn_size, PNG.selected)
+				X, Y + (sfinv_only and 0.7 or 0), btn_size, btn_size, PNG.selected)
 		end
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
@@ -891,33 +903,52 @@ local function get_grid_fs(fs, rcp, spacing)
 end
 
 local function get_panels(data, fs)
-	local panels = {recipes = data.recipes or {}, usages = data.usages or {}}
-	local x = 0.33
+	local start_y = CORE_VERSION >= 520 and 0 or 0.33
+	local panels = {
+		{dat = data.usages or {}, height = 3.5},
+		{dat = data.recipes or {}, height = 3.5},
+	}
 
-	if sfinv_only then
-		panels = data.show_usages and {usages = data.usages} or {recipes = data.recipes}
+	if CORE_VERSION >= 520 and not sfinv_only then
+		panels.favs = {dat = {}, height = 2.19}
+	elseif sfinv_only then
+		panels = data.show_usages and
+			{{dat = data.usages}} or {{dat = data.recipes}}
 	end
 
 	for k, v in pairs(panels) do
-		x = x + 1
-		local spacing = (x - 1) * 3.6
+		start_y = start_y + 1
+		local spacing = (start_y - 1) * 3.6
 
 		if not sfinv_only then
 			fs[#fs + 1] = CORE_VERSION >= 510 and
-				fmt("background9[8.1,%f;6.6,3.5;%s;false;%d]",
-					-0.2 + spacing, PNG.bg_full, 10) or
-				fmt("background[8.1,%f;6.6,3.5;%s;false]",
-					-0.2 + spacing, PNG.bg_full)
+				fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
+					-0.2 + spacing, v.height, PNG.bg_full, 10) or
+				fmt("background[8.1,%f;6.6,%f;%s;false]",
+					-0.2 + spacing, v.height, PNG.bg_full)
+
+			if k ~= "favs" then
+				local fav = is_fav(data)
+
+				fs[#fs + 1] = fmt(
+					"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
+					fmt("craftguide_fav%s.png", fav and "" or "_off"),
+					fmt("craftguide_fav%s.png", fav and "_off" or ""),
+					fmt("craftguide_fav%s.png", fav and "_off" or ""))
+
+				fs[#fs + 1] = fmt(FMT.image_button,
+					14, spacing, 0.5, 0.45, "", "fav", "")
+			end
 		end
 
-		local rn = #v
+		local rn = #v.dat
 		local _rn = tostring(rn)
 		local xu = tostring(data.unum) .. _rn
 		local xr = tostring(data.rnum) .. _rn
-		xu = max(-0.3, -((#xu - 3) * 0.15))
-		xr = max(-0.3, -((#xr - 3) * 0.15))
+		xu = max(-0.3, -((#xu - 3) * 0.05))
+		xr = max(-0.3, -((#xr - 3) * 0.05))
 
-		local is_recipe = k == "recipes"
+		local is_recipe = k == 2
 		local lbl
 
 		if not sfinv_only and rn == 0 then
@@ -938,14 +969,14 @@ local function get_panels(data, fs)
 
 		fs[#fs + 1] = fmt(FMT.label,
 			XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
-			YOFFSET + (sfinv_only and 3.35 or 1.5 + spacing), lbl)
+			YOFFSET + (sfinv_only and 2.3 or 1.5 + spacing), lbl)
 
 		if rn > 1 then
 			local btn_suffix = is_recipe and "recipe" or "usage"
 			local prev_name = fmt("prev_%s", btn_suffix)
 			local next_name = fmt("next_%s", btn_suffix)
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
-			local y_arrow = YOFFSET + (sfinv_only and 3.25 or 1.4 + spacing)
+			local y_arrow = YOFFSET + (sfinv_only and 2.2 or 1.4 + spacing)
 
 			if CORE_VERSION >= 520 then
 				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
@@ -960,9 +991,27 @@ local function get_panels(data, fs)
 			end
 		end
 
-		local rcp = is_recipe and v[data.rnum] or v[data.unum]
+		local rcp = is_recipe and v.dat[data.rnum] or v.dat[data.unum]
 		if rcp then
 			get_grid_fs(fs, rcp, spacing)
+		end
+
+		if k == "favs" and CORE_VERSION >= 520 and not sfinv_only then
+			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.1, ES"Bookmarks")
+
+			for i = 1, #data.favs do
+				local item = data.favs[i]
+
+				if data.query_item == item then
+					fs[#fs + 1] = fmt(FMT.image,
+						7.85 + (i - 0.5), spacing + 0.45,
+						1.1, 1.1, PNG.selected)
+				end
+
+				fs[#fs + 1] = fmt(FMT.item_image_button,
+					7.85 + (i - 0.5), spacing + 0.45,
+					1.1, 1.1, item, item, "")
+			end
 		end
 	end
 end
@@ -971,16 +1020,13 @@ local function make_formspec(name)
 	local data = pdata[name]
 	local fs = {}
 
-	if not sfinv_only then
-		fs[#fs + 1] = fmt([[
-			size[%f,%f]
-			no_prepend[]
-			bgcolor[#0000]
-			style_type[image_button;border=false]
-			style_type[item_image_button;border=false;bgimg_hovered=%s]
-		]],
-		ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3, PNG.selected)
+	fs[#fs + 1] = fmt([[
+		size[%f,%f]
+		no_prepend[]
+		bgcolor[#0000]
+	]], ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3)
 
+	if not sfinv_only then
 		fs[#fs + 1] = CORE_VERSION >= 510 and
 			fmt("background9[-0.15,-0.2;%f,%f;%s;false;%d]",
 				ROWS - 0.9, LINES + 0.4, PNG.bg_full, 10) or
@@ -996,15 +1042,18 @@ local function make_formspec(name)
 
 	if CORE_VERSION >= 520 then
 		fs[#fs + 1] = fmt([[
+			style_type[image_button;border=false]
+			style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
 			style[search;fgimg=%s;fgimg_hovered=%s]
 			style[clear;fgimg=%s;fgimg_hovered=%s]
-			style[prev_page;fgimg=%s;fgimg_hovered=%s]
-			style[next_page;fgimg=%s;fgimg_hovered=%s]
+			style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+			style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 		]],
+		PNG.selected, PNG.selected,
 		PNG.search, PNG.search_hover,
-		PNG.clear,  PNG.clear_hover,
-		PNG.prev,   PNG.prev_hover,
-		PNG.next,   PNG.next_hover)
+		PNG.clear, PNG.clear_hover,
+		PNG.prev, PNG.prev_hover, PNG.prev_hover,
+		PNG.next, PNG.next_hover, PNG.next_hover)
 
 		fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
 			sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
@@ -1475,6 +1524,7 @@ local function init_data(name)
 		pagenum   = 1,
 		items     = items,
 		items_raw = items,
+		favs      = {},
 	}
 end
 
@@ -1535,6 +1585,18 @@ local function fields(player, _f)
 			data.pagenum = 1
 		elseif data.pagenum == 0 then
 			data.pagenum = data.pagemax
+		end
+
+		return true, show_fs(player, name)
+
+	elseif _f.fav then
+		local fav, i = is_fav(data)
+		local total = #data.favs
+
+		if total < 6 and not fav then
+			data.favs[total + 1] = data.query_item
+		elseif fav then
+			remove(data.favs, i)
 		end
 
 		return true, show_fs(player, name)
