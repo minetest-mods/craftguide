@@ -1030,7 +1030,8 @@ local function make_formspec(name)
 		size[%f,%f]
 		no_prepend[]
 		bgcolor[#0000]
-	]], ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3)
+	]],
+	ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3)
 
 	if not sfinv_only then
 		fs[#fs + 1] = CORE_VERSION >= 510 and
