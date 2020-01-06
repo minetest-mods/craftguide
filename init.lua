@@ -556,7 +556,7 @@ local function get_usages(item)
 end
 
 local function get_burntime(item)
-	return get_craft_result({method = "fuel", items = {item}}).time
+	return get_craft_result{method = "fuel", items = {item}}.time
 end
 
 local function cache_fuel(item)
@@ -929,6 +929,7 @@ local function get_panels(data, fs)
 
 			if k ~= "favs" then
 				local fav = is_fav(data)
+				local nfavs = #data.favs
 
 				fs[#fs + 1] = fmt(
 					"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
@@ -936,8 +937,13 @@ local function get_panels(data, fs)
 					fmt("craftguide_fav%s.png", fav and "_off" or ""),
 					fmt("craftguide_fav%s.png", fav and "_off" or ""))
 
-				fs[#fs + 1] = fmt(FMT.image_button,
-					14, spacing, 0.5, 0.45, "", "fav", "")
+				if nfavs < 6 or (nfavs >= 6 and fav) then
+					fs[#fs + 1] = fmt(FMT.image_button,
+						14, spacing, 0.5, 0.45, "", "fav", "")
+				end
+
+				fs[#fs + 1] = fmt("tooltip[fav;%s]",
+					fav and ES"Unmark this item" or ES"Mark this item")
 			end
 		end
 
@@ -1369,20 +1375,20 @@ local function handle_drops_table(name, drop)
 	end
 
 	for item, count in pairs(drop_sure) do
-		craftguide.register_craft({
+		craftguide.register_craft{
 			type = "digging",
 			items = {name},
 			output = fmt("%s %u", item, count),
-		})
+		}
 	end
 
 	for item, data in pairs(drop_maybe) do
-		craftguide.register_craft({
+		craftguide.register_craft{
 			type = "digging_chance",
 			items = {name},
 			output = fmt("%s %u", item, data.output),
 			rarity = data.rarity,
-		})
+		}
 	end
 end
 
@@ -1391,11 +1397,11 @@ local function register_drops(name, def)
 	local dstack = ItemStack(drop)
 
 	if not dstack:is_empty() and dstack:get_name() ~= name then
-		craftguide.register_craft({
+		craftguide.register_craft{
 			type = "digging",
 			items = {name},
 			output = drop,
-		})
+		}
 	elseif is_table(drop) then
 		handle_drops_table(name, drop)
 	end
@@ -1506,10 +1512,10 @@ local function get_init_items()
 			fuel    = fuel_cache,
 		}
 
-		http.fetch_async({
+		http.fetch_async{
 			url = craftguide.export_url,
 			post_data = write_json(post_data),
-		})
+		}
 	end
 
 	print()
@@ -1720,29 +1726,29 @@ else
 		end
 	})
 
-	core.register_craft({
+	core.register_craft{
 		output = "craftguide:book",
 		type   = "shapeless",
 		recipe = {"default:book"}
-	})
+	}
 
-	core.register_craft({
+	core.register_craft{
 		type = "fuel",
 		recipe = "craftguide:book",
 		burntime = 3
-	})
+	}
 
-	core.register_craft({
+	core.register_craft{
 		output = "craftguide:sign",
 		type   = "shapeless",
 		recipe = {"default:sign_wall_wood"}
-	})
+	}
 
-	core.register_craft({
+	core.register_craft{
 		type = "fuel",
 		recipe = "craftguide:sign",
 		burntime = 10
-	})
+	}
 
 	if rawget(_G, "sfinv_buttons") then
 		sfinv_buttons.register_button("craftguide", {
@@ -1958,29 +1964,29 @@ if progressive_mode then
 		end
 
 		data.hud = {
-			bg = player:hud_add({
+			bg = player:hud_add{
 				hud_elem_type = "image",
 				position      = {x = 0.78, y = 1},
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 370,  y = 112},
 				text          = PNG.bg,
-			}),
+			},
 
-			book = player:hud_add({
+			book = player:hud_add{
 				hud_elem_type = "image",
 				position      = {x = 0.79, y = 1.02},
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 4,    y = 4},
 				text          = PNG.book,
-			}),
+			},
 
-			text = player:hud_add({
+			text = player:hud_add{
 				hud_elem_type = "text",
 				position      = {x = 0.84, y = 1.04},
 				alignment     = {x = 1,    y = 1},
 				number        = 0xfff,
 				text          = "",
-			}),
+			},
 		}
 	end)
 
