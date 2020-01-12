@@ -892,17 +892,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 end
 
 local function get_panels(data, fs)
-	local start_y
-
-	if data.fs_version >= 3 then
-		if sfinv_only then
-			start_y = 0.33
-		else
-			start_y = 0
-		end
-	else
-		start_y = 0.33
-	end
+	local start_y = data.fs_version >= 3 and (sfinv_only and 0.33 or 0) or 0.33
 
 	local panels = {
 		{dat = data.usages or {}, height = 3.5},
