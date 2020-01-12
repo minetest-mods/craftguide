@@ -590,10 +590,15 @@ local function get_recipes(item, data, player)
 	end
 
 	local no_recipes = not recipes or #recipes == 0
+
 	if no_recipes and not usages then
 		return
-	elseif sfinv_only and usages and no_recipes then
-		data.show_usages = true
+	elseif sfinv_only then
+		if usages and no_recipes then
+			data.show_usages = true
+		elseif recipes and not usages then
+			data.show_usages = nil
+		end
 	end
 
 	if not sfinv_only or (sfinv_only and data.show_usages) then
