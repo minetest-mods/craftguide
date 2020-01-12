@@ -1,12 +1,5 @@
 craftguide = {}
 
-local p = 0
-local CORE_VERSION = core.get_version().string:match("[^%-]*"):gsub("%.", function(a)
-	p = p + 1
-	return p == 3 and a or ""
-end)
-CORE_VERSION = tonumber(CORE_VERSION)
-
 -- Caches
 local pdata         = {}
 local init_items    = {}
@@ -44,6 +37,7 @@ local get_player_by_name = core.get_player_by_name
 local slz, dslz = core.serialize, core.deserialize
 local on_mods_loaded = core.register_on_mods_loaded
 local on_leaveplayer = core.register_on_leaveplayer
+local get_player_info = core.get_player_information
 local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
@@ -710,7 +704,7 @@ local function get_tooltip(name, info)
 	return fmt("tooltip[%s;%s]", name, ESC(tooltip))
 end
 
-local function get_output_fs(fs, L)
+local function get_output_fs(data, fs, L)
 	local custom_recipe = craft_types[L.recipe.type]
 
 	if custom_recipe or L.shapeless or L.recipe.type == "cooking" then
@@ -748,7 +742,7 @@ local function get_output_fs(fs, L)
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		if CORE_VERSION >= 520 then
+		if data.fs_version >= 3 then
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
 				1.1, 1.1, PNG.selected)
@@ -781,7 +775,7 @@ local function get_output_fs(fs, L)
 	end
 end
 
-local function get_grid_fs(fs, rcp, spacing)
+local function get_grid_fs(data, fs, rcp, spacing)
 	local width = rcp.width or 1
 	local replacements = rcp.replacements
 	local rarity = rcp.rarity
@@ -860,7 +854,7 @@ local function get_grid_fs(fs, rcp, spacing)
 			end
 		end
 
-		if CORE_VERSION >= 520 and not large_recipe then
+		if data.fs_version >= 3 and not large_recipe then
 			fs[#fs + 1] = fmt(FMT.image,
 				X, Y + (sfinv_only and 0.7 or 0), btn_size, btn_size, PNG.selected)
 		end
@@ -886,7 +880,7 @@ local function get_grid_fs(fs, rcp, spacing)
 		fs[#fs + 1] = "style_type[item_image_button;border=false]"
 	end
 
-	get_output_fs(fs, {
+	get_output_fs(data, fs, {
 		recipe    = rcp,
 		shapeless = shapeless,
 		rightest  = rightest,
@@ -900,7 +894,7 @@ end
 local function get_panels(data, fs)
 	local start_y
 
-	if CORE_VERSION >= 520 then
+	if data.fs_version >= 3 then
 		if sfinv_only then
 			start_y = 0.33
 		else
@@ -915,7 +909,7 @@ local function get_panels(data, fs)
 		{dat = data.recipes or {}, height = 3.5},
 	}
 
-	if CORE_VERSION >= 520 and not sfinv_only then
+	if data.fs_version >= 3 and not sfinv_only then
 		panels.favs = {dat = {}, height = 2.19}
 
 	elseif sfinv_only then
@@ -931,7 +925,7 @@ local function get_panels(data, fs)
 			fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
 				-0.2 + spacing, v.height, PNG.bg_full, 10)
 
-			if CORE_VERSION >= 520 and k ~= "favs" then
+			if data.fs_version >= 3 and k ~= "favs" then
 				local fav = is_fav(data)
 				local nfavs = #data.favs
 
@@ -988,7 +982,7 @@ local function get_panels(data, fs)
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 			local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
 
-			if CORE_VERSION >= 520 then
+			if data.fs_version >= 3 then
 				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 					x_arrow + (is_recipe and xr or xu), y_arrow,
 						PNG.prev, prev_name, "",
@@ -1003,10 +997,10 @@ local function get_panels(data, fs)
 
 		local rcp = is_recipe and v.dat[data.rnum] or v.dat[data.unum]
 		if rcp then
-			get_grid_fs(fs, rcp, spacing)
+			get_grid_fs(data, fs, rcp, spacing)
 		end
 
-		if k == "favs" and CORE_VERSION >= 520 and not sfinv_only then
+		if k == "favs" and data.fs_version >= 3 and not sfinv_only then
 			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.1, ES"Bookmarks")
 
 			for i = 1, #data.favs do
@@ -1026,8 +1020,7 @@ local function get_panels(data, fs)
 	end
 end
 
-local function make_formspec(name)
-	local data = pdata[name]
+local function make_formspec(data)
 	local fs = {}
 
 	fs[#fs + 1] = fmt([[
@@ -1048,7 +1041,7 @@ local function make_formspec(name)
 	]],
 	sfinv_only and 2.76 or 2.72, ESC(data.filter))
 
-	if CORE_VERSION >= 520 then
+	if data.fs_version >= 3 then
 		fs[#fs + 1] = fmt([[
 			style_type[image_button;border=false]
 			style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
@@ -1078,9 +1071,9 @@ local function make_formspec(name)
 
 		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.05,
-				PNG.prev, "prev_page", PNG.prev,
+				PNG.prev, "prev_page", PNG.prev_hover,
 			sfinv_only and 7.2 or (ROWS * 8.75) / 11, -0.05,
-				PNG.next, "next_page", PNG.next)
+				PNG.next, "next_page", PNG.next_hover)
 	end
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
@@ -1110,7 +1103,7 @@ local function make_formspec(name)
 		local X = i % ROWS
 		local Y = (i % IPP - X) / ROWS + 1
 
-		if CORE_VERSION >= 520 and data.query_item == item then
+		if data.fs_version >= 3 and data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image,
 				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 				Y - (Y * 0.1) - 0.1,
@@ -1131,10 +1124,11 @@ local function make_formspec(name)
 end
 
 local show_fs = function(player, name)
+	local data = pdata[name]
 	if sfinv_only then
 		sfinv.set_player_inventory_formspec(player)
 	else
-		show_formspec(name, "craftguide", make_formspec(name))
+		show_formspec(name, "craftguide", make_formspec(data))
 	end
 end
 
@@ -1525,11 +1519,12 @@ end
 
 local function init_data(name)
 	pdata[name] = {
-		filter    = "",
-		pagenum   = 1,
-		items     = init_items,
-		items_raw = init_items,
-		favs      = {},
+		filter     = "",
+		pagenum    = 1,
+		items      = init_items,
+		items_raw  = init_items,
+		favs       = {},
+		fs_version = get_player_info(name).formspec_version,
 	}
 end
 
@@ -1645,9 +1640,15 @@ if sfinv_only then
 	sfinv.register_page("craftguide:craftguide", {
 		title = S"Craft Guide",
 
+		is_in_nav = function(self, player, context)
+			local name = player:get_player_name()
+			return get_player_info(name).formspec_version >= 2
+		end,
+
 		get = function(self, player, context)
 			local name = player:get_player_name()
-			local formspec = make_formspec(name)
+			local data = pdata[name]
+			local formspec = make_formspec(data)
 
 			return sfinv.make_formspec(player, context, formspec)
 		end,
@@ -1675,14 +1676,19 @@ else
 
 	local function on_use(user)
 		local name = user:get_player_name()
+		local data = pdata[name]
+
+		if data.fs_version == 1 then
+			return msg(name, "Your Minetest client is outdated. " ..
+				"Get the latest version on minetest.net to use the Crafting Guide.")
+		end
 
 		if next(recipe_filters) then
-			local data = pdata[name]
 			data.items_raw = get_filtered_items(user)
 			search(data)
 		end
 
-		show_formspec(name, "craftguide", make_formspec(name))
+		show_formspec(name, "craftguide", make_formspec(data))
 	end
 
 	core.register_craftitem("craftguide:book", {
