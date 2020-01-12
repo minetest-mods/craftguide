@@ -47,15 +47,7 @@ local on_leaveplayer = core.register_on_leaveplayer
 local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
-local S = CORE_VERSION >= 500 and core.get_translator("craftguide") or
-	function(...)
-		local args, i = {...}, 1
-
-		return args[1]:gsub("@%d+", function()
-			i = i + 1
-			return args[i]
-		end)
-	end
+local S = core.get_translator("craftguide")
 
 local ES = function(...)
 	return ESC(S(...))
@@ -79,7 +71,7 @@ local IPP   = ROWS * LINES
 local WH_LIMIT = 8
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
-local YOFFSET = sfinv_only and 6 or 1
+local YOFFSET = sfinv_only and 4.9 or 1
 
 local PNG = {
 	bg       = "craftguide_bg.png",
@@ -737,9 +729,7 @@ local function get_output_fs(fs, L)
 		local tooltip = custom_recipe and custom_recipe.description or
 				L.shapeless and S"Shapeless" or S"Cooking"
 
-		if CORE_VERSION >= 500 then
-			fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y + L.spacing, 0.5, 0.5, ESC(tooltip))
-		end
+		fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y + L.spacing, 0.5, 0.5, ESC(tooltip))
 	end
 
 	local arrow_X = L.rightest + (L._btn_size or 1.1)
@@ -758,7 +748,7 @@ local function get_output_fs(fs, L)
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		if CORE_VERSION >= 510 then
+		if CORE_VERSION >= 520 then
 			fs[#fs + 1] = fmt(FMT.image,
 				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
 				1.1, 1.1, PNG.selected)
@@ -870,7 +860,7 @@ local function get_grid_fs(fs, rcp, spacing)
 			end
 		end
 
-		if CORE_VERSION >= 510 and not large_recipe then
+		if CORE_VERSION >= 520 and not large_recipe then
 			fs[#fs + 1] = fmt(FMT.image,
 				X, Y + (sfinv_only and 0.7 or 0), btn_size, btn_size, PNG.selected)
 		end
@@ -908,7 +898,18 @@ local function get_grid_fs(fs, rcp, spacing)
 end
 
 local function get_panels(data, fs)
-	local start_y = CORE_VERSION >= 520 and 0 or 0.33
+	local start_y
+
+	if CORE_VERSION >= 520 then
+		if sfinv_only then
+			start_y = 0.33
+		else
+			start_y = 0
+		end
+	else
+		start_y = 0.33
+	end
+
 	local panels = {
 		{dat = data.usages or {}, height = 3.5},
 		{dat = data.recipes or {}, height = 3.5},
@@ -916,6 +917,7 @@ local function get_panels(data, fs)
 
 	if CORE_VERSION >= 520 and not sfinv_only then
 		panels.favs = {dat = {}, height = 2.19}
+
 	elseif sfinv_only then
 		panels = data.show_usages and
 			{{dat = data.usages}} or {{dat = data.recipes}}
@@ -926,13 +928,10 @@ local function get_panels(data, fs)
 		local spacing = (start_y - 1) * 3.6
 
 		if not sfinv_only then
-			fs[#fs + 1] = CORE_VERSION >= 510 and
-				fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
-					-0.2 + spacing, v.height, PNG.bg_full, 10) or
-				fmt("background[8.1,%f;6.6,%f;%s;false]",
-					-0.2 + spacing, v.height, PNG.bg_full)
+			fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
+				-0.2 + spacing, v.height, PNG.bg_full, 10)
 
-			if k ~= "favs" then
+			if CORE_VERSION >= 520 and k ~= "favs" then
 				local fav = is_fav(data)
 				local nfavs = #data.favs
 
@@ -980,14 +979,14 @@ local function get_panels(data, fs)
 
 		fs[#fs + 1] = fmt(FMT.label,
 			XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
-			YOFFSET + (sfinv_only and 2.3 or 1.5 + spacing), lbl)
+			YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
 
 		if rn > 1 then
 			local btn_suffix = is_recipe and "recipe" or "usage"
 			local prev_name = fmt("prev_%s", btn_suffix)
 			local next_name = fmt("next_%s", btn_suffix)
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
-			local y_arrow = YOFFSET + (sfinv_only and 2.2 or 1.4 + spacing)
+			local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
 
 			if CORE_VERSION >= 520 then
 				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
@@ -1039,11 +1038,8 @@ local function make_formspec(name)
 	ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3)
 
 	if not sfinv_only then
-		fs[#fs + 1] = CORE_VERSION >= 510 and
-			fmt("background9[-0.15,-0.2;%f,%f;%s;false;%d]",
-				ROWS - 0.9, LINES + 0.4, PNG.bg_full, 10) or
-			fmt("background[-0.15,-0.2;%f,%f;%s;false]",
-				ROWS - 0.9, LINES + 0.4, PNG.bg_full)
+		fs[#fs + 1] = fmt("background9[-0.15,-0.2;%f,%f;%s;false;%d]",
+			ROWS - 0.9, LINES + 0.4, PNG.bg_full, 10)
 	end
 
 	fs[#fs + 1] = fmt([[
@@ -1114,7 +1110,7 @@ local function make_formspec(name)
 		local X = i % ROWS
 		local Y = (i % IPP - X) / ROWS + 1
 
-		if CORE_VERSION >= 510 and data.query_item == item then
+		if CORE_VERSION >= 520 and data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image,
 				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 				Y - (Y * 0.1) - 0.1,
@@ -1528,14 +1524,11 @@ local function get_init_items()
 end
 
 local function init_data(name)
-	local items = CORE_VERSION >= 500 and init_items or
-		(#init_items == 0 and get_init_items() or init_items)
-
 	pdata[name] = {
 		filter    = "",
 		pagenum   = 1,
-		items     = items,
-		items_raw = items,
+		items     = init_items,
+		items_raw = init_items,
 		favs      = {},
 	}
 end
@@ -1552,9 +1545,7 @@ local function reset_data(data)
 	data.items       = data.items_raw
 end
 
-if CORE_VERSION >= 500 then
-	on_mods_loaded(get_init_items)
-end
+on_mods_loaded(get_init_items)
 
 on_joinplayer(function(player)
 	local name = player:get_player_name()
@@ -1960,14 +1951,9 @@ if progressive_mode then
 		local name = player:get_player_name()
 		local data = pdata[name]
 
-		if CORE_VERSION >= 500 then
-			local meta = player:get_meta()
-			data.inv_items = dslz(meta:get_string("inv_items")) or {}
-			data.known_recipes = dslz(meta:get_string("known_recipes")) or 0
-		else
-			data.inv_items = dslz(player:get_attribute("inv_items")) or {}
-			data.known_recipes = dslz(player:get_attribute("known_recipes")) or 0
-		end
+		local meta = player:get_meta()
+		data.inv_items = dslz(meta:get_string("inv_items")) or {}
+		data.known_recipes = dslz(meta:get_string("known_recipes")) or 0
 
 		data.hud = {
 			bg = player:hud_add{
@@ -2002,22 +1988,13 @@ if progressive_mode then
 	}
 
 	local function save_meta(player)
-		local meta
+		local meta = player:get_meta()
 		local name = player:get_player_name()
 		local data = pdata[name]
 
-		if CORE_VERSION >= 500 then
-			meta = player:get_meta()
-		end
-
 		for i = 1, #to_save do
 			local meta_name = to_save[i]
-
-			if CORE_VERSION >= 500 then
-				meta:set_string(meta_name, slz(data[meta_name]))
-			else
-				player:set_attribute(meta_name, slz(data[meta_name]))
-			end
+			meta:set_string(meta_name, slz(data[meta_name]))
 		end
 	end
 
