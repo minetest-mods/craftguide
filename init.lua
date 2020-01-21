@@ -1972,7 +1972,7 @@ if progressive_mode then
 				hud_elem_type = "text",
 				position      = {x = 0.84, y = 1.04},
 				alignment     = {x = 1,    y = 1},
-				number        = 0xfff,
+				number        = 0xffffff,
 				text          = "",
 			},
 		}
