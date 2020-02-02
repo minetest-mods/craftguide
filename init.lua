@@ -915,7 +915,7 @@ local function get_panels(data, fs)
 			fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
 				-0.2 + spacing, v.height, PNG.bg_full, 10)
 
-			if data.fs_version >= 3 and k ~= "favs" then
+			if data.fs_version >= 3 and k == 2 then
 				local fav = is_fav(data)
 				local nfavs = #data.favs
 
