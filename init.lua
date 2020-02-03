@@ -1543,27 +1543,27 @@ local function fields(player, _f)
 
 	if _f.clear then
 		reset_data(data)
-		return true, show_fs(player, name)
 
 	elseif _f.prev_recipe or _f.next_recipe then
 		local num = data.rnum + (_f.prev_recipe and -1 or 1)
 		data.rnum = data.recipes[num] and num or (_f.prev_recipe and #data.recipes or 1)
-		return true, show_fs(player, name)
 
 	elseif _f.prev_usage or _f.next_usage then
 		local num = data.unum + (_f.prev_usage and -1 or 1)
 		data.unum = data.usages[num] and num or (_f.prev_usage and #data.usages or 1)
-		return true, show_fs(player, name)
 
-	elseif (_f.key_enter_field == "filter" or _f.search) and _f.filter ~= "" then
+	elseif _f.key_enter_field == "filter" or _f.search then
+		if _f.filter == "" then
+			reset_data(data)
+			return true, show_fs(player, name)
+		end
+
 		local str = lower(_f.filter)
 		if data.filter == str then return end
 
 		data.filter = str
 		data.pagenum = 1
 		search(data)
-
-		return true, show_fs(player, name)
 
 	elseif _f.prev_page or _f.next_page then
 		if data.pagemax == 1 then return end
@@ -1575,8 +1575,6 @@ local function fields(player, _f)
 			data.pagenum = data.pagemax
 		end
 
-		return true, show_fs(player, name)
-
 	elseif _f.fav then
 		local fav, i = is_fav(data)
 		local total = #data.favs
@@ -1586,8 +1584,6 @@ local function fields(player, _f)
 		elseif fav then
 			remove(data.favs, i)
 		end
-
-		return true, show_fs(player, name)
 	else
 		local item
 		for field in pairs(_f) do
@@ -1622,9 +1618,9 @@ local function fields(player, _f)
 		data.usages     = usages
 		data.rnum       = 1
 		data.unum       = 1
-
-		return true, show_fs(player, name)
 	end
+
+	return true, show_fs(player, name)
 end
 
 if sfinv_only then
