@@ -644,6 +644,10 @@ local function is_fav(data)
 end
 
 local function get_desc(name)
+	if sub(name, 1, 1) == "_" then
+		name = sub(name, 2)
+	end
+
 	local def = reg_items[name]
 
 	return def and (match(def.description, "%)([%w%s]*)") or def.description) or
@@ -748,7 +752,7 @@ local function get_output_fs(data, fs, L)
 				1.1, 1.1, PNG.selected)
 		end
 
-		fs[#fs + 1] = fmt(FMT.item_image_button,
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;_%s;%s]",
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
 			1.1, 1.1, item, name, "")
 
@@ -760,7 +764,7 @@ local function get_output_fs(data, fs, L)
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(name, infos)
+			fs[#fs + 1] = get_tooltip(fmt("_%s", name), infos)
 		end
 
 		if infos.burntime then
