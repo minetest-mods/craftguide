@@ -1616,6 +1616,8 @@ local function fields(player, _f)
 			else
 				data.show_usages = not data.show_usages
 			end
+		elseif item == data.query_item then
+			return
 		end
 
 		local recipes, usages = get_recipes(item, data, player)
