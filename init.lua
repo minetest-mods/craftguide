@@ -1016,7 +1016,7 @@ local function get_panels(data, fs)
 	end
 end
 
-local function make_formspec(data)
+local function make_fs(data)
 	local fs = {}
 
 	fs[#fs + 1] = fmt([[
@@ -1124,7 +1124,7 @@ local show_fs = function(player, name)
 	if sfinv_only then
 		sfinv.set_player_inventory_formspec(player)
 	else
-		show_formspec(name, "craftguide", make_formspec(data))
+		show_formspec(name, "craftguide", make_fs(data))
 	end
 end
 
@@ -1646,7 +1646,7 @@ if sfinv_only then
 		get = function(self, player, context)
 			local name = player:get_player_name()
 			local data = pdata[name]
-			local formspec = make_formspec(data)
+			local formspec = make_fs(data)
 
 			return sfinv.make_formspec(player, context, formspec)
 		end,
@@ -1686,7 +1686,7 @@ else
 			search(data)
 		end
 
-		show_formspec(name, "craftguide", make_formspec(data))
+		show_formspec(name, "craftguide", make_fs(data))
 	end
 
 	core.register_craftitem("craftguide:book", {
