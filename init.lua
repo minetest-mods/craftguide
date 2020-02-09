@@ -752,9 +752,11 @@ local function get_output_fs(data, fs, L)
 				1.1, 1.1, PNG.selected)
 		end
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;_%s;%s]",
+		local _name = sfinv_only and name or fmt("_%s", name)
+
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, item, name, "")
+			1.1, 1.1, item, _name, "")
 
 		local infos = {
 			unknown  = not reg_items[name] or nil,
@@ -764,7 +766,7 @@ local function get_output_fs(data, fs, L)
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(fmt("_%s", name), infos)
+			fs[#fs + 1] = get_tooltip(_name, infos)
 		end
 
 		if infos.burntime then
@@ -946,7 +948,7 @@ local function get_panels(data, fs)
 		xu = max(-0.3, -((#xu - 3) * 0.05))
 		xr = max(-0.3, -((#xr - 3) * 0.05))
 
-		local is_recipe = k == 2
+		local is_recipe = sfinv_only and not data.show_usages or k == 2
 		local lbl
 
 		if not sfinv_only and rn == 0 then
@@ -1544,6 +1546,7 @@ end)
 local function fields(player, _f)
 	local name = player:get_player_name()
 	local data = pdata[name]
+	--print(dump(_f))
 
 	if _f.clear then
 		reset_data(data)
