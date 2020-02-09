@@ -1604,6 +1604,8 @@ local function fields(player, _f)
 			return
 		elseif sub(item, -4) == "_inv" then
 			item = sub(item, 1, -5)
+		elseif sub(item, 1, 1) == "_" then
+			item = sub(item, 2)
 		end
 
 		item = reg_aliases[item] or item
