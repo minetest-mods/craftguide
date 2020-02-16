@@ -68,17 +68,19 @@ local XOFFSET = sfinv_only and 3.83 or 11.2
 local YOFFSET = sfinv_only and 4.9 or 1
 
 local PNG = {
-	bg       = "craftguide_bg.png",
-	bg_full  = "craftguide_bg_full.png",
-	search   = "craftguide_search_icon.png",
-	clear    = "craftguide_clear_icon.png",
-	prev     = "craftguide_next_icon.png^\\[transformFX",
-	next     = "craftguide_next_icon.png",
-	arrow    = "craftguide_arrow.png",
-	fire     = "craftguide_fire.png",
-	book     = "craftguide_book.png",
-	sign     = "craftguide_sign.png",
-	selected = "craftguide_selected.png",
+	bg        = "craftguide_bg.png",
+	bg_full   = "craftguide_bg_full.png",
+	search    = "craftguide_search_icon.png",
+	clear     = "craftguide_clear_icon.png",
+	prev      = "craftguide_next_icon.png^\\[transformFX",
+	next      = "craftguide_next_icon.png",
+	arrow     = "craftguide_arrow.png",
+	fire      = "craftguide_fire.png",
+	fire_anim = "craftguide_fire_anim.png",
+	book      = "craftguide_book.png",
+	sign      = "craftguide_sign.png",
+	selected  = "craftguide_selected.png",
+	furnace_anim = "craftguide_furnace_anim.png",
 
 	search_hover = "craftguide_search_icon_hover.png",
 	clear_hover  = "craftguide_clear_icon_hover.png",
@@ -94,6 +96,7 @@ local FMT = {
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
+	animated_image = "animated_image[%f,%f;%f,%f;%s:%u,%u]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
@@ -722,7 +725,12 @@ local function get_output_fs(data, fs, L)
 		local pos_x = L.rightest + L.btn_size + 0.1
 		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
 
-		fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y + L.spacing, 0.5, 0.5, icon)
+		if data.fs_version >= 3 and sub(icon, 1, 18) == "craftguide_furnace" then
+			fs[#fs + 1] = fmt(FMT.animated_image,
+				pos_x, pos_y + L.spacing, 0.5, 0.5, PNG.furnace_anim, 8, 180)
+		else
+			fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y + L.spacing, 0.5, 0.5, icon)
+		end
 
 		local tooltip = custom_recipe and custom_recipe.description or
 				L.shapeless and S"Shapeless" or S"Cooking"
@@ -738,9 +746,15 @@ local function get_output_fs(data, fs, L)
 		0.9, 0.7, PNG.arrow)
 
 	if L.recipe.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT.image,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, PNG.fire)
+		if data.fs_version >= 3 then
+			fs[#fs + 1] = fmt(FMT.animated_image,
+				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
+				1.1, 1.1, PNG.fire_anim, 8, 180)
+		else
+			fs[#fs + 1] = fmt(FMT.image,
+				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
+				1.1, 1.1, PNG.fire)
+		end
 	else
 		local item = L.recipe.output
 		item = clean_name(item)
@@ -774,9 +788,15 @@ local function get_output_fs(data, fs, L)
 				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1) + L.spacing,
 				0.6, 0.4, PNG.arrow)
 
-			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
-				0.6, 0.6, PNG.fire)
+			if data.fs_version >= 3 then
+				fs[#fs + 1] = fmt(FMT.animated_image,
+					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
+					0.6, 0.6, PNG.fire_anim, 8, 180)
+			else
+				fs[#fs + 1] = fmt(FMT.image,
+					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
+					0.6, 0.6, PNG.fire)
+			end
 		end
 	end
 end
