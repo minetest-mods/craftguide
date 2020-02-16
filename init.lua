@@ -1160,16 +1160,6 @@ craftguide.register_craft_type("digging_chance", {
 	icon = "default_tool_mesepick.png",
 })
 
-local function sfind(str, filter)
-	if filter == "" then
-		return 0
-	end
-
-	if find(str, filter, 1, true) then
-		return #str - #filter
-	end
-end
-
 local function search(data)
 	local filter = data.filter
 
@@ -1191,28 +1181,30 @@ local function search(data)
 		end
 	end
 
-	local filtered_list, order, c = {}, {}, 0
+	local filtered_list, c = {}, 0
 
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
 		local desc = (def and def.description) and lower(def.description) or ""
+		local search_in = fmt("%s %s", item, desc)
 		local to_add
 
 		if search_filter then
 			for filter_name, values in pairs(filters) do
-				local func = search_filters[filter_name]
-				to_add = func(item, values) and (search_filter == "" or
-					(sfind(item, search_filter) or sfind(desc, search_filter)))
+				if values then
+					local func = search_filters[filter_name]
+					to_add = func(item, values) and (search_filter == "" or
+						find(search_in, search_filter, 1, true))
+				end
 			end
 		else
-			to_add = sfind(item, filter) or sfind(desc, filter)
+			to_add = find(search_in, filter, 1, true)
 		end
 
 		if to_add then
 			c = c + 1
 			filtered_list[c] = item
-			order[item] = to_add
 		end
 	end
 
@@ -1224,10 +1216,6 @@ local function search(data)
 			searches[filter] = filtered_list
 		end
 	end
-
-	sort(filtered_list, function(a, b)
-		return order[a] < order[b]
-	end)
 
 	data.items = filtered_list
 end
