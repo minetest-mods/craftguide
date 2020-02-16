@@ -1052,10 +1052,12 @@ local function make_fs(data)
 	end
 
 	fs[#fs + 1] = fmt([[
-		field[0.25,0.2;%f,1;filter;;%s]
+		style[filter;border=false]
+		field[0.4,0.2;2.5,1;filter;;%s]
 		field_close_on_enter[filter;false]
+		box[0,0;2.4,0.6;#ffffff25]
 	]],
-	sfinv_only and 2.76 or 2.72, ESC(data.filter))
+	ESC(data.filter))
 
 	if data.fs_version >= 3 then
 		fs[#fs + 1] = fmt([[
