@@ -1473,17 +1473,17 @@ local function get_init_items()
 		last_str = str
 	end
 
-	local full_char, empty_char = "▰", "▱"
+	local full_char, empty_char = "#", " "
 
 	for name, def in pairs(reg_items) do
 		ic = ic + 1
-		local percent, bar, len = (ic * 100) / it, "", 20
+		local percent, bar, len = (ic * 100) / it, "[", 20
 
 		for i = 1, len do
 			bar = bar .. (i <= percent / (100 / len) and full_char or empty_char)
 		end
 
-		iop(fmt("[craftguide] Caching data  %s  %u%%\r", bar, percent))
+		iop(fmt("[craftguide] Caching data  %s  %u%%\r", bar .. "]", percent))
 
 		if show_item(def) then
 			if not fuel_cache[name] then
