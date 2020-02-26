@@ -101,6 +101,11 @@ local FMT = {
 	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
 
+local function get_fs_version(name)
+	local info = get_player_info(name)
+	return info and info.formspec_version or 1
+end
+
 local function mul_elem(elem, n)
 	local fstr, elems = "", {}
 
@@ -1530,7 +1535,7 @@ local function init_data(name)
 		items      = init_items,
 		items_raw  = init_items,
 		favs       = {},
-		fs_version = get_player_info(name).formspec_version,
+		fs_version = get_fs_version(name),
 	}
 end
 
@@ -1650,7 +1655,7 @@ if sfinv_only then
 
 		is_in_nav = function(self, player, context)
 			local name = player:get_player_name()
-			return get_player_info(name).formspec_version >= 2
+			return get_fs_version(name) >= 2
 		end,
 
 		get = function(self, player, context)
