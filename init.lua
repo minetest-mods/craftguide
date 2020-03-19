@@ -96,7 +96,7 @@ local FMT = {
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
-	animated_image = "animated_image[%f,%f;%f,%f;%s:%u,%u]",
+	animated_image = "animated_image[%f,%f;%f,%f;;%s;%u;%u]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
