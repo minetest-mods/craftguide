@@ -2001,10 +2001,7 @@ if progressive_mode then
 		}
 	end)
 
-	local to_save = {
-		"inv_items",
-		"known_recipes",
-	}
+	local to_save = {"inv_items", "known_recipes"}
 
 	local function save_meta(player)
 		local meta = player:get_meta()
