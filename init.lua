@@ -12,6 +12,11 @@ local toolrepair
 
 local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
+local enable_cache_progress_bar = core.settings:get_bool("craftguide_enable_cache_progress_bar")
+
+if enable_cache_progress_bar == nil then
+	enable_cache_progress_bar = true
+end
 
 local http = core.request_http_api()
 
@@ -1494,7 +1499,9 @@ local function get_init_items()
 			bar = bar .. (i <= percent / (100 / len) and full_char or empty_char)
 		end
 
-		iop(fmt("[craftguide] Caching data  %s  %u%%\r", bar .. "]", percent))
+		if enable_cache_progress_bar then
+			iop(fmt("[craftguide] Caching data  %s  %u%%\r", bar .. "]", percent))
+		end
 
 		if show_item(def) then
 			if not fuel_cache[name] then
