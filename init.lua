@@ -47,9 +47,9 @@ local ES = function(...)
 	return ESC(S(...))
 end
 
-local maxn, sort, concat, copy, insert, remove =
+local maxn, sort, concat, copy, insert, remove, unpack =
 	table.maxn, table.sort, table.concat, table.copy,
-	table.insert, table.remove
+	table.insert, table.remove, unpack
 
 local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
@@ -79,6 +79,7 @@ local PNG = {
 	fire_anim = "craftguide_fire_anim.png",
 	book      = "craftguide_book.png",
 	sign      = "craftguide_sign.png",
+	nothing   = "craftguide_no.png",
 	selected  = "craftguide_selected.png",
 	furnace_anim = "craftguide_furnace_anim.png",
 
@@ -931,7 +932,7 @@ local function get_panels(data, fs)
 	}
 
 	if data.fs_version >= 3 and not sfinv_only then
-		panels.favs = {dat = {}, height = 2.19}
+		panels.favs = {height = 2.19}
 
 	elseif sfinv_only then
 		panels = data.show_usages and
@@ -966,7 +967,7 @@ local function get_panels(data, fs)
 			end
 		end
 
-		local rn = #v.dat
+		local rn = v.dat and #v.dat or -1
 		local _rn = tostring(rn)
 		local xu = tostring(data.unum) .. _rn
 		local xr = tostring(data.rnum) .. _rn
@@ -974,10 +975,15 @@ local function get_panels(data, fs)
 		xr = max(-0.3, -((#xr - 3) * 0.05))
 
 		local is_recipe = sfinv_only and not data.show_usages or k == 2
-		local lbl
+		local lbl = ""
 
 		if not sfinv_only and rn == 0 then
-			lbl = clr("#f00", is_recipe and ES"No recipes" or ES"No usages")
+			fs[#fs + 1] = fmt(FMT.image,
+				XOFFSET - 0.7, YOFFSET - 0.4 + spacing, 2, 2, PNG.nothing)
+
+			fs[#fs + 1] = fmt(FMT.tooltip,
+				XOFFSET - 0.7, YOFFSET - 0.4 + spacing, 2, 2,
+				is_recipe and ES"No recipes" or ES"No usages")
 
 		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
@@ -1016,7 +1022,7 @@ local function get_panels(data, fs)
 			end
 		end
 
-		local rcp = is_recipe and v.dat[data.rnum] or v.dat[data.unum]
+		local rcp = v.dat and (is_recipe and v.dat[data.rnum] or v.dat[data.unum])
 		if rcp then
 			get_grid_fs(data, fs, rcp, spacing)
 		end
