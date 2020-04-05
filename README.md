@@ -19,4 +19,4 @@ For developers, `craftguide` also has a [modding API](https://github.com/minetes
 Love this mod? Donations are appreciated: https://www.paypal.me/jpg84240
 
 
-![Preview2](https://i.imgur.com/w7KMS9G.png)
+![Preview2](https://content.minetest.net/uploads/wAGr5rE3fI.png)
