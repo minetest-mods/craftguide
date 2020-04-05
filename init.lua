@@ -64,6 +64,8 @@ local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next, type, tostring, io = pairs, next, type, tostring, io
 local vec_add, vec_mul = vector.add, vector.multiply
 
+local FORMSPEC_MINIMAL_VERSION = 3
+
 local ROWS  = 9
 local LINES = sfinv_only and 5 or 9
 local IPP   = ROWS * LINES
@@ -736,11 +738,9 @@ local function get_output_fs(data, fs, L)
 		local pos_x = L.rightest + L.btn_size + 0.1
 		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
 
-		if data.fs_version >= 3 and sub(icon, 1, 18) == "craftguide_furnace" then
+		if sub(icon, 1, 18) == "craftguide_furnace" then
 			fs[#fs + 1] = fmt(FMT.animated_image,
 				pos_x, pos_y + L.spacing, 0.5, 0.5, PNG.furnace_anim, 8, 180)
-		else
-			fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y + L.spacing, 0.5, 0.5, icon)
 		end
 
 		local tooltip = custom_recipe and custom_recipe.description or
@@ -757,25 +757,17 @@ local function get_output_fs(data, fs, L)
 		0.9, 0.7, PNG.arrow)
 
 	if L.recipe.type == "fuel" then
-		if data.fs_version >= 3 then
-			fs[#fs + 1] = fmt(FMT.animated_image,
-				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-				1.1, 1.1, PNG.fire_anim, 8, 180)
-		else
-			fs[#fs + 1] = fmt(FMT.image,
-				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-				1.1, 1.1, PNG.fire)
-		end
+		fs[#fs + 1] = fmt(FMT.animated_image,
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
+			1.1, 1.1, PNG.fire_anim, 8, 180)
 	else
 		local item = L.recipe.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		if data.fs_version >= 3 then
-			fs[#fs + 1] = fmt(FMT.image,
-				output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-				1.1, 1.1, PNG.selected)
-		end
+		fs[#fs + 1] = fmt(FMT.image,
+			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
+			1.1, 1.1, PNG.selected)
 
 		local _name = sfinv_only and name or fmt("_%s", name)
 
@@ -799,15 +791,9 @@ local function get_output_fs(data, fs, L)
 				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1) + L.spacing,
 				0.6, 0.4, PNG.arrow)
 
-			if data.fs_version >= 3 then
-				fs[#fs + 1] = fmt(FMT.animated_image,
-					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
-					0.6, 0.6, PNG.fire_anim, 8, 180)
-			else
-				fs[#fs + 1] = fmt(FMT.image,
-					output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
-					0.6, 0.6, PNG.fire)
-			end
+			fs[#fs + 1] = fmt(FMT.animated_image,
+				output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
+				0.6, 0.6, PNG.fire_anim, 8, 180)
 		end
 	end
 end
@@ -891,7 +877,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 			end
 		end
 
-		if data.fs_version >= 3 and not large_recipe then
+		if not large_recipe then
 			fs[#fs + 1] = fmt(FMT.image,
 				X, Y + (sfinv_only and 0.7 or 0), btn_size, btn_size, PNG.selected)
 		end
@@ -929,17 +915,16 @@ local function get_grid_fs(data, fs, rcp, spacing)
 end
 
 local function get_panels(data, fs)
-	local start_y = data.fs_version >= 3 and (sfinv_only and 0.33 or 0) or 0.33
+	local start_y = sfinv_only and 0.33 or 0
 
 	local panels = {
 		{dat = data.usages or {}, height = 3.5},
 		{dat = data.recipes or {}, height = 3.5},
 	}
 
-	if data.fs_version >= 3 and not sfinv_only then
+	if not sfinv_only then
 		panels.favs = {height = 2.19}
-
-	elseif sfinv_only then
+	else
 		panels = data.show_usages and
 			{{dat = data.usages}} or {{dat = data.recipes}}
 	end
@@ -952,7 +937,7 @@ local function get_panels(data, fs)
 			fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
 				-0.2 + spacing, v.height, PNG.bg_full, 10)
 
-			if data.fs_version >= 3 and k == 2 then
+			if k == 2 then
 				local fav = is_fav(data)
 				local nfavs = #data.favs
 
@@ -1014,17 +999,10 @@ local function get_panels(data, fs)
 			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 			local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
 
-			if data.fs_version >= 3 then
-				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-					x_arrow + (is_recipe and xr or xu), y_arrow,
-						PNG.prev, prev_name, "",
-					x_arrow + 1.8, y_arrow, PNG.next, next_name, "")
-			else
-				fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-					x_arrow + (is_recipe and xr or xu),
-						y_arrow, PNG.prev, prev_name, PNG.prev_hover,
-					x_arrow + 1.8, y_arrow, PNG.next, next_name, PNG.next_hover)
-			end
+			fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
+				x_arrow + (is_recipe and xr or xu), y_arrow,
+					PNG.prev, prev_name, "",
+				x_arrow + 1.8, y_arrow, PNG.next, next_name, "")
 		end
 
 		local rcp = v.dat and (is_recipe and v.dat[data.rnum] or v.dat[data.unum])
@@ -1032,7 +1010,7 @@ local function get_panels(data, fs)
 			get_grid_fs(data, fs, rcp, spacing)
 		end
 
-		if k == "favs" and data.fs_version >= 3 and not sfinv_only then
+		if k == "favs" and not sfinv_only then
 			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.1, ES"Bookmarks")
 
 			for i = 1, #data.favs do
@@ -1075,40 +1053,25 @@ local function make_fs(data)
 	]],
 	ESC(data.filter))
 
-	if data.fs_version >= 3 then
-		fs[#fs + 1] = fmt([[
-			style_type[image_button;border=false]
-			style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
-			style[search;fgimg=%s;fgimg_hovered=%s]
-			style[clear;fgimg=%s;fgimg_hovered=%s]
-			style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-			style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-		]],
-		PNG.selected, PNG.selected,
-		PNG.search, PNG.search_hover,
-		PNG.clear, PNG.clear_hover,
-		PNG.prev, PNG.prev_hover, PNG.prev_hover,
-		PNG.next, PNG.next_hover, PNG.next_hover)
+	fs[#fs + 1] = fmt([[
+		style_type[image_button;border=false]
+		style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
+		style[search;fgimg=%s;fgimg_hovered=%s]
+		style[clear;fgimg=%s;fgimg_hovered=%s]
+		style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+		style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	]],
+	PNG.selected, PNG.selected,
+	PNG.search, PNG.search_hover,
+	PNG.clear, PNG.clear_hover,
+	PNG.prev, PNG.prev_hover, PNG.prev_hover,
+	PNG.next, PNG.next_hover, PNG.next_hover)
 
-		fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
-			sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
-			sfinv_only and 3.3 or 3.25, -0.06, 0.85, 0.85, "", "clear", "",
-			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
-			sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
-	else
-		fs[#fs + 1] = fmt([[
-			image_button[%f,-0.06;0.85,0.85;%s;search;;;false;%s]
-			image_button[%f,-0.06;0.85,0.85;%s;clear;;;false;%s]
-			]],
-			sfinv_only and 2.6 or 2.54, PNG.search, PNG.search_hover,
-			sfinv_only and 3.3 or 3.25, PNG.clear, PNG.clear_hover)
-
-		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-			sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.05,
-				PNG.prev, "prev_page", PNG.prev_hover,
-			sfinv_only and 7.2 or (ROWS * 8.75) / 11, -0.05,
-				PNG.next, "next_page", PNG.next_hover)
-	end
+	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
+		sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
+		sfinv_only and 3.3 or 3.25, -0.06, 0.85, 0.85, "", "clear", "",
+		sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
+		sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
@@ -1137,7 +1100,7 @@ local function make_fs(data)
 		local X = i % ROWS
 		local Y = (i % IPP - X) / ROWS + 1
 
-		if data.fs_version >= 3 and data.query_item == item then
+		if data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image,
 				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
 				Y - (Y * 0.1) - 0.1,
@@ -1668,7 +1631,7 @@ if sfinv_only then
 
 		is_in_nav = function(self, player, context)
 			local name = player:get_player_name()
-			return get_fs_version(name) >= 2
+			return get_fs_version(name) >= FORMSPEC_MINIMAL_VERSION
 		end,
 
 		get = function(self, player, context)
@@ -1704,9 +1667,18 @@ else
 		local name = user:get_player_name()
 		local data = pdata[name]
 
-		if data.fs_version == 1 then
-			return msg(name, "Your Minetest client is outdated. " ..
-				"Get the latest version on minetest.net to use the Crafting Guide.")
+		if data.fs_version < FORMSPEC_MINIMAL_VERSION then
+			local fs = fmt([[
+				size[6.6,1.3]
+				image[0,0;1,1;%s]
+				label[1,0;%s]
+				button_exit[2.8,0.8;1,1;;OK]
+			]],
+			PNG.nothing,
+			"Your Minetest client is outdated.\n" ..
+			"Get the latest version on minetest.net to use the Crafting Guide.")
+
+			return show_formspec(name, "craftguide", fs)
 		end
 
 		if next(recipe_filters) then
