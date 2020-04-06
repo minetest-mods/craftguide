@@ -741,6 +741,8 @@ local function get_output_fs(data, fs, L)
 		if sub(icon, 1, 18) == "craftguide_furnace" then
 			fs[#fs + 1] = fmt(FMT.animated_image,
 				pos_x, pos_y + L.spacing, 0.5, 0.5, PNG.furnace_anim, 8, 180)
+		else
+			fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y + L.spacing, 0.5, 0.5, icon)
 		end
 
 		local tooltip = custom_recipe and custom_recipe.description or
@@ -925,8 +927,7 @@ local function get_panels(data, fs)
 	if not sfinv_only then
 		panels.favs = {height = 2.19}
 	else
-		panels = data.show_usages and
-			{{dat = data.usages}} or {{dat = data.recipes}}
+		panels = data.show_usages and {{dat = data.usages}} or {{dat = data.recipes}}
 	end
 
 	for k, v in pairs(panels) do
