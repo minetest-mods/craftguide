@@ -52,16 +52,16 @@ local ES = function(...)
 	return ESC(S(...))
 end
 
-local maxn, sort, concat, copy, insert, remove, unpack =
+local maxn, sort, concat, copy, insert, remove =
 	table.maxn, table.sort, table.concat, table.copy,
-	table.insert, table.remove, unpack
+	table.insert, table.remove
 
 local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next, type, tostring, io = pairs, next, type, tostring, io
+local pairs, next, type, tostring, unpack, io = pairs, next, type, tostring, unpack, io
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local FORMSPEC_MINIMAL_VERSION = 3
@@ -282,7 +282,7 @@ local craft_types = {}
 
 function craftguide.register_craft_type(name, def)
 	if not true_str(name) then
-		return err"craftguide.register_craft_type(): name missing"
+		return err "craftguide.register_craft_type(): name missing"
 	end
 
 	if not is_str(def.description) then
@@ -301,8 +301,9 @@ function craftguide.register_craft(def)
 
 	if true_str(def.url) then
 		if not http then
-			return err"No HTTP support for this mod. " ..
-				"Add it to the `secure.http_mods` or `secure.trusted_mods` setting."
+			return err "craftguide.register_craft(): Unable to reach " ..
+				def.url .. ". No HTTP support for this mod: " ..
+				"add it to the `secure.http_mods` or `secure.trusted_mods` setting."
 		end
 
 		http.fetch({url = def.url}, function(result)
@@ -318,7 +319,7 @@ function craftguide.register_craft(def)
 	end
 
 	if not is_table(def) or not next(def) then
-		return err"craftguide.register_craft(): craft definition missing"
+		return err "craftguide.register_craft(): craft definition missing"
 	end
 
 	if #def > 1 then
@@ -334,7 +335,7 @@ function craftguide.register_craft(def)
 	end
 
 	if not true_str(def.output) then
-		return err"craftguide.register_craft(): output missing"
+		return err "craftguide.register_craft(): output missing"
 	end
 
 	if not is_table(def.items) then
@@ -404,9 +405,9 @@ local recipe_filters = {}
 
 function craftguide.add_recipe_filter(name, f)
 	if not true_str(name) then
-		return err"craftguide.add_recipe_filter(): name missing"
+		return err "craftguide.add_recipe_filter(): name missing"
 	elseif not is_func(f) then
-		return err"craftguide.add_recipe_filter(): function missing"
+		return err "craftguide.add_recipe_filter(): function missing"
 	end
 
 	recipe_filters[name] = f
@@ -414,9 +415,9 @@ end
 
 function craftguide.set_recipe_filter(name, f)
 	if not is_str(name) then
-		return err"craftguide.set_recipe_filter(): name missing"
+		return err "craftguide.set_recipe_filter(): name missing"
 	elseif not is_func(f) then
-		return err"craftguide.set_recipe_filter(): function missing"
+		return err "craftguide.set_recipe_filter(): function missing"
 	end
 
 	recipe_filters = {[name] = f}
@@ -442,9 +443,9 @@ local search_filters = {}
 
 function craftguide.add_search_filter(name, f)
 	if not true_str(name) then
-		return err"craftguide.add_search_filter(): name missing"
+		return err "craftguide.add_search_filter(): name missing"
 	elseif not is_func(f) then
-		return err"craftguide.add_search_filter(): function missing"
+		return err "craftguide.add_search_filter(): function missing"
 	end
 
 	search_filters[name] = f
@@ -473,6 +474,7 @@ end
 
 local function item_in_recipe(item, recipe)
 	local clean_item = reg_aliases[item] or item
+
 	for _, recipe_item in pairs(recipe.items) do
 		local clean_recipe_item = reg_aliases[recipe_item] or recipe_item
 		if clean_recipe_item == clean_item then
@@ -610,7 +612,7 @@ local function get_recipes(item, data, player)
 	local no_usages = not usages or #usages == 0
 
 	return not no_recipes and recipes or nil,
-	       not no_usages  and usages or nil
+	       not no_usages  and usages  or nil
 end
 
 local function groups_to_items(groups, get_all)
@@ -1825,11 +1827,7 @@ if progressive_mode then
 		return filtered
 	end
 
-	local item_lists = {
-		"main",
-		"craft",
-		"craftpreview",
-	}
+	local item_lists = {"main", "craft", "craftpreview"}
 
 	local function get_inv_items(player)
 		local inv = player:get_inventory()
@@ -2020,7 +2018,7 @@ end)
 
 function craftguide.show(name, item, show_usages)
 	if not true_str(name)then
-		return err"craftguide.show(): player name missing"
+		return err "craftguide.show(): player name missing"
 	end
 
 	local data = pdata[name]
