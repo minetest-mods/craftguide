@@ -1445,6 +1445,7 @@ local function tablelen(t)
 end
 
 local function get_init_items()
+	print()
 	local ic, it, last_str = 0, tablelen(reg_items), ""
 	local hash = {}
 
