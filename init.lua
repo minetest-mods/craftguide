@@ -12,11 +12,6 @@ local toolrepair
 
 local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
 local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
-local enable_cache_progress_bar = core.settings:get_bool("craftguide_enable_cache_progress_bar")
-
-if enable_cache_progress_bar == nil then
-	enable_cache_progress_bar = true
-end
 
 local http = core.request_http_api()
 
@@ -61,7 +56,7 @@ local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next, type, tostring, unpack, io = pairs, next, type, tostring, unpack, io
+local pairs, next, type, tostring, unpack = pairs, next, type, tostring, unpack
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local FORMSPEC_MINIMAL_VERSION = 3
@@ -1435,41 +1430,11 @@ local function show_item(def)
 		def.description and def.description ~= ""
 end
 
-local function tablelen(t)
-	local c = 0
-	for _ in pairs(t) do
-		c = c + 1
-	end
-
-	return c
-end
-
 local function get_init_items()
-	print()
-	local ic, it, last_str = 0, tablelen(reg_items), ""
+	print("[craftguide] Caching data (this may take a while)")
 	local hash = {}
 
-	local function iop(str)
-		io.write(("\b \b"):rep(#last_str))
-		io.write(str)
-		io.flush()
-		last_str = str
-	end
-
-	local full_char, empty_char = "#", " "
-
 	for name, def in pairs(reg_items) do
-		ic = ic + 1
-		local percent, bar, len = (ic * 100) / it, "[", 20
-
-		for i = 1, len do
-			bar = bar .. (i <= percent / (100 / len) and full_char or empty_char)
-		end
-
-		if enable_cache_progress_bar then
-			iop(fmt("[craftguide] Caching data  %s  %u%%\r", bar .. "]", percent))
-		end
-
 		if show_item(def) then
 			if not fuel_cache[name] then
 				cache_fuel(name)
@@ -1504,8 +1469,6 @@ local function get_init_items()
 			post_data = write_json(post_data),
 		}
 	end
-
-	print()
 end
 
 local function init_data(name)

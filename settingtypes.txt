@@ -3,6 +3,3 @@ craftguide_progressive_mode	(Progressive Mode)	bool false
 
 # Integration in the default Minetest Game inventory.
 craftguide_sfinv_only		(Sfinv only)		bool false
-
-# Display the cache-building progress bar in the server console.
-craftguide_enable_cache_progress_bar	(Enable console cache progress bar)	bool true
