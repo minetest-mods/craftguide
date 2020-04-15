@@ -41,7 +41,7 @@ local get_player_info = core.get_player_information
 local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
-local S = core.get_translator("craftguide")
+local S = core.get_translator "craftguide"
 
 local ES = function(...)
 	return ESC(S(...))
@@ -331,9 +331,9 @@ function craftguide.register_craft(def)
 
 	if true_str(def.url) then
 		if not http then
-			return err "craftguide.register_craft(): Unable to reach " ..
-				def.url .. ". No HTTP support for this mod: " ..
-				"add it to the `secure.http_mods` or `secure.trusted_mods` setting."
+			return err(fmt([[craftguide.register_craft(): Unable to reach %s.
+				No HTTP support for this mod: add it to the `secure.http_mods` or
+				`secure.trusted_mods` setting.]], def.url))
 		end
 
 		http.fetch({url = def.url}, function(result)
@@ -1411,8 +1411,7 @@ local function handle_drops_table(name, drop)
 	end
 end
 
-local function register_drops(name, def)
-	local drop = def.drop
+local function register_drops(name, drop)
 	local dstack = ItemStack(drop)
 
 	if not dstack:is_empty() and dstack:get_name() ~= name then
@@ -1471,7 +1470,7 @@ local function show_item(def)
 end
 
 local function get_init_items()
-	print("[craftguide] Caching data (this may take a while)")
+	print "[craftguide] Caching data (this may take a while)"
 	local hash = {}
 
 	for name, def in pairs(reg_items) do
@@ -1485,7 +1484,7 @@ local function get_init_items()
 			end
 
 			cache_usages(name)
-			register_drops(name, def)
+			register_drops(name, def.drop)
 
 			if name ~= "" and recipes_cache[name] or usages_cache[name] then
 				init_items[#init_items + 1] = name
@@ -1544,7 +1543,6 @@ end)
 local function fields(player, _f)
 	local name = player:get_player_name()
 	local data = pdata[name]
-	--print(dump(_f))
 
 	if _f.clear then
 		reset_data(data)
