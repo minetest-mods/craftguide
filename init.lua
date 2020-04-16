@@ -779,46 +779,40 @@ local function get_output_fs(data, fs, L)
 		end
 
 		local pos_x = L.rightest + L.btn_size + 0.1
-		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45)
+		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45) + L.spacing
 
 		if sub(icon, 1, 18) == "craftguide_furnace" then
 			fs[#fs + 1] = fmt(FMT.animated_image,
-				pos_x, pos_y + L.spacing, 0.5, 0.5, PNG.furnace_anim, 8, 180)
+				pos_x, pos_y, 0.5, 0.5, PNG.furnace_anim, 8, 180)
 		else
-			fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y + L.spacing, 0.5, 0.5, icon)
+			fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y, 0.5, 0.5, icon)
 		end
 
 		local tooltip = custom_recipe and custom_recipe.description or
 				L.shapeless and S"Shapeless" or S"Cooking"
 
-		fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y + L.spacing, 0.5, 0.5, ESC(tooltip))
+		fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
 	local arrow_X = L.rightest + (L._btn_size or 1.1)
 	local output_X = arrow_X + 0.9
+	local Y = YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing
 
-	fs[#fs + 1] = fmt(FMT.image,
-		arrow_X, YOFFSET + (sfinv_only and 0.9 or 0.2) + L.spacing,
-		0.9, 0.7, PNG.arrow)
+	fs[#fs + 1] = fmt(FMT.image, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
 
 	if L.recipe.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT.animated_image,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, PNG.fire_anim, 8, 180)
+		fs[#fs + 1] = fmt(FMT.animated_image, output_X, Y, 1.1, 1.1, PNG.fire_anim, 8, 180)
 	else
 		local item = L.recipe.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs[#fs + 1] = fmt(FMT.image,
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, PNG.selected)
+		fs[#fs + 1] = fmt(FMT.image, output_X, Y, 1.1, 1.1, PNG.selected)
 
 		local _name = sfinv_only and name or fmt("_%s", name)
 
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-			output_X, YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing,
-			1.1, 1.1, item, _name, "")
+			output_X, Y, 1.1, 1.1, item, _name, "")
 
 		local infos = {
 			unknown  = not reg_items[name] or nil,
@@ -922,14 +916,14 @@ local function get_grid_fs(data, fs, rcp, spacing)
 			end
 		end
 
+		Y = Y + (sfinv_only and 0.7 or 0)
+
 		if not large_recipe then
-			fs[#fs + 1] = fmt(FMT.image,
-				X, Y + (sfinv_only and 0.7 or 0), btn_size, btn_size, PNG.selected)
+			fs[#fs + 1] = fmt(FMT.image, X, Y, btn_size, btn_size, PNG.selected)
 		end
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
-			X, Y + (sfinv_only and 0.7 or 0),
-			btn_size, btn_size, item, item, ESC(label))
+			X, Y, btn_size, btn_size, item, item, label)
 
 		local infos = {
 			unknown  = not reg_items[name] or nil,
@@ -1012,12 +1006,13 @@ local function get_panels(data, fs)
 		local lbl = ""
 
 		if not sfinv_only and rn == 0 then
-			fs[#fs + 1] = fmt(FMT.image,
-				XOFFSET - 0.7, YOFFSET - 0.4 + spacing, 2, 2, PNG.nothing)
+			local X = XOFFSET - 0.7
+			local Y = YOFFSET - 0.4 + spacing
+
+			fs[#fs + 1] = fmt(FMT.image, X, Y, 2, 2, PNG.nothing)
 
 			fs[#fs + 1] = fmt(FMT.tooltip,
-				XOFFSET - 0.7, YOFFSET - 0.4 + spacing, 2, 2,
-				is_recipe and ES"No recipes" or ES"No usages")
+				X, Y, 2, 2, is_recipe and ES"No recipes" or ES"No usages")
 
 		elseif (not sfinv_only and is_recipe) or
 				(sfinv_only and not data.show_usages) then
@@ -1059,16 +1054,15 @@ local function get_panels(data, fs)
 
 			for i = 1, #data.favs do
 				local item = data.favs[i]
+				local X = 7.85 + (i - 0.5)
+				local Y = spacing + 0.45
 
 				if data.query_item == item then
-					fs[#fs + 1] = fmt(FMT.image,
-						7.85 + (i - 0.5), spacing + 0.45,
-						1.1, 1.1, PNG.selected)
+					fs[#fs + 1] = fmt(FMT.image, X, Y, 1.1, 1.1, PNG.selected)
 				end
 
 				fs[#fs + 1] = fmt(FMT.item_image_button,
-					7.85 + (i - 0.5), spacing + 0.45,
-					1.1, 1.1, item, item, "")
+					X, Y, 1.1, 1.1, item, item, "")
 			end
 		end
 	end
@@ -1124,15 +1118,15 @@ local function make_fs(data)
 			0.06, clr("#ff0", data.pagenum), data.pagemax)
 
 	if #data.items == 0 then
-		local no_item = S"No item to show"
+		local no_item = ES"No item to show"
 		local pos = 3
 
 		if next(recipe_filters) and #init_items > 0 and data.filter == "" then
-			no_item = S"Collect items to reveal more recipes"
+			no_item = ES"Collect items to reveal more recipes"
 			pos = pos - 1
 		end
 
-		fs[#fs + 1] = fmt(FMT.label, pos, 2, ESC(no_item))
+		fs[#fs + 1] = fmt(FMT.label, pos, 2, no_item)
 	end
 
 	local first_item = (data.pagenum - 1) * IPP
@@ -1143,18 +1137,15 @@ local function make_fs(data)
 
 		local X = i % ROWS
 		local Y = (i % IPP - X) / ROWS + 1
+		X = X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05
+		Y = Y - (Y * 0.1) - 0.1
 
 		if data.query_item == item then
-			fs[#fs + 1] = fmt(FMT.image,
-				X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
-				Y - (Y * 0.1) - 0.1,
-				1, 1, PNG.selected)
+			fs[#fs + 1] = fmt(FMT.image, X, Y, 1, 1, PNG.selected)
 		end
 
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
-			X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05,
-			Y - (Y * 0.1) - 0.1,
-			1, 1, item, item)
+			X, Y, 1, 1, item, item)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
