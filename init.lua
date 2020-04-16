@@ -1476,8 +1476,10 @@ local function show_item(def)
 end
 
 local function get_init_items()
-	if autocache == false then
-		init_items    = dslz(storage:get "init_items")
+	local init_items_bak = storage:get "init_items"
+
+	if autocache == false and init_items_bak then
+		init_items    = dslz(init_items_bak)
 		fuel_cache    = dslz(storage:get "fuel_cache")
 		usages_cache  = dslz(storage:get "usages_cache")
 		recipes_cache = dslz(storage:get "recipes_cache")
