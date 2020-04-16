@@ -10,10 +10,12 @@ local fuel_cache    = {}
 
 local toolrepair
 
-local progressive_mode = core.settings:get_bool("craftguide_progressive_mode")
-local sfinv_only = core.settings:get_bool("craftguide_sfinv_only") and rawget(_G, "sfinv")
+local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
+local sfinv_only = core.settings:get_bool "craftguide_sfinv_only" and rawget(_G, "sfinv")
+local autocache = core.settings:get_bool "craftguide_autocache"
 
 local http = core.request_http_api()
+local storage = core.get_mod_storage()
 
 local reg_items = core.registered_items
 local reg_tools = core.registered_tools
@@ -130,7 +132,7 @@ craftguide.group_stereotypes = {
 	mesecon_conductor_craftable = "mesecons:wire_00000000_off",
 }
 
-local GROUP_NAMES = {
+local group_names = {
 	coal = S"Any coal",
 	wool = S"Any wool",
 	wood = S"Any wood planks",
@@ -708,7 +710,7 @@ local function get_tooltip(name, info)
 
 	if info.groups then
 		sort(info.groups)
-		tooltip = GROUP_NAMES[concat(info.groups, ",")]
+		tooltip = group_names[concat(info.groups, ",")]
 
 		if not tooltip then
 			local groupstr, c = {}, 0
@@ -1470,31 +1472,43 @@ local function show_item(def)
 end
 
 local function get_init_items()
-	print "[craftguide] Caching data (this may take a while)"
-	local hash = {}
+	if not autocache then
+		init_items    = dslz(storage:get "init_items")
+		fuel_cache    = dslz(storage:get "fuel_cache")
+		usages_cache  = dslz(storage:get "usages_cache")
+		recipes_cache = dslz(storage:get "recipes_cache")
+	else
+		print "[craftguide] Caching data (this may take a while)"
+		local hash = {}
 
-	for name, def in pairs(reg_items) do
-		if show_item(def) then
-			if not fuel_cache[name] then
-				cache_fuel(name)
-			end
+		for name, def in pairs(reg_items) do
+			if show_item(def) then
+				if not fuel_cache[name] then
+					cache_fuel(name)
+				end
 
-			if not recipes_cache[name] then
-				cache_recipes(name)
-			end
+				if not recipes_cache[name] then
+					cache_recipes(name)
+				end
 
-			cache_usages(name)
-			register_drops(name, def.drop)
+				cache_usages(name)
+				register_drops(name, def.drop)
 
-			if name ~= "" and recipes_cache[name] or usages_cache[name] then
-				init_items[#init_items + 1] = name
-				hash[name] = true
+				if name ~= "" and recipes_cache[name] or usages_cache[name] then
+					init_items[#init_items + 1] = name
+					hash[name] = true
+				end
 			end
 		end
-	end
 
-	handle_aliases(hash)
-	sort(init_items)
+		handle_aliases(hash)
+		sort(init_items)
+
+		storage:set_string("init_items", slz(init_items))
+		storage:set_string("fuel_cache", slz(fuel_cache))
+		storage:set_string("usages_cache", slz(usages_cache))
+		storage:set_string("recipes_cache", slz(recipes_cache))
+	end
 
 	if http and true_str(craftguide.export_url) then
 		local post_data = {
@@ -1957,8 +1971,8 @@ if progressive_mode then
 		local data = pdata[name]
 
 		local meta = player:get_meta()
-		data.inv_items = dslz(meta:get_string("inv_items")) or {}
-		data.known_recipes = dslz(meta:get_string("known_recipes")) or 0
+		data.inv_items = dslz(meta:get_string "inv_items") or {}
+		data.known_recipes = dslz(meta:get_string "known_recipes") or 0
 
 		data.hud = {
 			bg = player:hud_add{
