@@ -175,7 +175,7 @@ local function err(str)
 end
 
 local function msg(name, str)
-	return chat_send(name, fmt("[craftguide] %s", clr("#f00", str)))
+	return chat_send(name, fmt("[craftguide] %s", str))
 end
 
 local function is_str(x)
