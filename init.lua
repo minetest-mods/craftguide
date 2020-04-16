@@ -1476,7 +1476,7 @@ local function show_item(def)
 end
 
 local function get_init_items()
-	if not autocache then
+	if autocache == false then
 		init_items    = dslz(storage:get "init_items")
 		fuel_cache    = dslz(storage:get "fuel_cache")
 		usages_cache  = dslz(storage:get "usages_cache")
