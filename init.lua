@@ -65,7 +65,6 @@ local FORMSPEC_MINIMAL_VERSION = 3
 
 local ROWS = 9
 local LINES = sfinv_only and 5 or 9
-local IPP = ROWS * LINES
 local WH_LIMIT = 8
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
@@ -1085,37 +1084,26 @@ local function make_fs(data)
 
 	fs[#fs + 1] = fmt([[
 		style[filter;border=false]
-		field[0.4,0.2;2.5,1;filter;;%s]
+		field[0.4,0.2;6.45,1;filter;;%s]
 		field_close_on_enter[filter;false]
-		box[0,0;2.4,0.6;#bababa25]
+		box[0,0;6.35,0.6;#bababa25]
 	]],
 	ESC(data.filter))
 
 	fs[#fs + 1] = fmt([[
+		style_type[image;noclip=false]
 		style_type[image_button;border=false]
 		style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
 		style[search;fgimg=%s;fgimg_hovered=%s]
 		style[clear;fgimg=%s;fgimg_hovered=%s]
-		style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-		style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	]],
 	PNG.selected, PNG.selected,
 	PNG.search, PNG.search_hover,
-	PNG.clear, PNG.clear_hover,
-	PNG.prev, PNG.prev_hover, PNG.prev_hover,
-	PNG.next, PNG.next_hover, PNG.next_hover)
+	PNG.clear, PNG.clear_hover)
 
-	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
-		sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
-		sfinv_only and 3.3 or 3.25, -0.06, 0.85, 0.85, "", "clear", "",
-		sfinv_only and 5.45 or (9 * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
-		sfinv_only and 7.2  or (9 * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
-
-	data.pagemax = max(1, ceil(#data.items / IPP))
-
-	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 6.35 or (9 * 7.85) / 11,
-			0.06, clr("#ff0", data.pagenum), data.pagemax)
+	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 2),
+		sfinv_only and 2.6 or 6.45, -0.06, 0.85, 0.85, "", "search", "",
+		sfinv_only and 3.3 or 7.15, -0.06, 0.85, 0.85, "", "clear", "")
 
 	if #data.items == 0 then
 		local no_item = ES"No item to show"
@@ -1129,16 +1117,16 @@ local function make_fs(data)
 		fs[#fs + 1] = fmt(FMT.label, pos, 2, no_item)
 	end
 
-	local first_item = (data.pagenum - 1) * IPP
+	fs[#fs + 1] = "scroll_container[0,1.3;9,9.3;scrbar;vertical]"
 
-	for i = first_item, first_item + IPP - 1 do
+	for i = 0, #data.items do
 		local item = data.items[i + 1]
 		if not item then break end
 
 		local X = i % ROWS
-		local Y = (i % IPP - X) / ROWS + 1
-		X = X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05
-		Y = Y - (Y * 0.1) - 0.1
+		local Y = (i - X) / ROWS
+		X = X - (X * 0.12)
+		Y = Y - (Y * 0.02)
 
 		if data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image, X, Y, 1, 1, PNG.selected)
@@ -1147,6 +1135,10 @@ local function make_fs(data)
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
 			X, Y, 1, 1, item, item)
 	end
+
+	fs[#fs + 1] = "scroll_container_end[]"
+	fs[#fs + 1] = fmt("scrollbaroptions[arrows=hide;max=%u]", (#data.items / 8) * 10 - 80)
+	fs[#fs + 1] = fmt("scrollbar[7.2,0.8;0.45,8.1;vertical;scrbar;%u]", data.scrbar)
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
 		get_panels(data, fs)
@@ -1524,7 +1516,7 @@ end
 local function init_data(name)
 	pdata[name] = {
 		filter     = "",
-		pagenum    = 1,
+		scrbar     = 0,
 		items      = init_items,
 		items_raw  = init_items,
 		favs       = {},
@@ -1534,7 +1526,7 @@ end
 
 local function reset_data(data)
 	data.filter      = ""
-	data.pagenum     = 1
+	data.scrbar      = 0
 	data.rnum        = 1
 	data.unum        = 1
 	data.query_item  = nil
@@ -1576,18 +1568,8 @@ local function fields(player, _f)
 		if data.filter == str then return end
 
 		data.filter = str
-		data.pagenum = 1
+		data.scrbar = 0
 		search(data)
-
-	elseif _f.prev_page or _f.next_page then
-		if data.pagemax == 1 then return end
-		data.pagenum = data.pagenum - (_f.prev_page and 1 or -1)
-
-		if data.pagenum > data.pagemax then
-			data.pagenum = 1
-		elseif data.pagenum == 0 then
-			data.pagenum = data.pagemax
-		end
 
 	elseif _f.fav then
 		local fav, i = is_fav(data)
@@ -1636,6 +1618,7 @@ local function fields(player, _f)
 		data.usages     = usages
 		data.rnum       = 1
 		data.unum       = 1
+		data.scrbar     = tonumber(match(_f.scrbar, "%d+"))
 	end
 
 	return true, show_fs(player, name)
