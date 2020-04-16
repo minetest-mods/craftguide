@@ -125,6 +125,8 @@ end
 craftguide.group_stereotypes = {
 	dye = "dye:white",
 	wool = "wool:white",
+	wood = "default:wood",
+	tree = "default:tree",
 	coal = "default:coal_lump",
 	vessel = "vessels:glass_bottle",
 	flower = "flowers:dandelion_yellow",
@@ -139,6 +141,7 @@ local group_names = {
 	sand = S"Any sand",
 	stick = S"Any stick",
 	stone = S"Any kind of stone block",
+	tree  = S"Any tree",
 	vessel = S"Any vessel",
 
 	["color_red,flower"] = S"Any red flower",
