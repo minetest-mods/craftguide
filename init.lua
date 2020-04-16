@@ -234,6 +234,7 @@ local function table_eq(T1, T2)
 
 	local function recurse(t1, t2)
 		if type(t1) ~= type(t2) then return end
+
 		if not is_table(t1) then
 			return t1 == t2
 		end
