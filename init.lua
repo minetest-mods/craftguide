@@ -887,9 +887,9 @@ local function get_grid_fs(data, fs, rcp, spacing)
 			_btn_size = btn_size
 
 			X = (btn_size * ((i - 1) % width) + XOFFSET -
-				(sfinv_only and 2.83 or 0.5)) * (0.83 - (x_y / 5))
+				(sfinv_only and 2.83 or 0)) * (0.83 - (x_y / 5))
 			Y = (btn_size * floor((i - 1) / width) +
-				(sfinv_only and 5.81 or 5.5) + x_y) * (0.86 - (x_y / 5))
+				(sfinv_only and 5.81 or 3.92) + x_y) * (0.86 - (x_y / 5))
 		end
 
 		if X > rightest then
