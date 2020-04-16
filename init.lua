@@ -1093,7 +1093,7 @@ local function make_fs(data)
 		style[filter;border=false]
 		field[0.4,0.2;2.5,1;filter;;%s]
 		field_close_on_enter[filter;false]
-		box[0,0;2.4,0.6;#ffffff25]
+		box[0,0;2.4,0.6;#bababa25]
 	]],
 	ESC(data.filter))
 
