@@ -63,9 +63,9 @@ local vec_add, vec_mul = vector.add, vector.multiply
 
 local FORMSPEC_MINIMAL_VERSION = 3
 
-local ROWS  = 9
+local ROWS = 9
 local LINES = sfinv_only and 5 or 9
-local IPP   = ROWS * LINES
+local IPP = ROWS * LINES
 local WH_LIMIT = 8
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
@@ -1078,11 +1078,11 @@ local function make_fs(data)
 		no_prepend[]
 		bgcolor[#0000]
 	]],
-	ROWS + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3)
+	9 + (data.query_item and 6.7 or 0) - 1.2, LINES - 0.3)
 
 	if not sfinv_only then
 		fs[#fs + 1] = fmt("background9[-0.15,-0.2;%f,%f;%s;false;%d]",
-			ROWS - 0.9, LINES + 0.4, PNG.bg_full, 10)
+			9 - 0.9, LINES + 0.4, PNG.bg_full, 10)
 	end
 
 	fs[#fs + 1] = fmt([[
@@ -1110,18 +1110,18 @@ local function make_fs(data)
 	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
 		sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
 		sfinv_only and 3.3 or 3.25, -0.06, 0.85, 0.85, "", "clear", "",
-		sfinv_only and 5.45 or (ROWS * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
-		sfinv_only and 7.2  or (ROWS * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
+		sfinv_only and 5.45 or (9 * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
+		sfinv_only and 7.2  or (9 * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 6.35 or (ROWS * 7.85) / 11,
+		sfinv_only and 6.35 or (9 * 7.85) / 11,
 			0.06, clr("#ff0", data.pagenum), data.pagemax)
 
 	if #data.items == 0 then
 		local no_item = S"No item to show"
-		local pos = ROWS / 3
+		local pos = 3
 
 		if next(recipe_filters) and #init_items > 0 and data.filter == "" then
 			no_item = S"Collect items to reveal more recipes"
