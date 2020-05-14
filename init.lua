@@ -7,7 +7,6 @@ local searches      = {}
 local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
-
 local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
@@ -16,6 +15,7 @@ local autocache = core.settings:get_bool "craftguide_autocache"
 
 local http = core.request_http_api()
 local storage = core.get_mod_storage()
+local singleplayer = core.is_singleplayer()
 
 local reg_items = core.registered_items
 local reg_tools = core.registered_tools
@@ -1726,7 +1726,12 @@ else
 		paramtype = "light",
 		paramtype2 = "wallmounted",
 		sunlight_propagates = true,
-		groups = {choppy = 1, attached_node = 1, oddly_breakable_by_hand = 1, flammable = 3},
+		groups = {
+			choppy = 1,
+			attached_node = 1,
+			oddly_breakable_by_hand = 1,
+			flammable = 3,
+		},
 		node_box = {
 			type = "wallmounted",
 			wall_top    = {-0.5, 0.4375, -0.5, 0.5, 0.5, 0.5},
@@ -1771,7 +1776,7 @@ else
 	if rawget(_G, "sfinv_buttons") then
 		sfinv_buttons.register_button("craftguide", {
 			title = S"Crafting Guide",
-			tooltip = S"Shows a list of available crafting recipes, cooking recipes and fuels",
+			tooltip = S"Shows a list of available crafting recipes",
 			image = PNG.book,
 			action = function(player)
 				on_use(player)
@@ -1955,7 +1960,7 @@ if progressive_mode then
 			local name   = player:get_player_name()
 			local data   = pdata[name]
 
-			if data.show_hud ~= nil then
+			if data.show_hud ~= nil and singleplayer then
 				show_hud_success(player, data)
 			end
 		end
@@ -1970,6 +1975,8 @@ if progressive_mode then
 		local meta = player:get_meta()
 		data.inv_items = dslz(meta:get_string "inv_items") or {}
 		data.known_recipes = dslz(meta:get_string "known_recipes") or 0
+
+		if not singleplayer then return end
 
 		data.hud = {
 			bg = player:hud_add{
