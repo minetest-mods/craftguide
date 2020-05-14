@@ -711,6 +711,10 @@ local function is_fav(data)
 	return fav, i
 end
 
+local function check_newline(def)
+	return def and def.description and find(def.description, "\n")
+end
+
 local function get_desc(name)
 	if sub(name, 1, 1) == "_" then
 		name = sub(name, 2)
@@ -828,11 +832,15 @@ local function get_output_fs(data, fs, L)
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 			output_X, Y, 1.1, 1.1, item, _name, "")
 
+
+		local def = reg_items[name]
+
 		local infos = {
-			unknown  = not reg_items[name] or nil,
+			unknown  = not def or nil,
 			burntime = fuel_cache[name],
 			repair   = repairable(name),
 			rarity   = L.rarity,
+			newline  = check_newline(def),
 		}
 
 		if next(infos) then
@@ -939,12 +947,15 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y, btn_size, btn_size, item, item, label)
 
+		local def = reg_items[name]
+
 		local infos = {
-			unknown  = not reg_items[name] or nil,
+			unknown  = not def or nil,
 			groups   = groups,
 			burntime = fuel_cache[name],
 			cooktime = cooktime,
 			replace  = replace,
+			newline  = check_newline(def),
 		}
 
 		if next(infos) then
@@ -2061,13 +2072,11 @@ function craftguide.show(name, item, show_usages)
 	if not recipes and not usages then
 		if not recipes_cache[item] and not usages_cache[item] then
 			return false, msg(name, fmt("%s: %s",
-				S"No recipe or usage for this item",
-				get_desc(item)))
+				S"No recipe or usage for this item", get_desc(item)))
 		end
 
 		return false, msg(name, fmt("%s: %s",
-			S"You don't know a recipe or usage for this item",
-			get_desc(item)))
+			S"You don't know a recipe or usage for this item", get_desc(item)))
 	end
 
 	data.query_item = item
