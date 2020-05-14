@@ -1552,6 +1552,7 @@ on_joinplayer(function(player)
 end)
 
 local function fields(player, _f)
+	if not player then return end
 	local name = player:get_player_name()
 	local data = pdata[name]
 
@@ -1780,7 +1781,6 @@ else
 end
 
 if progressive_mode then
-	local PLAYERS = {}
 	local POLL_FREQ = 0.25
 	local HUD_TIMER_MAX = 1.5
 
@@ -1914,8 +1914,9 @@ if progressive_mode then
 	-- Workaround. Need an engine call to detect when the contents of
 	-- the player inventory changed, instead.
 	local function poll_new_items()
-		for i = 1, #PLAYERS do
-			local player = PLAYERS[i]
+		local players = get_players()
+		for i = 1, #players do
+			local player = players[i]
 			local name   = player:get_player_name()
 			local data   = pdata[name]
 
@@ -1948,8 +1949,9 @@ if progressive_mode then
 	poll_new_items()
 
 	globalstep(function()
-		for i = 1, #PLAYERS do
-			local player = PLAYERS[i]
+		local players = get_players()
+		for i = 1, #players do
+			local player = players[i]
 			local name   = player:get_player_name()
 			local data   = pdata[name]
 
@@ -1962,8 +1964,6 @@ if progressive_mode then
 	craftguide.add_recipe_filter("Default progressive filter", progressive_filter)
 
 	on_joinplayer(function(player)
-		PLAYERS = get_players()
-
 		local name = player:get_player_name()
 		local data = pdata[name]
 
@@ -2011,14 +2011,12 @@ if progressive_mode then
 		end
 	end
 
-	on_leaveplayer(function(player)
-		PLAYERS = get_players()
-		save_meta(player)
-	end)
+	on_leaveplayer(save_meta)
 
 	on_shutdown(function()
-		for i = 1, #PLAYERS do
-			local player = PLAYERS[i]
+		local players = get_players()
+		for i = 1, #players do
+			local player = players[i]
 			save_meta(player)
 		end
 	end)
