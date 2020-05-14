@@ -111,6 +111,20 @@ local function get_fs_version(name)
 	return info and info.formspec_version or 1
 end
 
+local function outdated(name)
+	local fs = fmt([[
+		size[6.6,1.3]
+		image[0,0;1,1;%s]
+		label[1,0;%s]
+		button_exit[2.8,0.8;1,1;;OK]
+	]],
+	PNG.book,
+	"Your Minetest client is outdated.\n" ..
+	"Get the latest version on minetest.net to use the Crafting Guide.")
+
+	return show_formspec(name, "craftguide", fs)
+end
+
 local function mul_elem(elem, n)
 	local fstr, elems = "", {}
 
@@ -1549,10 +1563,13 @@ on_mods_loaded(get_init_items)
 on_joinplayer(function(player)
 	local name = player:get_player_name()
 	init_data(name)
+
+	if pdata[name].fs_version < FORMSPEC_MINIMAL_VERSION then
+		outdated(name)
+	end
 end)
 
 local function fields(player, _f)
-	if not player then return end
 	local name = player:get_player_name()
 	local data = pdata[name]
 
@@ -1654,9 +1671,8 @@ if sfinv_only then
 		get = function(self, player, context)
 			local name = player:get_player_name()
 			local data = pdata[name]
-			local formspec = make_fs(data)
 
-			return sfinv.make_formspec(player, context, formspec)
+			return sfinv.make_formspec(player, context, make_fs(data))
 		end,
 
 		on_enter = function(self, player, context)
@@ -1685,17 +1701,7 @@ else
 		local data = pdata[name]
 
 		if data.fs_version < FORMSPEC_MINIMAL_VERSION then
-			local fs = fmt([[
-				size[6.6,1.3]
-				image[0,0;1,1;%s]
-				label[1,0;%s]
-				button_exit[2.8,0.8;1,1;;OK]
-			]],
-			PNG.nothing,
-			"Your Minetest client is outdated.\n" ..
-			"Get the latest version on minetest.net to use the Crafting Guide.")
-
-			return show_formspec(name, "craftguide", fs)
+			return outdated(name)
 		end
 
 		if next(recipe_filters) then
@@ -1872,6 +1878,34 @@ if progressive_mode then
 		return inv_items
 	end
 
+	local function init_hud(player, data)
+		data.hud = {
+			bg = player:hud_add{
+				hud_elem_type = "image",
+				position      = {x = 0.78, y = 1},
+				alignment     = {x = 1,    y = 1},
+				scale         = {x = 370,  y = 112},
+				text          = PNG.bg,
+			},
+
+			book = player:hud_add{
+				hud_elem_type = "image",
+				position      = {x = 0.79, y = 1.02},
+				alignment     = {x = 1,    y = 1},
+				scale         = {x = 4,    y = 4},
+				text          = PNG.book,
+			},
+
+			text = player:hud_add{
+				hud_elem_type = "text",
+				position      = {x = 0.84, y = 1.04},
+				alignment     = {x = 1,    y = 1},
+				number        = 0xffffff,
+				text          = "",
+			},
+		}
+	end
+
 	local function show_hud_success(player, data)
 		-- It'd better to have an engine function `hud_move` to only need
 		-- 2 calls for the notification's back and forth.
@@ -1976,33 +2010,9 @@ if progressive_mode then
 		data.inv_items = dslz(meta:get_string "inv_items") or {}
 		data.known_recipes = dslz(meta:get_string "known_recipes") or 0
 
-		if not singleplayer then return end
-
-		data.hud = {
-			bg = player:hud_add{
-				hud_elem_type = "image",
-				position      = {x = 0.78, y = 1},
-				alignment     = {x = 1,    y = 1},
-				scale         = {x = 370,  y = 112},
-				text          = PNG.bg,
-			},
-
-			book = player:hud_add{
-				hud_elem_type = "image",
-				position      = {x = 0.79, y = 1.02},
-				alignment     = {x = 1,    y = 1},
-				scale         = {x = 4,    y = 4},
-				text          = PNG.book,
-			},
-
-			text = player:hud_add{
-				hud_elem_type = "text",
-				position      = {x = 0.84, y = 1.04},
-				alignment     = {x = 1,    y = 1},
-				number        = 0xffffff,
-				text          = "",
-			},
-		}
+		if singleplayer then
+			init_hud(player, data)
+		end
 	end)
 
 	local to_save = {"inv_items", "known_recipes"}
