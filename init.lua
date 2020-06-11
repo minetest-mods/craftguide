@@ -1123,6 +1123,7 @@ local function make_fs(data)
 		style[clear;fgimg=%s;fgimg_hovered=%s]
 		style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 		style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+		style[pagenum;border=false]
 	]],
 	PNG.selected, PNG.selected,
 	PNG.search, PNG.search_hover,
@@ -1138,9 +1139,9 @@ local function make_fs(data)
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
-	fs[#fs + 1] = fmt("label[%f,%f;%s / %u]",
-		sfinv_only and 6.35 or (9 * 7.85) / 11,
-			0.06, clr("#ff0", data.pagenum), data.pagemax)
+	fs[#fs + 1] = fmt(FMT.button,
+		sfinv_only and 5.85 or 6, -0.1, sfinv_only and 1.82 or 1.62, 1, "pagenum",
+		fmt("%u / %u", data.pagenum, data.pagemax))
 
 	if #data.items == 0 then
 		local no_item = ES"No item to show"
