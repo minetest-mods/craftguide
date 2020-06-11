@@ -1169,8 +1169,7 @@ local function make_fs(data)
 			fs[#fs + 1] = fmt(FMT.image, X, Y, 1, 1, PNG.selected)
 		end
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
-			X, Y, 1, 1, item, item)
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;1,1;%s;%s_inv;]", X, Y, item, item)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
