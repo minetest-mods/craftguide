@@ -1110,9 +1110,9 @@ local function make_fs(data)
 
 	fs[#fs + 1] = fmt([[
 		style[filter;border=false]
-		field[0.4,0.2;2.5,1;filter;;%s]
+		field[0.4,0.2;2.6,1;filter;;%s]
 		field_close_on_enter[filter;false]
-		box[0,0;2.4,0.6;#bababa25]
+		box[0,0;2.5,0.6;#bababa25]
 	]],
 	ESC(data.filter))
 
@@ -1131,17 +1131,27 @@ local function make_fs(data)
 	PNG.prev, PNG.prev_hover, PNG.prev_hover,
 	PNG.next, PNG.next_hover, PNG.next_hover)
 
-	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 4),
-		sfinv_only and 2.6 or 2.54, -0.06, 0.85, 0.85, "", "search", "",
-		sfinv_only and 3.3 or 3.25, -0.06, 0.85, 0.85, "", "clear", "",
-		sfinv_only and 5.45 or (9 * 6.83) / 11, -0.06, 0.85, 0.85, "", "prev_page", "",
-		sfinv_only and 7.2  or (9 * 8.75) / 11, -0.06, 0.85, 0.85, "", "next_page", "")
+	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 2),
+		2.6, -0.06, 0.85, 0.85, "", "search", "",
+		3.3, -0.06, 0.85, 0.85, "", "clear", "")
+
+	if sfinv_only then
+		fs[#fs + 1] = "container[0.2,0]"
+	end
+
+	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 2),
+		5.35, -0.06, 0.85, 0.85, "", "prev_page", "",
+		7.1, -0.06, 0.85, 0.85, "", "next_page", "")
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	fs[#fs + 1] = fmt(FMT.button,
-		sfinv_only and 5.85 or 6, -0.1, sfinv_only and 1.82 or 1.62, 1, "pagenum",
-		fmt("%u / %u", data.pagenum, data.pagemax))
+		5.97, -0.06, 1.36, 0.85, "pagenum",
+		fmt("%s / %u", clr("#ff0", data.pagenum), data.pagemax))
+
+	if sfinv_only then
+		fs[#fs + 1] = "container_end[]"
+	end
 
 	if #data.items == 0 then
 		local no_item = ES"No item to show"
@@ -1608,7 +1618,7 @@ local function fields(player, _f)
 		data.pagenum = 1
 		search(data)
 
-	elseif _f.prev_page or _f.next_page then
+	elseif _f.prev_page or _f.next_page or _f.pagenum then
 		if data.pagemax == 1 then return end
 		data.pagenum = data.pagenum - (_f.prev_page and 1 or -1)
 
