@@ -786,19 +786,19 @@ local function get_tooltip(name, info)
 	return fmt("tooltip[%s;%s]", name, ESC(tooltip))
 end
 
-local function get_output_fs(data, fs, L)
-	local custom_recipe = craft_types[L.recipe.type]
+local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing, rarity)
+	local custom_recipe = craft_types[rcp.type]
 
-	if custom_recipe or L.shapeless or L.recipe.type == "cooking" then
+	if custom_recipe or shapeless or rcp.type == "cooking" then
 		local icon = custom_recipe and custom_recipe.icon or
-			     L.shapeless and "shapeless" or "furnace"
+			     shapeless and "shapeless" or "furnace"
 
 		if not custom_recipe then
 			icon = fmt("craftguide_%s.png^[resize:16x16", icon)
 		end
 
-		local pos_x = L.rightest + L.btn_size + 0.1
-		local pos_y = YOFFSET + (sfinv_only and 1.55 or -0.45) + L.spacing
+		local pos_x = right + btn_size + 0.1
+		local pos_y = YOFFSET + (sfinv_only and 1.55 or -0.45) + spacing
 
 		if sub(icon, 1, 18) == "craftguide_furnace" then
 			fs[#fs + 1] = fmt(FMT.animated_image,
@@ -808,21 +808,21 @@ local function get_output_fs(data, fs, L)
 		end
 
 		local tooltip = custom_recipe and custom_recipe.description or
-				L.shapeless and S"Shapeless" or S"Cooking"
+				shapeless and S"Shapeless" or S"Cooking"
 
 		fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
-	local arrow_X = L.rightest + (L._btn_size or 1.1)
+	local arrow_X = right + (_btn_size or 1.1)
 	local output_X = arrow_X + 0.9
-	local Y = YOFFSET + (sfinv_only and 2 or 0) + L.spacing
+	local Y = YOFFSET + (sfinv_only and 2 or 0) + spacing
 
 	fs[#fs + 1] = fmt(FMT.image, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
 
-	if L.recipe.type == "fuel" then
+	if rcp.type == "fuel" then
 		fs[#fs + 1] = fmt(FMT.animated_image, output_X, Y, 1.1, 1.1, PNG.fire_anim, 8, 180)
 	else
-		local item = L.recipe.output
+		local item = rcp.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
@@ -840,7 +840,7 @@ local function get_output_fs(data, fs, L)
 			unknown  = not def or nil,
 			burntime = fuel_cache[name],
 			repair   = repairable(name),
-			rarity   = L.rarity,
+			rarity   = rarity,
 			newline  = check_newline(def),
 		}
 
@@ -850,11 +850,11 @@ local function get_output_fs(data, fs, L)
 
 		if infos.burntime then
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + L.spacing,
+				output_X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
 				0.6, 0.4, PNG.arrow)
 
 			fs[#fs + 1] = fmt(FMT.animated_image,
-				output_X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + L.spacing,
+				output_X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + spacing,
 				0.6, 0.6, PNG.fire_anim, 8, 180)
 		end
 	end
@@ -864,7 +864,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 	local width = rcp.width or 1
 	local replacements = rcp.replacements
 	local rarity = rcp.rarity
-	local rightest, btn_size, _btn_size = 0, 1.1
+	local right, btn_size, _btn_size = 0, 1.1
 	local cooktime, shapeless
 
 	if rcp.type == "cooking" then
@@ -915,8 +915,8 @@ local function get_grid_fs(data, fs, rcp, spacing)
 				(sfinv_only and 5.81 or 3.92) + x_y) * (0.86 - (x_y / 5))
 		end
 
-		if X > rightest then
-			rightest = X
+		if X > right then
+			right = X
 		end
 
 		local groups
@@ -968,31 +968,104 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		fs[#fs + 1] = "style_type[item_image_button;border=false]"
 	end
 
-	get_output_fs(data, fs, {
-		recipe    = rcp,
-		shapeless = shapeless,
-		rightest  = rightest,
-		btn_size  = btn_size,
-		_btn_size = _btn_size,
-		spacing   = spacing,
-		rarity    = rarity,
-	})
+	get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing, rarity)
+end
+
+local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
+	local lbl
+
+	if (not sfinv_only and is_recipe) or
+			(sfinv_only and not data.show_usages) then
+		lbl = ES("Recipe @1 of @2", data.rnum, rn)
+
+	elseif not sfinv_only or (sfinv_only and data.show_usages) then
+		lbl = ES("Usage @1 of @2", data.unum, rn)
+
+	elseif sfinv_only then
+		lbl = data.show_usages and
+			ES("Usage @1 of @2", data.unum, rn) or
+			ES("Recipe @1 of @2", data.rnum, rn)
+	end
+
+	local _rn = tostring(rn)
+	local xu = tostring(data.unum) .. _rn
+	local xr = tostring(data.rnum) .. _rn
+	xu = max(-0.3, -((#xu - 3) * 0.05))
+	xr = max(-0.3, -((#xr - 3) * 0.05))
+
+	fs[#fs + 1] = fmt(FMT.label,
+		XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
+		YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
+
+	if rn > 1 then
+		local btn_suffix = is_recipe and "recipe" or "usage"
+		local prev_name = fmt("prev_%s", btn_suffix)
+		local next_name = fmt("next_%s", btn_suffix)
+		local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
+		local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
+
+		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
+			x_arrow + (is_recipe and xr or xu), y_arrow,
+				PNG.prev, prev_name, "",
+			x_arrow + 1.8, y_arrow, PNG.next, next_name, "")
+	end
+
+	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
+	get_grid_fs(data, fs, rcp, spacing)
+end
+
+local function get_title_fs(data, fs, spacing)
+	local desc = ESC(get_desc(data.query_item))
+	desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
+	local t_desc = data.query_item
+	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
+
+	fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;item_title;%s]",
+		spacing - 0.1,
+		fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
+		    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
+			data.query_item, desc, t_desc))
+
+	local fav = is_fav(data)
+	local nfavs = #data.favs
+
+	if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
+		local fav_marked = fmt("craftguide_fav%s.png", fav and "_off" or "")
+
+		fs[#fs + 1] = fmt(
+			"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
+			fmt("craftguide_fav%s.png", fav and "" or "_off"), fav_marked, fav_marked)
+
+		fs[#fs + 1] = fmt(FMT.image_button, 8.25, spacing + 0.15, 0.5, 0.45, "", "fav", "")
+
+		fs[#fs + 1] = fmt("tooltip[fav;%s]",
+			fav and ES"Unmark this item" or ES"Mark this item")
+	else
+		fs[#fs + 1] = fmt(
+			"style[fav_no;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
+			"craftguide_fav_off.png", PNG.nothing, PNG.nothing)
+
+		fs[#fs + 1] = fmt(FMT.image_button,
+			8.25, spacing + 0.15, 0.5, 0.45, "", "fav_no", "")
+
+		fs[#fs + 1] = fmt("tooltip[fav_no;%s]",
+			ES"Cannot mark this item. Limit of bookmarks reached.")
+	end
 end
 
 local function get_panels(data, fs)
-	local _recipes = {name = "recipes", dat = data.recipes or {}, height = 3.5}
-	local _usages = {name = "usages", dat = data.usages or {}, height = 3.5}
-	local panels = {_recipes, _usages}
+	local title   = {name = "title", height = 1.2}
+	local favs    = {name = "favs",  height = 1.91}
+	local recipes = {name = "recipes", rcp = data.recipes, height = 3.5}
+	local usages  = {name = "usages",  rcp = data.usages,  height = 3.5}
+	local panels  = {title, recipes, usages, favs}
 
-	if not sfinv_only then
-		insert(panels, 1, {name = "title", height = 1.2})
-		insert(panels, 4, {name = "favs", height = 1.91})
-	else
-		panels = data.show_usages and {_usages} or {_recipes}
+	if sfinv_only then
+		panels = {data.show_usages and usages or recipes}
 	end
 
-	for idx, v in pairs(panels) do
-		local spacing = 0
+	for idx = 1, #panels do
+		local panel, spacing = panels[idx], 0
 
 		if idx > 1 then
 			for _idx = idx - 1, 1, -1 do
@@ -1000,65 +1073,20 @@ local function get_panels(data, fs)
 			end
 		end
 
-		if v.name == "title" and not sfinv_only then
-			local desc = ESC(get_desc(data.query_item))
-			desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
-			local t_desc = data.query_item
-			t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
+		local rn = panel.rcp and #panel.rcp
+		local is_recipe = sfinv_only and not data.show_usages or panel.name == "recipes"
+		local recipe_or_usage = panel.name == "recipes" or panel.name == "usages"
 
-			fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;item_title;%s]",
-				spacing - 0.1,
-				fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
-				    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
-					data.query_item, desc, t_desc))
+		if rn then
+			get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 		end
 
-		if not sfinv_only then
-			fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
-				-0.2 + spacing, v.height, PNG.bg_full, 10)
+		if sfinv_only then return end
 
-			if v.name == "title" then
-				local fav = is_fav(data)
-				local nfavs = #data.favs
+		fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
+			-0.2 + spacing, panel.height, PNG.bg_full, 10)
 
-				if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
-					local fav_marked = fmt("craftguide_fav%s.png", fav and "_off" or "")
-
-					fs[#fs + 1] = fmt(
-						"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
-						fmt("craftguide_fav%s.png", fav and "" or "_off"),
-						fav_marked, fav_marked)
-
-					fs[#fs + 1] = fmt(FMT.image_button,
-						8.25, spacing + 0.15, 0.5, 0.45, "", "fav", "")
-
-					fs[#fs + 1] = fmt("tooltip[fav;%s]",
-						fav and ES"Unmark this item" or ES"Mark this item")
-				else
-					fs[#fs + 1] = fmt(
-						"style[fav_no;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
-						"craftguide_fav_off.png", PNG.nothing, PNG.nothing)
-
-					fs[#fs + 1] = fmt(FMT.image_button,
-						8.25, spacing + 0.15, 0.5, 0.45, "", "fav_no", "")
-
-					fs[#fs + 1] = fmt("tooltip[fav_no;%s]",
-						ES"Cannot mark this item. Limit of bookmarks reached.")
-				end
-			end
-		end
-
-		local rn = v.dat and #v.dat or -1
-		local _rn = tostring(rn)
-		local xu = tostring(data.unum) .. _rn
-		local xr = tostring(data.rnum) .. _rn
-		xu = max(-0.3, -((#xu - 3) * 0.05))
-		xr = max(-0.3, -((#xr - 3) * 0.05))
-
-		local is_recipe = sfinv_only and not data.show_usages or v.name == "recipes"
-		local lbl = ""
-
-		if not sfinv_only and rn == 0 then
+		if recipe_or_usage and not rn then
 			local X = XOFFSET - 0.7
 			local Y = YOFFSET - 0.4 + spacing
 
@@ -1067,44 +1095,10 @@ local function get_panels(data, fs)
 			fs[#fs + 1] = fmt(FMT.tooltip,
 				X, Y, 2, 2, is_recipe and ES"No recipes" or ES"No usages")
 
-		elseif (not sfinv_only and is_recipe) or
-				(sfinv_only and not data.show_usages) then
-			lbl = ES("Recipe @1 of @2", data.rnum, rn)
+		elseif panel.name == "title" then
+			get_title_fs(data, fs, spacing)
 
-		elseif not sfinv_only or (sfinv_only and data.show_usages) then
-			lbl = ES("Usage @1 of @2", data.unum, rn)
-
-		elseif sfinv_only then
-			lbl = data.show_usages and
-				ES("Usage @1 of @2", data.unum, rn) or
-				ES("Recipe @1 of @2", data.rnum, rn)
-		end
-
-		if v.name == "recipes" or v.name == "usages" then
-			fs[#fs + 1] = fmt(FMT.label,
-				XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
-				YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
-		end
-
-		if rn > 1 then
-			local btn_suffix = is_recipe and "recipe" or "usage"
-			local prev_name = fmt("prev_%s", btn_suffix)
-			local next_name = fmt("next_%s", btn_suffix)
-			local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
-			local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
-
-			fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-				x_arrow + (is_recipe and xr or xu), y_arrow,
-					PNG.prev, prev_name, "",
-				x_arrow + 1.8, y_arrow, PNG.next, next_name, "")
-		end
-
-		local rcp = v.dat and (is_recipe and v.dat[data.rnum] or v.dat[data.unum])
-		if rcp then
-			get_grid_fs(data, fs, rcp, spacing)
-		end
-
-		if v.name == "favs" and not sfinv_only then
+		elseif panel.name == "favs" then
 			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.15, ES"Bookmarks")
 
 			for i = 1, #data.favs do
