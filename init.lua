@@ -67,6 +67,7 @@ local ROWS = 9
 local LINES = sfinv_only and 5 or 10
 local IPP = ROWS * LINES
 local WH_LIMIT = 8
+local MAX_FAVS = 6
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
 local YOFFSET = sfinv_only and 4.9 or 1
@@ -1020,19 +1021,30 @@ local function get_panels(data, fs)
 				local fav = is_fav(data)
 				local nfavs = #data.favs
 
-				fs[#fs + 1] = fmt(
-					"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
-					fmt("craftguide_fav%s.png", fav and "" or "_off"),
-					fmt("craftguide_fav%s.png", fav and "_off" or ""),
-					fmt("craftguide_fav%s.png", fav and "_off" or ""))
+				if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
+					local fav_marked = fmt("craftguide_fav%s.png", fav and "_off" or "")
 
-				if nfavs < 6 or (nfavs >= 6 and fav) then
+					fs[#fs + 1] = fmt(
+						"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
+						fmt("craftguide_fav%s.png", fav and "" or "_off"),
+						fav_marked, fav_marked)
+
 					fs[#fs + 1] = fmt(FMT.image_button,
 						8.25, spacing + 0.15, 0.5, 0.45, "", "fav", "")
-				end
 
-				fs[#fs + 1] = fmt("tooltip[fav;%s]",
-					fav and ES"Unmark this item" or ES"Mark this item")
+					fs[#fs + 1] = fmt("tooltip[fav;%s]",
+						fav and ES"Unmark this item" or ES"Mark this item")
+				else
+					fs[#fs + 1] = fmt(
+						"style[fav_no;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
+						"craftguide_fav_off.png", PNG.nothing, PNG.nothing)
+
+					fs[#fs + 1] = fmt(FMT.image_button,
+						8.25, spacing + 0.15, 0.5, 0.45, "", "fav_no", "")
+
+					fs[#fs + 1] = fmt("tooltip[fav_no;%s]",
+						ES"Cannot mark this item. Limit of bookmarks reached.")
+				end
 			end
 		end
 
@@ -1650,7 +1662,7 @@ local function fields(player, _f)
 		local fav, i = is_fav(data)
 		local total = #data.favs
 
-		if total < 6 and not fav then
+		if total < MAX_FAVS and not fav then
 			data.favs[total + 1] = data.query_item
 		elseif fav then
 			remove(data.favs, i)
