@@ -1004,6 +1004,13 @@ local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 		local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 		local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
 
+		fs[#fs + 1] = fmt([[
+			style[%s;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+			style[%s;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+		]],
+		prev_name, PNG.prev, PNG.prev_hover, PNG.prev_hover,
+		next_name, PNG.next, PNG.next_hover, PNG.next_hover)
+
 		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 			x_arrow + (is_recipe and xr or xu), y_arrow,
 				PNG.prev, prev_name, "",
