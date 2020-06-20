@@ -64,7 +64,7 @@ local vec_add, vec_mul = vector.add, vector.multiply
 local FORMSPEC_MINIMAL_VERSION = 3
 
 local ROWS = 9
-local LINES = sfinv_only and 5 or 9
+local LINES = sfinv_only and 5 or 10
 local IPP = ROWS * LINES
 local WH_LIMIT = 8
 
@@ -797,7 +797,7 @@ local function get_output_fs(data, fs, L)
 		end
 
 		local pos_x = L.rightest + L.btn_size + 0.1
-		local pos_y = YOFFSET + (sfinv_only and 0.25 or -0.45) + L.spacing
+		local pos_y = YOFFSET + (sfinv_only and 1.55 or -0.45) + L.spacing
 
 		if sub(icon, 1, 18) == "craftguide_furnace" then
 			fs[#fs + 1] = fmt(FMT.animated_image,
@@ -814,7 +814,7 @@ local function get_output_fs(data, fs, L)
 
 	local arrow_X = L.rightest + (L._btn_size or 1.1)
 	local output_X = arrow_X + 0.9
-	local Y = YOFFSET + (sfinv_only and 0.7 or 0) + L.spacing
+	local Y = YOFFSET + (sfinv_only and 2 or 0) + L.spacing
 
 	fs[#fs + 1] = fmt(FMT.image, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
 
@@ -849,11 +849,11 @@ local function get_output_fs(data, fs, L)
 
 		if infos.burntime then
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1, YOFFSET + (sfinv_only and 0.7 or 0.1) + L.spacing,
+				output_X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + L.spacing,
 				0.6, 0.4, PNG.arrow)
 
 			fs[#fs + 1] = fmt(FMT.animated_image,
-				output_X + 1.6, YOFFSET + (sfinv_only and 0.55 or 0) + L.spacing,
+				output_X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + L.spacing,
 				0.6, 0.6, PNG.fire_anim, 8, 180)
 		end
 	end
@@ -938,7 +938,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 			end
 		end
 
-		Y = Y + (sfinv_only and 0.7 or 0)
+		Y = Y + (sfinv_only and 2 or 0)
 
 		if not large_recipe then
 			fs[#fs + 1] = fmt(FMT.image, X, Y, btn_size, btn_size, PNG.selected)
@@ -979,28 +979,44 @@ local function get_grid_fs(data, fs, rcp, spacing)
 end
 
 local function get_panels(data, fs)
-	local start_y = sfinv_only and 0.33 or 0
-
-	local panels = {
-		{dat = data.usages or {}, height = 3.5},
-		{dat = data.recipes or {}, height = 3.5},
-	}
+	local _recipes = {name = "recipes", dat = data.recipes or {}, height = 3.5}
+	local _usages = {name = "usages", dat = data.usages or {}, height = 3.5}
+	local panels = {_recipes, _usages}
 
 	if not sfinv_only then
-		panels.favs = {height = 2.19}
+		insert(panels, 1, {name = "title", height = 1.2})
+		insert(panels, 4, {name = "favs", height = 1.91})
 	else
-		panels = data.show_usages and {{dat = data.usages}} or {{dat = data.recipes}}
+		panels = data.show_usages and {_usages} or {_recipes}
 	end
 
-	for k, v in pairs(panels) do
-		start_y = start_y + 1
-		local spacing = (start_y - 1) * 3.6
+	for idx, v in pairs(panels) do
+		local spacing = 0
+
+		if idx > 1 then
+			for _idx = idx - 1, 1, -1 do
+				spacing = spacing + panels[_idx].height + 0.1
+			end
+		end
+
+		if v.name == "title" and not sfinv_only then
+			local desc = ESC(get_desc(data.query_item))
+			desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
+			local t_desc = data.query_item
+			t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
+
+			fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;item_title;%s]",
+				spacing - 0.1,
+				fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
+				    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
+					data.query_item, desc, t_desc))
+		end
 
 		if not sfinv_only then
 			fs[#fs + 1] = fmt("background9[8.1,%f;6.6,%f;%s;false;%d]",
 				-0.2 + spacing, v.height, PNG.bg_full, 10)
 
-			if k == 2 then
+			if v.name == "title" then
 				local fav = is_fav(data)
 				local nfavs = #data.favs
 
@@ -1012,7 +1028,7 @@ local function get_panels(data, fs)
 
 				if nfavs < 6 or (nfavs >= 6 and fav) then
 					fs[#fs + 1] = fmt(FMT.image_button,
-						14, spacing, 0.5, 0.45, "", "fav", "")
+						8.25, spacing + 0.15, 0.5, 0.45, "", "fav", "")
 				end
 
 				fs[#fs + 1] = fmt("tooltip[fav;%s]",
@@ -1027,7 +1043,7 @@ local function get_panels(data, fs)
 		xu = max(-0.3, -((#xu - 3) * 0.05))
 		xr = max(-0.3, -((#xr - 3) * 0.05))
 
-		local is_recipe = sfinv_only and not data.show_usages or k == 2
+		local is_recipe = sfinv_only and not data.show_usages or v.name == "recipes"
 		local lbl = ""
 
 		if not sfinv_only and rn == 0 then
@@ -1052,9 +1068,11 @@ local function get_panels(data, fs)
 				ES("Recipe @1 of @2", data.rnum, rn)
 		end
 
-		fs[#fs + 1] = fmt(FMT.label,
-			XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
-			YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
+		if v.name == "recipes" or v.name == "usages" then
+			fs[#fs + 1] = fmt(FMT.label,
+				XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
+				YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
+		end
 
 		if rn > 1 then
 			local btn_suffix = is_recipe and "recipe" or "usage"
@@ -1074,13 +1092,13 @@ local function get_panels(data, fs)
 			get_grid_fs(data, fs, rcp, spacing)
 		end
 
-		if k == "favs" and not sfinv_only then
-			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.1, ES"Bookmarks")
+		if v.name == "favs" and not sfinv_only then
+			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.15, ES"Bookmarks")
 
 			for i = 1, #data.favs do
 				local item = data.favs[i]
 				local X = 7.85 + (i - 0.5)
-				local Y = spacing + 0.45
+				local Y = spacing + 0.4
 
 				if data.query_item == item then
 					fs[#fs + 1] = fmt(FMT.image, X, Y, 1.1, 1.1, PNG.selected)
