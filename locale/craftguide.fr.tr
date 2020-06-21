@@ -58,3 +58,6 @@ No recipe or usage for this item=Aucune recette pour ce bloc
 Digging=Destruction
 Digging Chance=Destruction chanceuse
 @1 of chance to drop=@1 de chance de tomber
+Mark this item=Mettre en favori.
+Unmark this item=Enlever des favoris.
+Cannot mark this item. Limit of bookmarks reached.=Impossible de mettre cet item en favori. Limite des favoris atteinte.
