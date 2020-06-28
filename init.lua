@@ -779,14 +779,32 @@ local function get_tooltip(name, info)
 	end
 
 	if info.rarity then
-		local chance = (1 / info.rarity) * 100
+		local chance = (1 / max(1, info.rarity)) * 100
 		tooltip = add(S("@1 of chance to drop", clr("#ff0", chance .. "%")))
+	end
+
+	if info.tools then
+		local several = #info.tools > 1
+		local names = several and "\n" or ""
+
+		if several then
+			for i = 1, #info.tools do
+				names = fmt("%s\t\t- %s\n",
+					names, clr("#ff0", get_desc(info.tools[i])))
+			end
+
+			tooltip = add(S("Only drop if using one of these tools: @1",
+				sub(names, 1, -2)))
+		else
+			tooltip = add(S("Only drop if using this tool: @1",
+				clr("#ff0", get_desc(info.tools[1]))))
+		end
 	end
 
 	return fmt("tooltip[%s;%s]", name, ESC(tooltip))
 end
 
-local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing, rarity)
+local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
 	local custom_recipe = craft_types[rcp.type]
 
 	if custom_recipe or shapeless or rcp.type == "cooking" then
@@ -840,7 +858,8 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 			unknown  = not def or nil,
 			burntime = fuel_cache[name],
 			repair   = repairable(name),
-			rarity   = rarity,
+			rarity   = rcp.rarity,
+			tools    = rcp.tools,
 			newline  = check_newline(def),
 		}
 
@@ -862,8 +881,6 @@ end
 
 local function get_grid_fs(data, fs, rcp, spacing)
 	local width = rcp.width or 1
-	local replacements = rcp.replacements
-	local rarity = rcp.rarity
 	local right, btn_size, _btn_size = 0, 1.1
 	local cooktime, shapeless
 
@@ -929,9 +946,9 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		local label = groups and "\nG" or ""
 		local replace
 
-		if replacements then
-			for j = 1, #replacements do
-				local replacement = replacements[j]
+		if rcp.replacements then
+			for j = 1, #rcp.replacements do
+				local replacement = rcp.replacements[j]
 				if replacement[1] == name then
 					label = (label ~= "" and "\n" or "") .. label .. "\nR"
 					replace = replacement[2]
@@ -968,7 +985,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		fs[#fs + 1] = "style_type[item_image_button;border=false]"
 	end
 
-	get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing, rarity)
+	get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
 end
 
 local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
@@ -1450,6 +1467,7 @@ local function handle_drops_table(name, drop)
 					drop_maybe[dname] = {
 						output = drop_maybe[dname].output + dcount,
 						rarity = di.rarity,
+						tools  = di.tools,
 					}
 				end
 			end
@@ -1461,15 +1479,17 @@ local function handle_drops_table(name, drop)
 			type = "digging",
 			items = {name},
 			output = fmt("%s %u", item, count),
+			tools = drop.tools,
 		}
 	end
 
 	for item, data in pairs(drop_maybe) do
 		craftguide.register_craft{
-			type = "digging_chance",
-			items = {name},
+			type   = "digging_chance",
+			items  = {name},
 			output = fmt("%s %u", item, data.output),
 			rarity = data.rarity,
+			tools  = data.tools,
 		}
 	end
 end
