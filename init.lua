@@ -68,6 +68,7 @@ local LINES = sfinv_only and 5 or 10
 local IPP = ROWS * LINES
 local WH_LIMIT = 8
 local MAX_FAVS = 6
+local ITEM_BTN_SIZE = 1.1
 
 local XOFFSET = sfinv_only and 3.83 or 11.2
 local YOFFSET = sfinv_only and 4.9 or 1
@@ -831,25 +832,27 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 		fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
-	local arrow_X = right + (_btn_size or 1.1)
+	local arrow_X = right + (_btn_size or ITEM_BTN_SIZE)
 	local output_X = arrow_X + 0.9
 	local Y = YOFFSET + (sfinv_only and 2 or 0) + spacing
 
 	fs[#fs + 1] = fmt(FMT.image, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
 
 	if rcp.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT.animated_image, output_X, Y, 1.1, 1.1, PNG.fire_anim, 8, 180)
+		fs[#fs + 1] = fmt(FMT.animated_image, output_X, Y,
+			ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180)
 	else
 		local item = rcp.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs[#fs + 1] = fmt(FMT.image, output_X, Y, 1.1, 1.1, PNG.selected)
+		fs[#fs + 1] = fmt(FMT.image, output_X, Y,
+			ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 
 		local _name = sfinv_only and name or fmt("_%s", name)
 
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-			output_X, Y, 1.1, 1.1, item, _name, "")
+			output_X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, "")
 
 
 		local def = reg_items[name]
@@ -881,7 +884,7 @@ end
 
 local function get_grid_fs(data, fs, rcp, spacing)
 	local width = rcp.width or 1
-	local right, btn_size, _btn_size = 0, 1.1
+	local right, btn_size, _btn_size = 0, ITEM_BTN_SIZE
 	local cooktime, shapeless
 
 	if rcp.type == "cooking" then
@@ -1131,11 +1134,12 @@ local function get_panels(data, fs)
 				local Y = spacing + 0.4
 
 				if data.query_item == item then
-					fs[#fs + 1] = fmt(FMT.image, X, Y, 1.1, 1.1, PNG.selected)
+					fs[#fs + 1] = fmt(FMT.image, X, Y,
+						ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 				end
 
 				fs[#fs + 1] = fmt(FMT.item_image_button,
-					X, Y, 1.1, 1.1, item, item, "")
+					X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, item, "")
 			end
 		end
 	end
@@ -1228,7 +1232,8 @@ local function make_fs(data)
 			fs[#fs + 1] = fmt(FMT.image, X, Y, 1, 1, PNG.selected)
 		end
 
-		fs[#fs + 1] = fmt("item_image_button[%f,%f;1,1;%s;%s_inv;]", X, Y, item, item)
+		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
+			X, Y, 1, 1, item, item)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
@@ -1253,7 +1258,7 @@ craftguide.register_craft_type("digging", {
 })
 
 craftguide.register_craft_type("digging_chance", {
-	description = ES"Digging Chance",
+	description = ES"Digging (by chance)",
 	icon = "craftguide_mesepick.png",
 })
 
@@ -1440,12 +1445,21 @@ local function handle_drops_table(name, drop)
 			if not dstack:is_empty() and dname ~= name then
 				local dcount = dstack:get_count()
 
-				if #di.items == 1 and di.rarity == 1 and max_start then
+				if #di.items == 1 and (not di.rarity or
+						di.rarity <= 1) and max_start then
+					-- TODO: add `tools`
 					if not drop_sure[dname] then
-						drop_sure[dname] = 0
+						drop_sure[dname] = {}
 					end
 
-					drop_sure[dname] = drop_sure[dname] + dcount
+					if not drop_sure[dname].output then
+						drop_sure[dname].output = 0
+					end
+
+					drop_sure[dname] = {
+						output = drop_sure[dname].output + dcount,
+						tools  = di.tools,
+					}
 
 					if max_items_left then
 						max_items_left = max_items_left - 1
@@ -1474,12 +1488,12 @@ local function handle_drops_table(name, drop)
 		end
 	end
 
-	for item, count in pairs(drop_sure) do
+	for item, data in pairs(drop_sure) do
 		craftguide.register_craft{
-			type = "digging",
-			items = {name},
-			output = fmt("%s %u", item, count),
-			tools = drop.tools,
+			type   = "digging",
+			items  = {name},
+			output = fmt("%s %u", item, data.output),
+			tools  = data.tools,
 		}
 	end
 
@@ -1495,14 +1509,15 @@ local function handle_drops_table(name, drop)
 end
 
 local function register_drops(name, drop)
-	local dstack = ItemStack(drop)
-
-	if not dstack:is_empty() and dstack:get_name() ~= name then
-		craftguide.register_craft{
-			type = "digging",
-			items = {name},
-			output = drop,
-		}
+	if true_str(drop) then
+		local dstack = ItemStack(drop)
+		if not dstack:is_empty() and dstack:get_name() ~= name then
+			craftguide.register_craft{
+				type = "digging",
+				items = {name},
+				output = drop,
+			}
+		end
 	elseif is_table(drop) then
 		handle_drops_table(name, drop)
 	end
@@ -1562,10 +1577,12 @@ local function get_init_items()
 		recipes_cache = dslz(storage:get "recipes_cache")
 	else
 		print "[craftguide] Caching data (this may take a while)"
-		local hash = {}
+		local _select, _preselect = {}, {}
 
 		for name, def in pairs(reg_items) do
-			if show_item(def) then
+			if name ~= "" and show_item(def) then
+				register_drops(name, def.drop)
+
 				if not fuel_cache[name] then
 					cache_fuel(name)
 				end
@@ -1575,16 +1592,19 @@ local function get_init_items()
 				end
 
 				cache_usages(name)
-				register_drops(name, def.drop)
 
-				if name ~= "" and recipes_cache[name] or usages_cache[name] then
-					init_items[#init_items + 1] = name
-					hash[name] = true
-				end
+				_preselect[name] = true
 			end
 		end
 
-		handle_aliases(hash)
+		for name in pairs(_preselect) do
+			if recipes_cache[name] or usages_cache[name] then
+				init_items[#init_items + 1] = name
+				_select[name] = true
+			end
+		end
+
+		handle_aliases(_select)
 		sort(init_items)
 
 		storage:set_string("init_items", slz(init_items))
