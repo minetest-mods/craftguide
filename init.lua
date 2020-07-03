@@ -66,7 +66,7 @@ local FORMSPEC_MINIMAL_VERSION = 3
 local ROWS = 9
 local LINES = sfinv_only and 5 or 10
 local IPP = ROWS * LINES
-local WH_LIMIT = 8
+local WH_LIMIT = 5
 local MAX_FAVS = 6
 local ITEM_BTN_SIZE = 1.1
 
@@ -921,18 +921,11 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		local Y = ceil(i / width) + YOFFSET - min(2, rows) + spacing
 
 		if large_recipe then
-			local xof = 1 - 4 / width
-			local yof = 1 - 4 / rows
-			local x_y = width > rows and xof or yof
-
-			btn_size = width > rows and
-				(3.5 + (xof * 2)) / width or (3.5 + (yof * 2)) / rows
+			btn_size = width > 3 and 3 / width or 3 / rows
 			_btn_size = btn_size
 
-			X = (btn_size * ((i - 1) % width) + XOFFSET -
-				(sfinv_only and 2.83 or 0)) * (0.83 - (x_y / 5))
-			Y = (btn_size * floor((i - 1) / width) +
-				(sfinv_only and 5.81 or 3.92) + x_y) * (0.86 - (x_y / 5))
+			X = btn_size * ((i - 1) % width) + XOFFSET - 2.65
+			Y = btn_size * floor((i - 1) / width) + spacing + (sfinv and 4 or 0)
 		end
 
 		if X > right then
