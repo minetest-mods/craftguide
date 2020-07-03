@@ -1438,19 +1438,14 @@ local function handle_drops_table(name, drop)
 			if not dstack:is_empty() and dname ~= name then
 				local dcount = dstack:get_count()
 
-				if #di.items == 1 and (not di.rarity or
-						di.rarity <= 1) and max_start then
-					-- TODO: add `tools`
+				if #di.items == 1 and max_start and
+						(not di.rarity or di.rarity <= 1) then
 					if not drop_sure[dname] then
 						drop_sure[dname] = {}
 					end
 
-					if not drop_sure[dname].output then
-						drop_sure[dname].output = 0
-					end
-
 					drop_sure[dname] = {
-						output = drop_sure[dname].output + dcount,
+						output = (drop_sure[dname].output or 0) + dcount,
 						tools  = di.tools,
 					}
 
@@ -1467,12 +1462,8 @@ local function handle_drops_table(name, drop)
 						drop_maybe[dname] = {}
 					end
 
-					if not drop_maybe[dname].output then
-						drop_maybe[dname].output = 0
-					end
-
 					drop_maybe[dname] = {
-						output = drop_maybe[dname].output + dcount,
+						output = (drop_maybe[dname].output or 0) + dcount,
 						rarity = di.rarity,
 						tools  = di.tools,
 					}
