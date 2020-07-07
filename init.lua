@@ -705,8 +705,8 @@ local function cache_recipes(item)
 	local def = reg_items[item]
 	if not def then return end
 
-	local recipes = get_all_recipes(item) or {}
-	if #recipes > 0 then
+	local recipes = get_all_recipes(item)
+	if recipes then
 		recipes_cache[item] = recipes
 	end
 
