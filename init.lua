@@ -580,13 +580,13 @@ local function get_usages(recipe)
 						local usage = copy(recipe)
 						table_replace(usage.items, item, name)
 						usages_cache[name] = usages_cache[name] or {}
-						insert(usages_cache[name], usage)
+						insert(usages_cache[name], 1, usage)
 						added[name] = true
 					end
 				end
 			elseif show_item(reg_items[item]) then
 				usages_cache[item] = usages_cache[item] or {}
-				insert(usages_cache[item], recipe)
+				insert(usages_cache[item], 1, recipe)
 			end
 
 			added[item] = true
