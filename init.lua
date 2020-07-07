@@ -56,8 +56,8 @@ local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.format, string.find, string.gmatch, string.match,
 	string.sub, string.split, string.upper, string.lower
 
-local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
-local pairs, next, type, tostring, unpack = pairs, next, type, tostring, unpack
+local min, max, floor, ceil, abs = math.min, math.max, math.floor, math.ceil, math.abs
+local pairs, next, type, unpack = pairs, next, type, unpack
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local ROWS = 9
@@ -1048,7 +1048,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 
 		local infos = {
 			unknown    = not def or nil,
-			weird_desc = not true_str(def.description) or desc_newline(def),
+			weird_desc = def and (not true_str(def.description) or desc_newline(def)),
 			groups     = groups,
 			burntime   = fuel_cache[name],
 			cooktime   = cooktime,
@@ -1084,14 +1084,11 @@ local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 			ES("Recipe @1 of @2", data.rnum, rn)
 	end
 
-	local _rn = tostring(rn)
-	local xu = tostring(data.unum) .. _rn
-	local xr = tostring(data.rnum) .. _rn
-	xu = max(-0.3, -((#xu - 3) * 0.05))
-	xr = max(-0.3, -((#xr - 3) * 0.05))
+	lbl = get_translation(data.lang_code, lbl)
+	local shift = min(0.9, abs(13 - max(13, #lbl)) * 0.1)
 
 	fs[#fs + 1] = fmt(FMT.label,
-		XOFFSET + (sfinv_only and 2.3 or 1.6) + (is_recipe and xr or xu),
+		XOFFSET + (sfinv_only and 2.3 or 1.6) - shift,
 		YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
 
 	if rn > 1 then
@@ -1109,9 +1106,8 @@ local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 		next_name, PNG.next, PNG.next_hover, PNG.next_hover)
 
 		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
-			x_arrow + (is_recipe and xr or xu), y_arrow,
-				PNG.prev, prev_name, "",
-			x_arrow + 1.8, y_arrow, PNG.next, next_name, "")
+			x_arrow - shift, y_arrow, PNG.prev, prev_name, "",
+			x_arrow + 1.8,   y_arrow, PNG.next, next_name, "")
 	end
 
 	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
