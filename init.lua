@@ -38,6 +38,7 @@ local slz, dslz = core.serialize, core.deserialize
 local on_mods_loaded = core.register_on_mods_loaded
 local on_leaveplayer = core.register_on_leaveplayer
 local get_player_info = core.get_player_information
+local get_translation = minetest.get_translated_string
 local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
@@ -58,8 +59,6 @@ local fmt, find, gmatch, match, sub, split, upper, lower =
 local min, max, floor, ceil = math.min, math.max, math.floor, math.ceil
 local pairs, next, type, tostring, unpack = pairs, next, type, tostring, unpack
 local vec_add, vec_mul = vector.add, vector.multiply
-
-local FORMSPEC_MINIMAL_VERSION = 3
 
 local ROWS = 9
 local LINES = sfinv_only and 5 or 10
@@ -106,9 +105,9 @@ local FMT = {
 	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
 
-local function get_fs_version(name)
+local function get_lang_code(name)
 	local info = get_player_info(name)
-	return info and info.formspec_version or 1
+	return info and info.lang_code
 end
 
 local function outdated(name)
@@ -791,23 +790,29 @@ local function is_fav(data)
 	return fav, i
 end
 
-local function check_newline(def)
+local function desc_newline(def)
 	return def and def.description and find(def.description, "\n")
 end
 
-local function get_desc(name)
-	if sub(name, 1, 1) == "_" then
-		name = sub(name, 2)
+local function get_desc(item, data)
+	if sub(item, 1, 1) == "_" then
+		item = sub(item, 2)
 	end
 
-	local def = reg_items[name]
+	local def = reg_items[item]
 
-	return def and (match(def.description, "%)([%w%s]*)") or def.description) or
-	      (def and match(name, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ") or
-	      S("Unknown Item (@1)", name))
+	if def then
+		if true_str(def.description) then
+			return match(get_translation(data.lang_code, def.description), "[^\n]*")
+		elseif true_str(item) then
+			return match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ")
+		end
+	end
+
+	return S("Unknown Item (@1)", item)
 end
 
-local function get_tooltip(name, info)
+local function get_tooltip(item, info)
 	local tooltip
 
 	if info.groups then
@@ -825,7 +830,7 @@ local function get_tooltip(name, info)
 			tooltip = S("Any item belonging to the group(s): @1", groupstr)
 		end
 	else
-		tooltip = get_desc(name)
+		tooltip = get_desc(item, info.data)
 	end
 
 	local function add(str)
@@ -841,7 +846,7 @@ local function get_tooltip(name, info)
 	end
 
 	if info.replace then
-		local desc = clr("#ff0", get_desc(info.replace))
+		local desc = clr("#ff0", get_desc(info.replace, info.data))
 
 		if info.cooktime then
 			tooltip = add(S("Replaced by @1 on smelting", desc))
@@ -868,18 +873,18 @@ local function get_tooltip(name, info)
 		if several then
 			for i = 1, #info.tools do
 				names = fmt("%s\t\t- %s\n",
-					names, clr("#ff0", get_desc(info.tools[i])))
+					names, clr("#ff0", get_desc(info.tools[i], info.data)))
 			end
 
 			tooltip = add(S("Only drop if using one of these tools: @1",
 				sub(names, 1, -2)))
 		else
 			tooltip = add(S("Only drop if using this tool: @1",
-				clr("#ff0", get_desc(info.tools[1]))))
+				clr("#ff0", get_desc(info.tools[1], info.data))))
 		end
 	end
 
-	return fmt("tooltip[%s;%s]", name, ESC(tooltip))
+	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
 local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
@@ -935,12 +940,13 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 		local def = reg_items[name]
 
 		local infos = {
-			unknown  = not def or nil,
-			burntime = fuel_cache[name],
-			repair   = repairable(name),
-			rarity   = rcp.rarity,
-			tools    = rcp.tools,
-			newline  = check_newline(def),
+			unknown    = not def or nil,
+			weird_desc = not true_str(def.description) or desc_newline(def),
+			burntime   = fuel_cache[name],
+			repair     = repairable(name),
+			rarity     = rcp.rarity,
+			tools      = rcp.tools,
+			data       = data,
 		}
 
 		if next(infos) then
@@ -1041,12 +1047,13 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		local def = reg_items[name]
 
 		local infos = {
-			unknown  = not def or nil,
-			groups   = groups,
-			burntime = fuel_cache[name],
-			cooktime = cooktime,
-			replace  = replace,
-			newline  = check_newline(def),
+			unknown    = not def or nil,
+			weird_desc = not true_str(def.description) or desc_newline(def),
+			groups     = groups,
+			burntime   = fuel_cache[name],
+			cooktime   = cooktime,
+			replace    = replace,
+			data       = data,
 		}
 
 		if next(infos) then
@@ -1112,7 +1119,7 @@ local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 end
 
 local function get_title_fs(data, fs, spacing)
-	local desc = ESC(get_desc(data.query_item))
+	local desc = ESC(get_desc(data.query_item, data))
 	desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
 	local t_desc = data.query_item
 	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
@@ -1572,12 +1579,12 @@ end
 
 local function init_data(name)
 	pdata[name] = {
-		filter     = "",
-		pagenum    = 1,
-		items      = init_items,
-		items_raw  = init_items,
-		favs       = {},
-		fs_version = get_fs_version(name),
+		filter    = "",
+		pagenum   = 1,
+		items     = init_items,
+		items_raw = init_items,
+		favs      = {},
+		lang_code = get_lang_code(name),
 	}
 end
 
@@ -1599,7 +1606,7 @@ on_joinplayer(function(player)
 	local name = player:get_player_name()
 	init_data(name)
 
-	if pdata[name].fs_version < FORMSPEC_MINIMAL_VERSION then
+	if not pdata[name].lang_code then
 		outdated(name)
 	end
 end)
@@ -1700,7 +1707,7 @@ if sfinv_only then
 
 		is_in_nav = function(self, player, context)
 			local name = player:get_player_name()
-			return get_fs_version(name) >= FORMSPEC_MINIMAL_VERSION
+			return get_lang_code(name)
 		end,
 
 		get = function(self, player, context)
@@ -1735,7 +1742,7 @@ else
 		local name = user:get_player_name()
 		local data = pdata[name]
 
-		if data.fs_version < FORMSPEC_MINIMAL_VERSION then
+		if not data.lang_code then
 			return outdated(name)
 		end
 
@@ -2096,11 +2103,11 @@ function craftguide.show(name, item, show_usages)
 	if not recipes and not usages then
 		if not recipes_cache[item] and not usages_cache[item] then
 			return false, msg(name, fmt("%s: %s",
-				S"No recipe or usage for this item", get_desc(item)))
+				S"No recipe or usage for this item", get_desc(item, data)))
 		end
 
 		return false, msg(name, fmt("%s: %s",
-			S"You don't know a recipe or usage for this item", get_desc(item)))
+			S"You don't know a recipe or usage for this item", get_desc(item, data)))
 	end
 
 	data.query_item = item
