@@ -346,7 +346,7 @@ function craftguide.register_craft_type(name, def)
 end
 
 function craftguide.register_craft(def)
-	local width = 0
+	local width, c = 0, 0
 
 	if true_str(def.url) then
 		if not http then
@@ -414,7 +414,8 @@ function craftguide.register_craft(def)
 		end
 
 		for symbol in gmatch(concat(def.grid), ".") do
-			insert(def.items, def.key[symbol])
+			c = c + 1
+			def.items[c] = def.key[symbol]
 		end
 	else
 		local items, len = def.items, #def.items
@@ -436,7 +437,8 @@ function craftguide.register_craft(def)
 		end
 
 		for name in gmatch(concat(items, ","), "[%s%w_:]+") do
-			insert(def.items, match(name, "%S+"))
+			c = c + 1
+			def.items[c] = match(name, "%S+")
 		end
 	end
 
@@ -561,7 +563,7 @@ local function cache_fuel(item)
 end
 
 local function show_item(def)
-	return not (def.groups.not_in_craft_guide == 1 or
+	return def and not (def.groups.not_in_craft_guide == 1 or
 		def.groups.not_in_creative_inventory == 1) and
 		def.description and def.description ~= ""
 end
@@ -708,9 +710,6 @@ local function cache_recipes(item)
 	if recipes then
 		recipes_cache[item] = recipes
 	end
-
-	cache_drops(item, def.drop)
-	cache_fuel(item)
 end
 
 local function get_recipes(item, data, player)
@@ -1460,14 +1459,16 @@ core.register_craft = function(def)
 			end
 		else
 			def.width = #def.recipe[1]
+			local c = 0
 
 			for j = 1, #def.recipe do
 				if def.recipe[j] then
 					for h = 1, def.width do
+						c = c + 1
 						local it = def.recipe[j][h]
 
 						if it and it ~= "" then
-							insert(def.items, it)
+							def.items[c] = it
 						end
 					end
 				end
@@ -1541,6 +1542,9 @@ local function get_init_items()
 	for name, def in pairs(reg_items) do
 		if name ~= "" and show_item(def) then
 			cache_recipes(name)
+			cache_drops(name, def.drop)
+			cache_fuel(name)
+
 			_preselect[name] = true
 		end
 	end
