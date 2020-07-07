@@ -793,7 +793,7 @@ local function desc_newline(def)
 	return def and def.description and find(def.description, "\n")
 end
 
-local function get_desc(item, data)
+local function get_desc(item, lang_code)
 	if sub(item, 1, 1) == "_" then
 		item = sub(item, 2)
 	end
@@ -802,7 +802,7 @@ local function get_desc(item, data)
 
 	if def then
 		if true_str(def.description) then
-			return match(get_translation(data.lang_code, def.description), "[^\n]*")
+			return match(get_translation(lang_code, def.description), "[^\n]*")
 		elseif true_str(item) then
 			return match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ")
 		end
@@ -811,7 +811,7 @@ local function get_desc(item, data)
 	return S("Unknown Item (@1)", item)
 end
 
-local function get_tooltip(item, info)
+local function get_tooltip(item, info, lang_code)
 	local tooltip
 
 	if info.groups then
@@ -829,7 +829,7 @@ local function get_tooltip(item, info)
 			tooltip = S("Any item belonging to the group(s): @1", groupstr)
 		end
 	else
-		tooltip = get_desc(item, info.data)
+		tooltip = get_desc(item, lang_code)
 	end
 
 	local function add(str)
@@ -845,7 +845,7 @@ local function get_tooltip(item, info)
 	end
 
 	if info.replace then
-		local desc = clr("#ff0", get_desc(info.replace, info.data))
+		local desc = clr("#ff0", get_desc(info.replace, lang_code))
 
 		if info.cooktime then
 			tooltip = add(S("Replaced by @1 on smelting", desc))
@@ -872,14 +872,14 @@ local function get_tooltip(item, info)
 		if several then
 			for i = 1, #info.tools do
 				names = fmt("%s\t\t- %s\n",
-					names, clr("#ff0", get_desc(info.tools[i], info.data)))
+					names, clr("#ff0", get_desc(info.tools[i], lang_code)))
 			end
 
 			tooltip = add(S("Only drop if using one of these tools: @1",
 				sub(names, 1, -2)))
 		else
 			tooltip = add(S("Only drop if using this tool: @1",
-				clr("#ff0", get_desc(info.tools[1], info.data))))
+				clr("#ff0", get_desc(info.tools[1], lang_code))))
 		end
 	end
 
@@ -935,21 +935,22 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
 			output_X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, "")
 
-
 		local def = reg_items[name]
+		local unknown = not def or nil
+		local weird_desc = name ~= "" and def and
+			(not true_str(def.description) or desc_newline(def)) or nil
 
 		local infos = {
-			unknown    = not def or nil,
-			weird_desc = not true_str(def.description) or desc_newline(def),
+			unknown    = unknown,
+			weird_desc = weird_desc,
 			burntime   = fuel_cache[name],
 			repair     = repairable(name),
 			rarity     = rcp.rarity,
 			tools      = rcp.tools,
-			data       = data,
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(_name, infos)
+			fs[#fs + 1] = get_tooltip(_name, infos, data.lang_code)
 		end
 
 		if infos.burntime then
@@ -1044,19 +1045,22 @@ local function get_grid_fs(data, fs, rcp, spacing)
 			X, Y, btn_size, btn_size, item, item, label)
 
 		local def = reg_items[name]
+		local unknown = not def or nil
+		unknown = not groups and unknown or nil
+		local weird_desc = name ~= "" and def and
+			(not true_str(def.description) or desc_newline(def)) or nil
 
 		local infos = {
-			unknown    = not def or nil,
-			weird_desc = def and (not true_str(def.description) or desc_newline(def)),
+			unknown    = unknown,
+			weird_desc = weird_desc,
 			groups     = groups,
 			burntime   = fuel_cache[name],
 			cooktime   = cooktime,
 			replace    = replace,
-			data       = data,
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(item, infos)
+			fs[#fs + 1] = get_tooltip(item, infos, data.lang_code)
 		end
 	end
 
@@ -1114,7 +1118,7 @@ local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 end
 
 local function get_title_fs(data, fs, spacing)
-	local desc = ESC(get_desc(data.query_item, data))
+	local desc = ESC(get_desc(data.query_item, data.lang_code))
 	desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
 	local t_desc = data.query_item
 	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
@@ -2103,11 +2107,13 @@ function craftguide.show(name, item, show_usages)
 	if not recipes and not usages then
 		if not recipes_cache[item] and not usages_cache[item] then
 			return false, msg(name, fmt("%s: %s",
-				S"No recipe or usage for this item", get_desc(item, data)))
+				S"No recipe or usage for this item",
+				get_desc(item, data.lang_code)))
 		end
 
 		return false, msg(name, fmt("%s: %s",
-			S"You don't know a recipe or usage for this item", get_desc(item, data)))
+			S"You don't know a recipe or usage for this item",
+			get_desc(item, data.lang_code)))
 	end
 
 	data.query_item = item
