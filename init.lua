@@ -11,10 +11,8 @@ local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
 local sfinv_only = core.settings:get_bool "craftguide_sfinv_only" and rawget(_G, "sfinv")
-local autocache = core.settings:get_bool "craftguide_autocache"
 
 local http = core.request_http_api()
-local storage = core.get_mod_storage()
 local singleplayer = core.is_singleplayer()
 
 local reg_items = core.registered_items
@@ -349,7 +347,7 @@ function craftguide.register_craft_type(name, def)
 end
 
 function craftguide.register_craft(def)
-	local width, c = 0, 0
+	local width = 0
 
 	if true_str(def.url) then
 		if not http then
@@ -417,8 +415,7 @@ function craftguide.register_craft(def)
 		end
 
 		for symbol in gmatch(concat(def.grid), ".") do
-			c = c + 1
-			def.items[c] = def.key[symbol]
+			insert(def.items, def.key[symbol])
 		end
 	else
 		local items, len = def.items, #def.items
@@ -440,17 +437,16 @@ function craftguide.register_craft(def)
 		end
 
 		for name in gmatch(concat(items, ","), "[%s%w_:]+") do
-			c = c + 1
-			def.items[c] = match(name, "%S+")
+			insert(def.items, match(name, "%S+"))
 		end
 	end
 
-	local output = match(def.output, "%S+")
-	recipes_cache[output] = recipes_cache[output] or {}
+	local item = match(def.output, "%S+")
+	recipes_cache[item] = recipes_cache[item] or {}
 
 	def.custom = true
 	def.width = width
-	insert(recipes_cache[output], def)
+	insert(recipes_cache[item], def)
 end
 
 local recipe_filters = {}
@@ -521,35 +517,8 @@ local function item_has_groups(item_groups, groups)
 end
 
 local function extract_groups(str)
-	return split(sub(str, 7), ",")
-end
-
-local function item_in_recipe(item, recipe)
-	local clean_item = reg_aliases[item] or item
-
-	for _, recipe_item in pairs(recipe.items) do
-		local clean_recipe_item = reg_aliases[recipe_item] or recipe_item
-		if clean_recipe_item == clean_item then
-			return true
-		end
-	end
-end
-
-local function groups_item_in_recipe(item, recipe)
-	local def = reg_items[item]
-	if not def then return end
-	local item_groups = def.groups
-
-	for _, recipe_item in pairs(recipe.items) do
-		if is_group(recipe_item) then
-			local groups = extract_groups(recipe_item)
-
-			if item_has_groups(item_groups, groups) then
-				local usage = copy(recipe)
-				table_replace(usage.items, recipe_item, item)
-				return usage
-			end
-		end
+	if sub(str, 1, 6) == "group:" then
+		return split(sub(str, 7), ",")
 	end
 end
 
@@ -581,36 +550,6 @@ local function get_filtered_items(player, data)
 	return items
 end
 
-local function get_usages(item)
-	local usages, c = {}, 0
-
-	for _, recipes in pairs(recipes_cache) do
-	for i = 1, #recipes do
-		local recipe = recipes[i]
-		if item_in_recipe(item, recipe) then
-			c = c + 1
-			usages[c] = recipe
-		else
-			recipe = groups_item_in_recipe(item, recipe)
-			if recipe then
-				c = c + 1
-				usages[c] = recipe
-			end
-		end
-	end
-	end
-
-	if fuel_cache[item] then
-		usages[#usages + 1] = {
-			type = "fuel",
-			items = {item},
-			replacements = fuel_cache.replacements[item],
-		}
-	end
-
-	return usages
-end
-
 local function get_burntime(item)
 	return get_craft_result{method = "fuel", items = {item}}.time
 end
@@ -622,18 +561,155 @@ local function cache_fuel(item)
 	end
 end
 
-local function cache_usages(item)
-	local usages = get_usages(item)
-	if #usages > 0 then
-		usages_cache[item] = table_merge(usages, usages_cache[item] or {})
+local function show_item(def)
+	return not (def.groups.not_in_craft_guide == 1 or
+		def.groups.not_in_creative_inventory == 1) and
+		def.description and def.description ~= ""
+end
+
+local function get_usages(recipe)
+	local added = {}
+
+	for _, item in pairs(recipe.items) do
+		if not added[item] then
+			local groups = extract_groups(item)
+			if groups then
+				for name, def in pairs(reg_items) do
+					if not added[name] and show_item(def) and
+							item_has_groups(def.groups, groups) then
+						local usage = copy(recipe)
+						table_replace(usage.items, item, name)
+						usages_cache[name] = usages_cache[name] or {}
+						insert(usages_cache[name], usage)
+						added[name] = true
+					end
+				end
+			elseif show_item(reg_items[item]) then
+				usages_cache[item] = usages_cache[item] or {}
+				insert(usages_cache[item], recipe)
+			end
+
+			added[item] = true
+		end
 	end
 end
 
-local function cache_recipes(output)
-	local recipes = get_all_recipes(output) or {}
-	if #recipes > 0 then
-		recipes_cache[output] = recipes
+local function cache_usages(item)
+	local recipes = recipes_cache[item] or {}
+
+	for i = 1, #recipes do
+		get_usages(recipes[i])
 	end
+
+	if fuel_cache[item] then
+		local fuel = {
+			type = "fuel",
+			items = {item},
+			replacements = fuel_cache.replacements[item],
+		}
+
+		usages_cache[item] = table_merge(usages_cache[item] or {}, {fuel})
+	end
+end
+
+local function drop_table(name, drop)
+	-- Code borrowed and modified from unified_inventory
+	-- https://github.com/minetest-mods/unified_inventory/blob/master/api.lua
+	local drop_sure, drop_maybe = {}, {}
+	local drop_items = drop.items or {}
+	local max_items_left = drop.max_items
+	local max_start = true
+
+	for i = 1, #drop_items do
+		if max_items_left and max_items_left <= 0 then break end
+		local di = drop_items[i]
+
+		for j = 1, #di.items do
+			local dstack = ItemStack(di.items[j])
+			local dname = dstack:get_name()
+
+			if not dstack:is_empty() and dname ~= name then
+				local dcount = dstack:get_count()
+
+				if #di.items == 1 and max_start and
+						(not di.rarity or di.rarity <= 1) then
+					if not drop_sure[dname] then
+						drop_sure[dname] = {}
+					end
+
+					drop_sure[dname] = {
+						output = (drop_sure[dname].output or 0) + dcount,
+						tools  = di.tools,
+					}
+
+					if max_items_left then
+						max_items_left = max_items_left - 1
+						if max_items_left <= 0 then break end
+					end
+				else
+					if max_items_left then
+						max_start = false
+					end
+
+					if not drop_maybe[dname] then
+						drop_maybe[dname] = {}
+					end
+
+					drop_maybe[dname] = {
+						output = (drop_maybe[dname].output or 0) + dcount,
+						rarity = di.rarity,
+						tools  = di.tools,
+					}
+				end
+			end
+		end
+	end
+
+	for item, data in pairs(drop_sure) do
+		craftguide.register_craft{
+			type   = "digging",
+			items  = {name},
+			output = fmt("%s %u", item, data.output),
+			tools  = data.tools,
+		}
+	end
+
+	for item, data in pairs(drop_maybe) do
+		craftguide.register_craft{
+			type   = "digging_chance",
+			items  = {name},
+			output = fmt("%s %u", item, data.output),
+			rarity = data.rarity,
+			tools  = data.tools,
+		}
+	end
+end
+
+local function cache_drops(name, drop)
+	if true_str(drop) then
+		local dstack = ItemStack(drop)
+		if not dstack:is_empty() and dstack:get_name() ~= name then
+			craftguide.register_craft{
+				type = "digging",
+				items = {name},
+				output = drop,
+			}
+		end
+	elseif is_table(drop) then
+		drop_table(name, drop)
+	end
+end
+
+local function cache_recipes(item)
+	item = reg_aliases[item] or item
+
+	local recipes = get_all_recipes(item) or {}
+	if #recipes > 0 then
+		recipes_cache[item] = recipes
+	end
+
+	cache_drops(item, reg_items[item].drop)
+	cache_fuel(item)
 end
 
 local function get_recipes(item, data, player)
@@ -737,11 +813,10 @@ local function get_tooltip(name, info)
 		tooltip = group_names[concat(info.groups, ",")]
 
 		if not tooltip then
-			local groupstr, c = {}, 0
+			local groupstr = {}
 
 			for i = 1, #info.groups do
-				c = c + 1
-				groupstr[c] = clr("#ff0", info.groups[i])
+				insert(groupstr, clr("#ff0", info.groups[i]))
 			end
 
 			groupstr = concat(groupstr, ", ")
@@ -1380,16 +1455,14 @@ core.register_craft = function(def)
 			end
 		else
 			def.width = #def.recipe[1]
-			local c = 0
 
 			for j = 1, #def.recipe do
 				if def.recipe[j] then
 					for h = 1, def.width do
-						c = c + 1
 						local it = def.recipe[j][h]
 
 						if it and it ~= "" then
-							def.items[c] = it
+							insert(def.items, it)
 						end
 					end
 				end
@@ -1419,95 +1492,7 @@ core.clear_craft = function(def)
 	end
 end
 
-local function handle_drops_table(name, drop)
-	-- Code borrowed and modified from unified_inventory
-	-- https://github.com/minetest-mods/unified_inventory/blob/master/api.lua
-	local drop_sure, drop_maybe = {}, {}
-	local drop_items = drop.items or {}
-	local max_items_left = drop.max_items
-	local max_start = true
-
-	for i = 1, #drop_items do
-		if max_items_left and max_items_left <= 0 then break end
-		local di = drop_items[i]
-
-		for j = 1, #di.items do
-			local dstack = ItemStack(di.items[j])
-			local dname = dstack:get_name()
-
-			if not dstack:is_empty() and dname ~= name then
-				local dcount = dstack:get_count()
-
-				if #di.items == 1 and max_start and
-						(not di.rarity or di.rarity <= 1) then
-					if not drop_sure[dname] then
-						drop_sure[dname] = {}
-					end
-
-					drop_sure[dname] = {
-						output = (drop_sure[dname].output or 0) + dcount,
-						tools  = di.tools,
-					}
-
-					if max_items_left then
-						max_items_left = max_items_left - 1
-						if max_items_left <= 0 then break end
-					end
-				else
-					if max_items_left then
-						max_start = false
-					end
-
-					if not drop_maybe[dname] then
-						drop_maybe[dname] = {}
-					end
-
-					drop_maybe[dname] = {
-						output = (drop_maybe[dname].output or 0) + dcount,
-						rarity = di.rarity,
-						tools  = di.tools,
-					}
-				end
-			end
-		end
-	end
-
-	for item, data in pairs(drop_sure) do
-		craftguide.register_craft{
-			type   = "digging",
-			items  = {name},
-			output = fmt("%s %u", item, data.output),
-			tools  = data.tools,
-		}
-	end
-
-	for item, data in pairs(drop_maybe) do
-		craftguide.register_craft{
-			type   = "digging_chance",
-			items  = {name},
-			output = fmt("%s %u", item, data.output),
-			rarity = data.rarity,
-			tools  = data.tools,
-		}
-	end
-end
-
-local function register_drops(name, drop)
-	if true_str(drop) then
-		local dstack = ItemStack(drop)
-		if not dstack:is_empty() and dstack:get_name() ~= name then
-			craftguide.register_craft{
-				type = "digging",
-				items = {name},
-				output = drop,
-			}
-		end
-	elseif is_table(drop) then
-		handle_drops_table(name, drop)
-	end
-end
-
-local function handle_aliases(hash)
+local function resolve_aliases(hash)
 	for oldname, newname in pairs(reg_aliases) do
 		cache_recipes(oldname)
 		local recipes = recipes_cache[oldname]
@@ -1545,57 +1530,29 @@ local function handle_aliases(hash)
 	end
 end
 
-local function show_item(def)
-	return not (def.groups.not_in_craft_guide == 1 or
-		def.groups.not_in_creative_inventory == 1) and
-		def.description and def.description ~= ""
-end
-
 local function get_init_items()
-	local init_items_bak = storage:get "init_items"
+	local _select, _preselect = {}, {}
 
-	if autocache == false and init_items_bak then
-		init_items    = dslz(init_items_bak)
-		fuel_cache    = dslz(storage:get "fuel_cache")
-		usages_cache  = dslz(storage:get "usages_cache")
-		recipes_cache = dslz(storage:get "recipes_cache")
-	else
-		print "[craftguide] Caching data (this may take a while)"
-		local _select, _preselect = {}, {}
-
-		for name, def in pairs(reg_items) do
-			if name ~= "" and show_item(def) then
-				register_drops(name, def.drop)
-
-				if not fuel_cache[name] then
-					cache_fuel(name)
-				end
-
-				if not recipes_cache[name] then
-					cache_recipes(name)
-				end
-
-				cache_usages(name)
-
-				_preselect[name] = true
-			end
+	for name, def in pairs(reg_items) do
+		if name ~= "" and show_item(def) then
+			cache_recipes(name)
+			_preselect[name] = true
 		end
-
-		for name in pairs(_preselect) do
-			if recipes_cache[name] or usages_cache[name] then
-				init_items[#init_items + 1] = name
-				_select[name] = true
-			end
-		end
-
-		handle_aliases(_select)
-		sort(init_items)
-
-		storage:set_string("init_items", slz(init_items))
-		storage:set_string("fuel_cache", slz(fuel_cache))
-		storage:set_string("usages_cache", slz(usages_cache))
-		storage:set_string("recipes_cache", slz(recipes_cache))
 	end
+
+	for name in pairs(_preselect) do
+		cache_usages(name)
+	end
+
+	for name in pairs(_preselect) do
+		if recipes_cache[name] or usages_cache[name] then
+			init_items[#init_items + 1] = name
+			_select[name] = true
+		end
+	end
+
+	resolve_aliases(_select)
+	sort(init_items)
 
 	if http and true_str(craftguide.export_url) then
 		local post_data = {

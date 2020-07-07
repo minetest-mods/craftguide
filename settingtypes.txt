@@ -3,10 +3,3 @@ craftguide_progressive_mode    (Learn crafting recipes progressively)    bool fa
 
 # Integration in the default Minetest Game inventory.
 craftguide_sfinv_only    (Crafting Guide in inventory only)    bool false
-
-# Enable pre-caching of item recipes.
-# Do NOT disable the first time the mod loads.
-# Disabling the auto-caching will result in faster mod loading.
-# If you enable or disable mods, or edit the current mod recipes in your setup, you SHOULD re-enable this setting until the next caching at least.
-# Usage at your own risk.
-craftguide_autocache    (Auto-caching of recipes)    bool true
