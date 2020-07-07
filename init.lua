@@ -63,7 +63,7 @@ local vec_add, vec_mul = vector.add, vector.multiply
 local ROWS = 9
 local LINES = sfinv_only and 5 or 10
 local IPP = ROWS * LINES
-local WH_LIMIT = 5
+local WH_LIMIT = 10
 local MAX_FAVS = 6
 local ITEM_BTN_SIZE = 1.1
 
@@ -705,10 +705,10 @@ local function cache_recipes(item)
 	item = reg_aliases[item] or item
 	local def = reg_items[item]
 	if not def then return end
+	local recipes = get_all_recipes(item) or {}
 
-	local recipes = get_all_recipes(item)
-	if recipes then
-		recipes_cache[item] = recipes
+	for i = 1, #recipes do
+		recipes_cache[item] = table_merge(recipes_cache[item] or {}, recipes[i])
 	end
 end
 
@@ -1004,11 +1004,13 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		local Y = ceil(i / width) + YOFFSET - min(2, rows) + spacing
 
 		if large_recipe then
-			btn_size = width > 3 and 3 / width or 3 / rows
+			btn_size = (width > 3 and 3 / width or 3 / rows) + 0.1
 			_btn_size = btn_size
+			local xi = (i - 1) % width
+			local yi = floor((i - 1) / width)
 
-			X = btn_size * ((i - 1) % width) + XOFFSET - 2.65
-			Y = btn_size * floor((i - 1) / width) + spacing + (sfinv and 4 or 0)
+			X = btn_size * xi + XOFFSET - 2.65 - (xi * 0.15)
+			Y = btn_size * yi + spacing + (sfinv_only and 4 or 0) - (yi * 0.1)
 		end
 
 		if X > right then
