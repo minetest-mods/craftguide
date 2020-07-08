@@ -572,6 +572,7 @@ local function get_usages(recipe)
 	local added = {}
 
 	for _, item in pairs(recipe.items) do
+		item = reg_aliases[item] or item
 		if not added[item] then
 			local groups = extract_groups(item)
 			if groups then
