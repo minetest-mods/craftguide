@@ -777,10 +777,10 @@ local function repairable(tool)
 	return toolrepair and def and def.groups and def.groups.disable_repair ~= 1
 end
 
-local function is_fav(data)
+local function is_fav(favs, query_item)
 	local fav, i
-	for j = 1, #data.favs do
-		if data.favs[j] == data.query_item then
+	for j = 1, #favs do
+		if favs[j] == query_item then
 			fav = true
 			i = j
 			break
@@ -790,8 +790,8 @@ local function is_fav(data)
 	return fav, i
 end
 
-local function desc_newline(def)
-	return def and def.description and find(def.description, "\n")
+local function str_newline(str)
+	return find(str, "\n")
 end
 
 local function get_desc(item, lang_code)
@@ -887,7 +887,7 @@ local function get_tooltip(item, info, lang_code)
 	return fmt("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
-local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
+local function get_output_fs(lang_code, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
 	local custom_recipe = craft_types[rcp.type]
 
 	if custom_recipe or shapeless or rcp.type == "cooking" then
@@ -939,7 +939,7 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 		local def = reg_items[name]
 		local unknown = not def or nil
 		local weird_desc = name ~= "" and def and
-			(not true_str(def.description) or desc_newline(def)) or nil
+			(not true_str(def.description) or str_newline(def.description)) or nil
 
 		local infos = {
 			unknown    = unknown,
@@ -951,7 +951,7 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(_name, infos, data.lang_code)
+			fs[#fs + 1] = get_tooltip(_name, infos, lang_code)
 		end
 
 		if infos.burntime then
@@ -966,7 +966,7 @@ local function get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_siz
 	end
 end
 
-local function get_grid_fs(data, fs, rcp, spacing)
+local function get_grid_fs(lang_code, fs, rcp, spacing)
 	local width = rcp.width or 1
 	local right, btn_size, _btn_size = 0, ITEM_BTN_SIZE
 	local cooktime, shapeless
@@ -1051,7 +1051,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		local unknown = not def or nil
 		unknown = not groups and unknown or nil
 		local weird_desc = name ~= "" and def and
-			(not true_str(def.description) or desc_newline(def)) or nil
+			(not true_str(def.description) or str_newline(def.description)) or nil
 
 		local infos = {
 			unknown    = unknown,
@@ -1063,7 +1063,7 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(item, infos, data.lang_code)
+			fs[#fs + 1] = get_tooltip(item, infos, lang_code)
 		end
 	end
 
@@ -1071,26 +1071,25 @@ local function get_grid_fs(data, fs, rcp, spacing)
 		fs[#fs + 1] = "style_type[item_image_button;border=false]"
 	end
 
-	get_output_fs(data, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
+	get_output_fs(lang_code, fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
 end
 
-local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
+local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacing, rn, is_recipe)
 	local lbl
 
 	if (not sfinv_only and is_recipe) or
-			(sfinv_only and not data.show_usages) then
-		lbl = ES("Recipe @1 of @2", data.rnum, rn)
+			(sfinv_only and not show_usages) then
+		lbl = ES("Recipe @1 of @2", rnum, rn)
 
-	elseif not sfinv_only or (sfinv_only and data.show_usages) then
-		lbl = ES("Usage @1 of @2", data.unum, rn)
+	elseif not sfinv_only or (sfinv_only and show_usages) then
+		lbl = ES("Usage @1 of @2", unum, rn)
 
 	elseif sfinv_only then
-		lbl = data.show_usages and
-			ES("Usage @1 of @2", data.unum, rn) or
-			ES("Recipe @1 of @2", data.rnum, rn)
+		lbl = show_usages and ES("Usage @1 of @2", unum, rn) or
+			ES("Recipe @1 of @2", rnum, rn)
 	end
 
-	lbl = get_translation(data.lang_code, lbl)
+	lbl = get_translation(lang_code, lbl)
 	local shift = min(0.9, abs(13 - max(13, #lbl)) * 0.1)
 
 	fs[#fs + 1] = fmt(FMT.label,
@@ -1116,24 +1115,24 @@ local function get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
 			x_arrow + 1.8,   y_arrow, PNG.next, next_name, "")
 	end
 
-	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
-	get_grid_fs(data, fs, rcp, spacing)
+	local rcp = is_recipe and panel.rcp[rnum] or panel.rcp[unum]
+	get_grid_fs(lang_code, fs, rcp, spacing)
 end
 
-local function get_title_fs(data, fs, spacing)
-	local desc = ESC(get_desc(data.query_item, data.lang_code))
+local function get_title_fs(query_item, lang_code, favs, fs, spacing)
+	local desc = ESC(get_desc(query_item, lang_code))
 	desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
-	local t_desc = data.query_item
+	local t_desc = query_item
 	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
 
 	fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;item_title;%s]",
 		spacing - 0.1,
 		fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
 		    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
-			data.query_item, desc, t_desc))
+			query_item, desc, t_desc))
 
-	local fav = is_fav(data)
-	local nfavs = #data.favs
+	local fav = is_fav(favs, query_item)
+	local nfavs = #favs
 
 	if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
 		local fav_marked = fmt("craftguide_fav%s.png", fav and "_off" or "")
@@ -1159,15 +1158,17 @@ local function get_title_fs(data, fs, spacing)
 	end
 end
 
-local function get_panels(data, fs)
-	local title   = {name = "title", height = 1.2}
-	local favs    = {name = "favs",  height = 1.91}
-	local recipes = {name = "recipes", rcp = data.recipes, height = 3.5}
-	local usages  = {name = "usages",  rcp = data.usages,  height = 3.5}
-	local panels  = {title, recipes, usages, favs}
+local function get_panels(lang_code, query_item, recipes, usages, show_usages,
+			  favs, unum, rnum, fs)
+
+	local _title    = {name = "title", height = 1.2}
+	local _favs     = {name = "favs",  height = 1.91}
+	local _recipes  = {name = "recipes", rcp = recipes, height = 3.5}
+	local _usages   = {name = "usages",  rcp = usages,  height = 3.5}
+	local panels    = {_title, _recipes, _usages, _favs}
 
 	if sfinv_only then
-		panels = {data.show_usages and usages or recipes}
+		panels = {show_usages and _usages or _recipes}
 	end
 
 	for idx = 1, #panels do
@@ -1180,11 +1181,12 @@ local function get_panels(data, fs)
 		end
 
 		local rn = panel.rcp and #panel.rcp
-		local is_recipe = sfinv_only and not data.show_usages or panel.name == "recipes"
+		local is_recipe = sfinv_only and not show_usages or panel.name == "recipes"
 		local recipe_or_usage = panel.name == "recipes" or panel.name == "usages"
 
 		if rn then
-			get_rcp_lbl(data, fs, panel, spacing, rn, is_recipe)
+			get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel,
+				    spacing, rn, is_recipe)
 		end
 
 		if sfinv_only then return end
@@ -1202,17 +1204,17 @@ local function get_panels(data, fs)
 				X, Y, 2, 2, is_recipe and ES"No recipes" or ES"No usages")
 
 		elseif panel.name == "title" then
-			get_title_fs(data, fs, spacing)
+			get_title_fs(query_item, lang_code, favs, fs, spacing)
 
 		elseif panel.name == "favs" then
 			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.15, ES"Bookmarks")
 
-			for i = 1, #data.favs do
-				local item = data.favs[i]
+			for i = 1, #favs do
+				local item = favs[i]
 				local X = 7.85 + (i - 0.5)
 				local Y = spacing + 0.4
 
-				if data.query_item == item then
+				if query_item == item then
 					fs[#fs + 1] = fmt(FMT.image, X, Y,
 						ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 				end
@@ -1316,7 +1318,8 @@ local function make_fs(data)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
-		get_panels(data, fs)
+		get_panels(data.lang_code, data.query_item, data.recipes, data.usages,
+			   data.show_usages, data.favs, data.unum, data.rnum, fs)
 	end
 
 	return concat(fs)
@@ -1657,7 +1660,7 @@ local function fields(player, _f)
 		end
 
 	elseif _f.fav then
-		local fav, i = is_fav(data)
+		local fav, i = is_fav(data.favs, data.query_item)
 		local total = #data.favs
 
 		if total < MAX_FAVS and not fav then
