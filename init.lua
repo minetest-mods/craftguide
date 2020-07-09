@@ -615,50 +615,27 @@ local function cache_usages(item)
 end
 
 local function drop_table(name, drop)
-	-- Code borrowed and modified from unified_inventory
-	-- https://github.com/minetest-mods/unified_inventory/blob/master/api.lua
 	local drop_sure, drop_maybe = {}, {}
 	local drop_items = drop.items or {}
-	local max_items_left = drop.max_items
-	local max_start = true
 
 	for i = 1, #drop_items do
-		if max_items_left and max_items_left <= 0 then break end
 		local di = drop_items[i]
 
 		for j = 1, #di.items do
 			local dstack = ItemStack(di.items[j])
-			local dname = dstack:get_name()
+			local dname  = dstack:get_name()
+			local dcount = dstack:get_count()
 
-			if not dstack:is_empty() and dname ~= name then
-				local dcount = dstack:get_count()
-
-				if #di.items == 1 and max_start and
-						(not di.rarity or di.rarity <= 1) then
-					if not drop_sure[dname] then
-						drop_sure[dname] = {}
-					end
-
+			if not dstack:is_empty() and (dname ~= name or
+					(dname == name and dcount > 1)) then
+				if #di.items == 1 and (not di.rarity or di.rarity <= 1) then
 					drop_sure[dname] = {
-						output = (drop_sure[dname].output or 0) + dcount,
+						output = dcount,
 						tools  = di.tools,
 					}
-
-					if max_items_left then
-						max_items_left = max_items_left - 1
-						if max_items_left <= 0 then break end
-					end
 				else
-					if max_items_left then
-						max_start = false
-					end
-
-					if not drop_maybe[dname] then
-						drop_maybe[dname] = {}
-					end
-
 					drop_maybe[dname] = {
-						output = (drop_maybe[dname].output or 0) + dcount,
+						output = dcount,
 						rarity = di.rarity,
 						tools  = di.tools,
 					}
