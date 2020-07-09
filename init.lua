@@ -1934,6 +1934,7 @@ if progressive_mode then
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 370,  y = 112},
 				text          = PNG.bg,
+				z_index       = 0xDEAD,
 			},
 
 			book = player:hud_add{
@@ -1942,6 +1943,7 @@ if progressive_mode then
 				alignment     = {x = 1,    y = 1},
 				scale         = {x = 4,    y = 4},
 				text          = PNG.book,
+				z_index       = 0xDEAD,
 			},
 
 			text = player:hud_add{
@@ -1950,6 +1952,7 @@ if progressive_mode then
 				alignment     = {x = 1,    y = 1},
 				number        = 0xffffff,
 				text          = "",
+				z_index       = 0xDEAD,
 			},
 		}
 	end
