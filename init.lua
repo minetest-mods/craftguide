@@ -70,6 +70,10 @@ local ITEM_BTN_SIZE = 1.1
 local XOFFSET = sfinv_only and 3.83 or 11.2
 local YOFFSET = sfinv_only and 4.9 or 1
 
+-- Progressive mode
+local POLL_FREQ = 0.25
+local HUD_TIMER_MAX = 1.5
+
 local PNG = {
 	bg        = "craftguide_bg.png",
 	bg_full   = "craftguide_bg_full.png",
@@ -536,7 +540,7 @@ local function get_filtered_items(player, data)
 		local usages = usages_cache[item]
 
 		recipes = #apply_recipe_filters(recipes or {}, player)
-		usages  = #apply_recipe_filters(usages or {}, player)
+		usages = #apply_recipe_filters(usages or {}, player)
 
 		if recipes > 0 or usages > 0 then
 			c = c + 1
@@ -1073,8 +1077,7 @@ end
 local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacing, rn, is_recipe)
 	local lbl
 
-	if (not sfinv_only and is_recipe) or
-			(sfinv_only and not show_usages) then
+	if (not sfinv_only and is_recipe) or (sfinv_only and not show_usages) then
 		lbl = ES("Recipe @1 of @2", rnum, rn)
 
 	elseif not sfinv_only or (sfinv_only and show_usages) then
@@ -1840,9 +1843,6 @@ else
 end
 
 if progressive_mode then
-	local POLL_FREQ = 0.25
-	local HUD_TIMER_MAX = 1.5
-
 	local function item_in_inv(item, inv_items)
 		local inv_items_size = #inv_items
 
