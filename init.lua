@@ -633,12 +633,21 @@ local function drop_table(name, drop)
 			if not dstack:is_empty() and (dname ~= name or
 					(dname == name and dcount > 1)) then
 				if #di.items == 1 and (not di.rarity or di.rarity <= 1) then
+					if drop_sure[dname] then
+						if dcount > drop_sure[dname].output then
+							dcount = dcount + drop_sure[dname].output
+						else
+							dcount = drop_sure[dname].output
+						end
+					end
+
 					drop_sure[dname] = {
 						output = dcount,
 						tools  = di.tools,
 					}
 				else
-					drop_maybe[dname] = {
+					drop_maybe[#drop_maybe + 1] = {
+						item   = dname,
 						output = dcount,
 						rarity = di.rarity,
 						tools  = di.tools,
@@ -657,11 +666,11 @@ local function drop_table(name, drop)
 		}
 	end
 
-	for item, data in pairs(drop_maybe) do
+	for _, data in ipairs(drop_maybe) do
 		craftguide.register_craft{
 			type   = "digging_chance",
 			items  = {name},
-			output = fmt("%s %u", item, data.output),
+			output = fmt("%s %u", data.item, data.output),
 			rarity = data.rarity,
 			tools  = data.tools,
 		}
