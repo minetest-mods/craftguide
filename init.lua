@@ -148,14 +148,18 @@ craftguide.group_stereotypes = {
 }
 
 local group_names = {
+	carpet = S"Any carpet",
 	coal = S"Any coal",
-	wool = S"Any wool",
-	wood = S"Any wood planks",
+	dye = S"Any dye",
+	flower = S"Any flower",
+	mushroom = S"Any mushroom",
 	sand = S"Any sand",
 	stick = S"Any stick",
 	stone = S"Any kind of stone block",
 	tree  = S"Any tree",
 	vessel = S"Any vessel",
+	wool = S"Any wool",
+	wood = S"Any wood planks",
 
 	["color_red,flower"] = S"Any red flower",
 	["color_blue,flower"] = S"Any blue flower",
@@ -727,6 +731,7 @@ local function groups_to_items(groups, get_all)
 		local def_gr = "default:" .. group
 		local stereotypes = craftguide.group_stereotypes
 		local stereotype = stereotypes and stereotypes[group]
+		stereotype = reg_items[stereotype] and stereotype
 
 		if stereotype then
 			return stereotype
