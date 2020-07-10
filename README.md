@@ -21,4 +21,4 @@ For the best visuals, it is recommended to enable `inventory_items_animations` i
 Love this mod? Donations are appreciated: https://www.paypal.me/jpg84240
 
 
-![Preview2](https://i.imgur.com/mLlVyca.png)
+![Preview2](https://i.imgur.com/TrBouDq.png)
