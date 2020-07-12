@@ -1027,12 +1027,16 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		local replace
 
 		if rcp.replacements then
-			replace = {}
-			label = fmt("%s%s\nR", label ~= "" and "\n" or "", label)
-
 			for j = 1, #rcp.replacements do
 				local replacement = rcp.replacements[j]
 				if replacement[1] == name then
+					replace = replace or {}
+
+					if j == 1 then
+						label = fmt("%s%s\nR",
+							label ~= "" and "\n" or "", label)
+					end
+
 					replace[#replace + 1] = replacement[2]
 				end
 			end
