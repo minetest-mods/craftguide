@@ -30,6 +30,7 @@ local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
 local get_players = core.get_connected_players
 local get_craft_result = core.get_craft_result
+local translate = minetest.get_translated_string
 local on_joinplayer = core.register_on_joinplayer
 local get_all_recipes = core.get_all_craft_recipes
 local register_command = core.register_chatcommand
@@ -38,7 +39,6 @@ local slz, dslz = core.serialize, core.deserialize
 local on_mods_loaded = core.register_on_mods_loaded
 local on_leaveplayer = core.register_on_leaveplayer
 local get_player_info = core.get_player_information
-local get_translation = minetest.get_translated_string
 local on_receive_fields = core.register_on_player_receive_fields
 
 local ESC = core.formspec_escape
@@ -798,7 +798,7 @@ local function get_desc(item, lang_code)
 
 	if def then
 		if true_str(def.description) then
-			return match(get_translation(lang_code, def.description), "[^\n]*")
+			return match(translate(lang_code, def.description), "[^\n]*")
 		elseif true_str(item) then
 			return match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ")
 		end
@@ -1088,7 +1088,7 @@ local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacin
 			ES("Recipe @1 of @2", rnum, rn)
 	end
 
-	lbl = get_translation(lang_code, lbl)
+	lbl = translate(lang_code, lbl)
 	local lbl_len = #(lbl):gsub("[\128-\191]", "") -- Count chars, not bytes in UTF-8 strings
 	local shift = min(0.9, abs(13 - max(13, lbl_len)) * 0.1)
 
@@ -1371,7 +1371,7 @@ local function search(data)
 		local item = data.items_raw[i]
 		local def  = reg_items[item]
 		local desc = (def and def.description) and lower(def.description) or ""
-		local loc_desc = lower(get_translation(data.lang_code, def and def.description)) or ""
+		local loc_desc = lower(translate(data.lang_code, def and def.description)) or ""
 		local search_in = fmt("%s %s %s", item, desc, loc_desc)
 		local to_add
 
