@@ -913,26 +913,26 @@ local function get_output_fs(lang_code, fs, rcp, shapeless, right, btn_size, _bt
 	end
 
 	local arrow_X = right + (_btn_size or ITEM_BTN_SIZE)
-	local output_X = arrow_X + 0.9
+	local X = arrow_X + 0.9
 	local Y = YOFFSET + (sfinv_only and 2 or 0) + spacing
 
 	fs[#fs + 1] = fmt(FMT.image, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
 
 	if rcp.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT.animated_image, output_X, Y,
+		fs[#fs + 1] = fmt(FMT.animated_image, X, Y,
 			ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180)
 	else
 		local item = rcp.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs[#fs + 1] = fmt(FMT.image, output_X, Y,
+		fs[#fs + 1] = fmt(FMT.image, X, Y,
 			ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 
 		local _name = sfinv_only and name or fmt("_%s", name)
 
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-			output_X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, "")
+			X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, "")
 
 		local def = reg_items[name]
 		local unknown = not def or nil
@@ -954,11 +954,11 @@ local function get_output_fs(lang_code, fs, rcp, shapeless, right, btn_size, _bt
 
 		if infos.burntime then
 			fs[#fs + 1] = fmt(FMT.image,
-				output_X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
+				X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
 				0.6, 0.4, PNG.arrow)
 
 			fs[#fs + 1] = fmt(FMT.animated_image,
-				output_X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + spacing,
+				X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + spacing,
 				0.6, 0.6, PNG.fire_anim, 8, 180)
 		end
 	end
@@ -1048,8 +1048,10 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 			fs[#fs + 1] = fmt(FMT.image, X, Y, btn_size, btn_size, PNG.selected)
 		end
 
+		local btn_name = item ~= "" and item or (groups and groups[1] or "")
+
 		fs[#fs + 1] = fmt(FMT.item_image_button,
-			X, Y, btn_size, btn_size, item, item, label)
+			X, Y, btn_size, btn_size, item, btn_name, label)
 
 		local def = reg_items[name]
 		local unknown = not def or nil
@@ -1067,7 +1069,7 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		}
 
 		if next(infos) then
-			fs[#fs + 1] = get_tooltip(item, infos, lang_code)
+			fs[#fs + 1] = get_tooltip(btn_name, infos, lang_code)
 		end
 	end
 
