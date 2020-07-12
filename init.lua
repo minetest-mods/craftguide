@@ -842,7 +842,7 @@ local function get_tooltip(item, info, lang_code)
 
 	if info.replace then
 		for i = 1, #info.replace do
-			local rpl = info.replace[i]
+			local rpl = match(info.replace[i], "%S+")
 			local desc = clr("#ff0", get_desc(rpl, lang_code))
 
 			if info.cooktime then
@@ -1026,17 +1026,25 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		local label = groups and "\nG" or ""
 		local replace
 
-		if rcp.replacements then
-			for j = 1, #rcp.replacements do
-				local replacement = rcp.replacements[j]
-				if replacement[1] == name then
-					replace = replace or {}
+		for j = 1, #(rcp.replacements or {}) do
+			local replacement = rcp.replacements[j]
+			if replacement[1] == name then
+				replace = replace or {}
 
-					if j == 1 then
-						label = fmt("%s%s\nR",
-							label ~= "" and "\n" or "", label)
+				if j == 1 then
+					label = fmt("%s%s\nR", label ~= "" and "\n" or "", label)
+				end
+
+				local added
+
+				for _, v in ipairs(replace) do
+					if replacement[2] == v then
+						added = true
+						break
 					end
+				end
 
+				if not added then
 					replace[#replace + 1] = replacement[2]
 				end
 			end
