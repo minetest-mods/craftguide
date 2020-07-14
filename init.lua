@@ -700,10 +700,10 @@ local function cache_recipes(item)
 	item = reg_aliases[item] or item
 	local def = reg_items[item]
 	if not def then return end
-	local recipes = get_all_recipes(item) or {}
+	local recipes = get_all_recipes(item)
 
-	for i = 1, #recipes do
-		recipes_cache[item] = table_merge(recipes_cache[item] or {}, recipes[i])
+	if recipes then
+		recipes_cache[item] = table_merge(recipes_cache[item], recipes)
 	end
 end
 
