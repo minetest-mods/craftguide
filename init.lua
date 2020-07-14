@@ -156,6 +156,7 @@ local group_names = {
 	coal = S"Any coal",
 	dye = S"Any dye",
 	flower = S"Any flower",
+	glass = S"Any glass",
 	mushroom = S"Any mushroom",
 	sand = S"Any sand",
 	stick = S"Any stick",
@@ -1031,10 +1032,6 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 			if replacement[1] == name then
 				replace = replace or {}
 
-				if j == 1 then
-					label = fmt("%s%s\nR", label ~= "" and "\n" or "", label)
-				end
-
 				local added
 
 				for _, v in ipairs(replace) do
@@ -1045,6 +1042,7 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 				end
 
 				if not added then
+					label = fmt("%s%s\nR", label ~= "" and "\n" or "", label)
 					replace[#replace + 1] = replacement[2]
 				end
 			end
