@@ -1314,7 +1314,7 @@ local function make_fs(data)
 		local X = i % ROWS
 		local Y = (i % IPP - X) / ROWS + 1
 		X = X - (X * (sfinv_only and 0.12 or 0.14)) - 0.05
-		Y = Y - (Y * 0.1) - 0.1
+		Y = Y - (Y * 0.08) - 0.15
 
 		if data.query_item == item then
 			fs[#fs + 1] = fmt(FMT.image, X, Y, 1, 1, PNG.selected)
