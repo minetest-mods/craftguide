@@ -701,11 +701,7 @@ local function cache_recipes(item)
 	item = reg_aliases[item] or item
 	local def = reg_items[item]
 	if not def then return end
-	local recipes = get_all_recipes(item)
-
-	if recipes then
-		recipes_cache[item] = table_merge(recipes_cache[item], recipes)
-	end
+	recipes_cache[item] = get_all_recipes(item)
 end
 
 local function get_recipes(item, data, player)
@@ -1563,9 +1559,15 @@ local function get_init_items()
 
 	for name, def in pairs(reg_items) do
 		if name ~= "" and show_item(def) then
-			cache_recipes(name)
 			cache_drops(name, def.drop)
-			cache_fuel(name)
+
+			if not fuel_cache[name] then
+				cache_fuel(name)
+			end
+
+			if not recipes_cache[name] then
+				cache_recipes(name)
+			end
 
 			_preselect[name] = true
 		end
