@@ -1262,13 +1262,14 @@ local function make_fs(data)
 	ESC(data.filter))
 
 	fs[#fs + 1] = fmt([[
+		style_type[label,field;font_size=16]
 		style_type[image_button;border=false]
+		style_type[button;border=false;font=bold;font_size=19]
 		style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
 		style[search;fgimg=%s;fgimg_hovered=%s]
 		style[clear;fgimg=%s;fgimg_hovered=%s]
 		style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 		style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-		style[pagenum;border=false]
 	]],
 	PNG.selected, PNG.selected,
 	PNG.search, PNG.search_hover,
@@ -1299,15 +1300,13 @@ local function make_fs(data)
 	end
 
 	if #data.items == 0 then
-		local no_item = ES"No item to show"
-		local pos = 3
+		local lbl = ES"No item to show"
 
 		if next(recipe_filters) and #init_items > 0 and data.filter == "" then
-			no_item = ES"Collect items to reveal more recipes"
-			pos = pos - 1
+			lbl = ES"Collect items to reveal more recipes"
 		end
 
-		fs[#fs + 1] = fmt(FMT.label, pos, 2, no_item)
+		fs[#fs + 1] = fmt(FMT.button, -0.25, 3, 8.3, 1, "no_item", lbl)
 	end
 
 	local first_item = (data.pagenum - 1) * IPP
