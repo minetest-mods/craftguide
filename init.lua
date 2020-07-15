@@ -1478,32 +1478,8 @@ core.register_craft = function(def)
 			def.width = def.cooktime
 			def.cooktime = nil
 			def.items[1] = def.recipe
-
-		elseif def.type == "shapeless" then
-			def.width = 0
-			for j = 1, #def.recipe do
-				def.items[#def.items + 1] = def.recipe[j]
-			end
-		else
-			def.width = #def.recipe[1]
-			local c = 0
-
-			for j = 1, #def.recipe do
-				if def.recipe[j] then
-					for h = 1, def.width do
-						c = c + 1
-						local it = def.recipe[j][h]
-
-						if it and it ~= "" then
-							def.items[c] = it
-						end
-					end
-				end
-			end
-		end
-
-		if def.type and def.type ~= "fuel" and def.type ~= "shapeless" then
 			def.recipe = nil
+
 			recipes_cache[name] = recipes_cache[name] or {}
 			insert(recipes_cache[name], 1, def)
 		end
