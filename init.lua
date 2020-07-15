@@ -698,9 +698,6 @@ local function cache_drops(name, drop)
 end
 
 local function cache_recipes(item)
-	item = reg_aliases[item] or item
-	local def = reg_items[item]
-	if not def then return end
 	recipes_cache[item] = get_all_recipes(item)
 end
 
@@ -782,8 +779,16 @@ local function is_fav(favs, query_item)
 	return fav, i
 end
 
-local function str_newline(str)
-	return find(str, "\n")
+local function weird_desc(str)
+	return not true_str(str) or find(str, "\n") or not find(str, "%u")
+end
+
+local function toupper(str)
+	return str:gsub("%f[%w]%l", upper):gsub("_", " ")
+end
+
+local function strip_newline(str)
+	return match(str, "[^\n]*")
 end
 
 local function get_desc(item, lang_code)
@@ -794,10 +799,15 @@ local function get_desc(item, lang_code)
 	local def = reg_items[item]
 
 	if def then
-		if true_str(def.description) then
-			return match(translate(lang_code, def.description), "[^\n]*")
+		local desc = def.description
+		if true_str(desc) then
+			if not find(desc, "%u") then
+				return strip_newline(toupper(desc))
+			end
+			return strip_newline(translate(lang_code, desc))
+
 		elseif true_str(item) then
-			return match(item, ":.*"):gsub("%W%l", upper):sub(2):gsub("_", " ")
+			return toupper(match(item, ":(.*)"))
 		end
 	end
 
@@ -933,16 +943,16 @@ local function get_output_fs(lang_code, fs, rcp, shapeless, right, btn_size, _bt
 
 		local def = reg_items[name]
 		local unknown = not def or nil
-		local weird_desc = name ~= "" and def and
-			(not true_str(def.description) or str_newline(def.description)) or nil
+		local desc = def and def.description
+		local weird = name ~= "" and desc and weird_desc(desc) or nil
 
 		local infos = {
-			unknown    = unknown,
-			weird_desc = weird_desc,
-			burntime   = fuel_cache[name],
-			repair     = repairable(name),
-			rarity     = rcp.rarity,
-			tools      = rcp.tools,
+			unknown  = unknown,
+			weird    = weird,
+			burntime = fuel_cache[name],
+			repair   = repairable(name),
+			rarity   = rcp.rarity,
+			tools    = rcp.tools,
 		}
 
 		if next(infos) then
@@ -1058,16 +1068,16 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		local def = reg_items[name]
 		local unknown = not def or nil
 		unknown = not groups and unknown or nil
-		local weird_desc = name ~= "" and def and
-			(not true_str(def.description) or str_newline(def.description)) or nil
+		local desc = def and def.description
+		local weird = name ~= "" and desc and weird_desc(desc) or nil
 
 		local infos = {
-			unknown    = unknown,
-			weird_desc = weird_desc,
-			groups     = groups,
-			burntime   = fuel_cache[name],
-			cooktime   = cooktime,
-			replace    = replace,
+			unknown  = unknown,
+			weird    = weird,
+			groups   = groups,
+			burntime = fuel_cache[name],
+			cooktime = cooktime,
+			replace  = replace,
 		}
 
 		if next(infos) then
