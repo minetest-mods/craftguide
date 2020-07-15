@@ -29,7 +29,6 @@ local show_formspec = core.show_formspec
 local globalstep = core.register_globalstep
 local on_shutdown = core.register_on_shutdown
 local get_players = core.get_connected_players
-local get_craft_result = core.get_craft_result
 local translate = minetest.get_translated_string
 local on_joinplayer = core.register_on_joinplayer
 local get_all_recipes = core.get_all_craft_recipes
@@ -558,17 +557,6 @@ local function get_filtered_items(player, data)
 	end
 
 	return items
-end
-
-local function get_burntime(item)
-	return get_craft_result{method = "fuel", items = {item}}.time
-end
-
-local function cache_fuel(item)
-	local burntime = get_burntime(item)
-	if burntime > 0 then
-		fuel_cache[item] = burntime
-	end
 end
 
 local function show_item(def)
@@ -1545,10 +1533,6 @@ local function get_init_items()
 	for name, def in pairs(reg_items) do
 		if name ~= "" and show_item(def) then
 			cache_drops(name, def.drop)
-
-			if not fuel_cache[name] then
-				cache_fuel(name)
-			end
 
 			if not recipes_cache[name] then
 				cache_recipes(name)
