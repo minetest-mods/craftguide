@@ -1386,10 +1386,9 @@ local function search(data)
 
 	for i = 1, #data.items_raw do
 		local item = data.items_raw[i]
-		local def  = reg_items[item]
-		local desc = (def and def.description) and lower(def.description) or ""
-		local loc_desc = lower(translate(data.lang_code, def and def.description)) or ""
-		local search_in = fmt("%s %s %s", item, desc, loc_desc)
+		local def = reg_items[item]
+		local desc = lower(translate(data.lang_code, def and def.description)) or ""
+		local search_in = fmt("%s %s", item, desc)
 		local to_add
 
 		if search_filter then
