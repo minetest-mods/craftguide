@@ -1502,7 +1502,7 @@ core.register_craft = function(def)
 			end
 		end
 
-		if def.type ~= "fuel" then
+		if def.type and def.type ~= "fuel" and def.type ~= "shapeless" then
 			def.recipe = nil
 			recipes_cache[name] = recipes_cache[name] or {}
 			insert(recipes_cache[name], 1, def)
