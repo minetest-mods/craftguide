@@ -7,6 +7,7 @@ local searches      = {}
 local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
+local cook_cache    = {}
 local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
@@ -604,7 +605,7 @@ local function cache_usages(item)
 		local fuel = {
 			type = "fuel",
 			items = {item},
-			replacements = fuel_cache.replacements[item],
+			replacements = fuel_cache[item].replacements,
 		}
 
 		usages_cache[item] = table_merge(usages_cache[item] or {}, {fuel})
@@ -686,7 +687,21 @@ local function cache_drops(name, drop)
 end
 
 local function cache_recipes(item)
-	recipes_cache[item] = get_all_recipes(item)
+	local recipes = get_all_recipes(item)
+
+	if recipes then
+		recipes_cache[item] = {}
+		for i = 1, #recipes do
+			local rcp = recipes[i]
+			if rcp.type ~= "cooking" then
+				insert(recipes_cache[item], rcp)
+			end
+		end
+	end
+
+	if cook_cache[item] then
+		recipes_cache[item] = table_merge(recipes_cache[item] or {}, {cook_cache[item]})
+	end
 end
 
 local function get_recipes(item, data, player)
@@ -933,11 +948,12 @@ local function get_output_fs(lang_code, fs, rcp, shapeless, right, btn_size, _bt
 		local unknown = not def or nil
 		local desc = def and def.description
 		local weird = name ~= "" and desc and weird_desc(desc) or nil
+		local burntime = fuel_cache[name] and fuel_cache[name].burntime
 
 		local infos = {
 			unknown  = unknown,
 			weird    = weird,
-			burntime = fuel_cache[name],
+			burntime = burntime,
 			repair   = repairable(name),
 			rarity   = rcp.rarity,
 			tools    = rcp.tools,
@@ -1058,12 +1074,13 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		unknown = not groups and unknown or nil
 		local desc = def and def.description
 		local weird = name ~= "" and desc and weird_desc(desc) or nil
+		local burntime = fuel_cache[name] and fuel_cache[name].burntime
 
 		local infos = {
 			unknown  = unknown,
 			weird    = weird,
 			groups   = groups,
-			burntime = fuel_cache[name],
+			burntime = burntime,
 			cooktime = cooktime,
 			replace  = replace,
 		}
@@ -1429,8 +1446,6 @@ end)
 	`core.register_craft` and do some reverse engineering.
 	See engine's issues #4901 and #8920.	]]
 
-fuel_cache.replacements = {}
-
 local old_register_craft = core.register_craft
 
 core.register_craft = function(def)
@@ -1454,22 +1469,17 @@ core.register_craft = function(def)
 	for i = 1, #output do
 		local name = output[i]
 
-		if def.type ~= "fuel" then
-			def.items = {}
-		end
-
 		if def.type == "fuel" then
-			fuel_cache[name] = def.burntime
-			fuel_cache.replacements[name] = def.replacements
+			fuel_cache[name] = {
+				burntime = def.burntime,
+				replacements = def.replacements,
+			}
 
 		elseif def.type == "cooking" then
 			def.width = def.cooktime
-			def.cooktime = nil
-			def.items[1] = def.recipe
-			def.recipe = nil
-
-			recipes_cache[name] = recipes_cache[name] or {}
-			insert(recipes_cache[name], 1, def)
+			def.items = {def.recipe}
+			def.recipe, def.cooktime = nil, nil
+			cook_cache[name] = def
 		end
 	end
 end
@@ -1560,7 +1570,6 @@ local function get_init_items()
 		local post_data = {
 			recipes = recipes_cache,
 			usages  = usages_cache,
-			fuel    = fuel_cache,
 		}
 
 		http.fetch_async{
