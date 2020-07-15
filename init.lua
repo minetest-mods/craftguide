@@ -1270,7 +1270,7 @@ local function make_fs(data)
 	fs[#fs + 1] = fmt([[
 		style_type[label,field;font_size=16]
 		style_type[image_button;border=false]
-		style_type[button;border=false;font=bold;font_size=19]
+		style_type[button;border=false;font=bold;font_size=18]
 		style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
 		style[search;fgimg=%s;fgimg_hovered=%s]
 		style[clear;fgimg=%s;fgimg_hovered=%s]
