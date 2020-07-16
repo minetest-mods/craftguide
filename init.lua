@@ -695,7 +695,7 @@ local function cache_recipes(item)
 	end
 
 	if cook_cache[item] then
-		recipes_cache[item] = table_merge(recipes_cache[item] or {}, {cook_cache[item]})
+		recipes_cache[item] = table_merge(recipes_cache[item] or {}, cook_cache[item])
 	end
 end
 
@@ -1470,7 +1470,9 @@ core.register_craft = function(def)
 		elseif def.type == "cooking" then
 			def.cooktime = def.cooktime or 1
 			def.items = {def.recipe}
-			cook_cache[def.recipe] = def
+			def.recipe = nil
+			cook_cache[name] = cook_cache[name] or {}
+			insert(cook_cache[name], def)
 		end
 	end
 end
