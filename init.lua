@@ -157,6 +157,7 @@ local group_names = {
 	dye = S"Any dye",
 	flower = S"Any flower",
 	glass = S"Any glass",
+	leaves = S"Any leaves",
 	mushroom = S"Any mushroom",
 	sand = S"Any sand",
 	stick = S"Any stick",
