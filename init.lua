@@ -1483,10 +1483,7 @@ core.clear_craft = function(def)
 	old_clear_craft(def)
 
 	if true_str(def) then
-		def = match(def, "%S*")
-		recipes_cache[def] = nil
-		fuel_cache[def] = nil
-
+		return -- TODO
 	elseif is_table(def) then
 		return -- TODO
 	end
