@@ -1434,9 +1434,9 @@ craftguide.add_search_filter("groups", function(item, groups)
 end)
 
 --[[	As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not
-	return the replacements and toolrepair, we have to override
-	`core.register_craft` and do some reverse engineering.
-	See engine's issues #4901 and #8920.	]]
+	return the fuel, replacements and toolrepair recipes, we have to
+	override `core.register_craft` and do some reverse engineering.
+	See engine's issues #4901, #5745 and #8920.	]]
 
 local old_register_craft = core.register_craft
 
