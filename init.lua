@@ -1465,14 +1465,12 @@ core.register_craft = function(def)
 		if def.type == "fuel" then
 			def.replacements = def.replacements
 			def.items = {def.recipe}
-			def.recipe = nil
 			fuel_cache[name] = def
 
 		elseif def.type == "cooking" then
 			def.cooktime = def.cooktime or 1
 			def.items = {def.recipe}
-			def.recipe = nil
-			cook_cache[name] = def
+			cook_cache[def.recipe] = def
 		end
 	end
 end
