@@ -602,13 +602,7 @@ local function cache_usages(item)
 	end
 
 	if fuel_cache[item] then
-		local fuel = {
-			type = "fuel",
-			items = {item},
-			replacements = fuel_cache[item].replacements,
-		}
-
-		usages_cache[item] = table_merge(usages_cache[item] or {}, {fuel})
+		usages_cache[item] = table_merge(usages_cache[item] or {}, {fuel_cache[item]})
 	end
 end
 
@@ -978,11 +972,9 @@ end
 local function get_grid_fs(lang_code, fs, rcp, spacing)
 	local width = rcp.width or 1
 	local right, btn_size, _btn_size = 0, ITEM_BTN_SIZE
-	local cooktime, shapeless
+	local shapeless
 
-	if rcp.type == "cooking" then
-		cooktime, width = width, 1
-	elseif width == 0 and not rcp.custom then
+	if width == 0 and not rcp.custom then
 		shapeless = true
 		local n = #rcp.items
 		width = (n < 5 and n > 1) and 2 or min(3, max(1, n))
@@ -1081,7 +1073,7 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 			weird    = weird,
 			groups   = groups,
 			burntime = burntime,
-			cooktime = cooktime,
+			cooktime = rcp.cooktime,
 			replace  = replace,
 		}
 
@@ -1470,15 +1462,15 @@ core.register_craft = function(def)
 		local name = output[i]
 
 		if def.type == "fuel" then
-			fuel_cache[name] = {
-				burntime = def.burntime,
-				replacements = def.replacements,
-			}
+			def.replacements = def.replacements
+			def.items = {def.recipe}
+			def.recipe = nil
+			fuel_cache[name] = def
 
 		elseif def.type == "cooking" then
-			def.width = def.cooktime
+			def.cooktime = def.cooktime or 1
 			def.items = {def.recipe}
-			def.recipe, def.cooktime = nil, nil
+			def.recipe = nil
 			cook_cache[name] = def
 		end
 	end
