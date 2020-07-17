@@ -734,21 +734,17 @@ end
 local function groups_to_items(groups, get_all)
 	if not get_all and #groups == 1 then
 		local group = groups[1]
-		local def_gr = "default:" .. group
-		local stereotypes = craftguide.group_stereotypes
-		local stereotype = stereotypes and stereotypes[group]
-		stereotype = reg_items[stereotype] and stereotype
+		local stereotype = craftguide.group_stereotypes[group]
+		local def = reg_items[stereotype]
 
-		if stereotype then
+		if def and show_item(def) then
 			return stereotype
-		elseif reg_items[def_gr] then
-			return def_gr
 		end
 	end
 
 	local names = {}
 	for name, def in pairs(reg_items) do
-		if item_has_groups(def.groups, groups) then
+		if show_item(def) and item_has_groups(def.groups, groups) then
 			if get_all then
 				names[#names + 1] = name
 			else
