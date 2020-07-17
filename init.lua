@@ -1468,7 +1468,7 @@ core.register_craft = function(def)
 			fuel_cache[name] = def
 
 		elseif def.type == "cooking" then
-			def.cooktime = def.cooktime or 1
+			def.cooktime = max(1, def.cooktime or 1)
 			def.items = {def.recipe}
 			def.recipe = nil
 			cook_cache[name] = cook_cache[name] or {}
