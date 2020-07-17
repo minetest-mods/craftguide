@@ -621,7 +621,7 @@ local function drop_table(name, drop)
 
 			if not dstack:is_empty() and (dname ~= name or
 					(dname == name and dcount > 1)) then
-				if #di.items == 1 and (not di.rarity or di.rarity <= 1) then
+				if not di.rarity or di.rarity <= 1 then
 					if drop_sure[dname] then
 						if dcount > drop_sure[dname].output then
 							dcount = dcount + drop_sure[dname].output
