@@ -7,7 +7,6 @@ local searches      = {}
 local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
-local cook_cache    = {}
 local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
@@ -682,21 +681,7 @@ local function cache_drops(name, drop)
 end
 
 local function cache_recipes(item)
-	local recipes = get_all_recipes(item)
-
-	if recipes then
-		recipes_cache[item] = {}
-		for i = 1, #recipes do
-			local rcp = recipes[i]
-			if rcp.type ~= "cooking" then
-				insert(recipes_cache[item], rcp)
-			end
-		end
-	end
-
-	if cook_cache[item] then
-		recipes_cache[item] = table_merge(recipes_cache[item] or {}, cook_cache[item])
-	end
+	recipes_cache[item] = get_all_recipes(item)
 end
 
 local function get_recipes(item, data, player)
@@ -973,9 +958,11 @@ end
 local function get_grid_fs(lang_code, fs, rcp, spacing)
 	local width = rcp.width or 1
 	local right, btn_size, _btn_size = 0, ITEM_BTN_SIZE
-	local shapeless
+	local cooktime, shapeless
 
-	if width == 0 and not rcp.custom then
+	if rcp.type == "cooking" then
+		cooktime, width = width, 1
+	elseif width == 0 and not rcp.custom then
 		shapeless = true
 		local n = #rcp.items
 		width = (n < 5 and n > 1) and 2 or min(3, max(1, n))
@@ -1074,7 +1061,7 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 			weird    = weird,
 			groups   = groups,
 			burntime = burntime,
-			cooktime = rcp.cooktime,
+			cooktime = cooktime,
 			replace  = replace,
 		}
 
@@ -1466,13 +1453,6 @@ core.register_craft = function(def)
 			def.replacements = def.replacements
 			def.items = {def.recipe}
 			fuel_cache[name] = def
-
-		elseif def.type == "cooking" then
-			def.cooktime = max(1, def.cooktime or 1)
-			def.items = {def.recipe}
-			def.recipe = nil
-			cook_cache[name] = cook_cache[name] or {}
-			insert(cook_cache[name], def)
 		end
 	end
 end
@@ -1533,7 +1513,11 @@ local function get_init_items()
 	for name, def in pairs(reg_items) do
 		if name ~= "" and show_item(def) then
 			cache_drops(name, def.drop)
-			cache_recipes(name)
+
+			if not recipes_cache[name] then
+				cache_recipes(name)
+			end
+
 			_preselect[name] = true
 		end
 	end
