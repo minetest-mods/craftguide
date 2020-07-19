@@ -7,6 +7,7 @@ local searches      = {}
 local recipes_cache = {}
 local usages_cache  = {}
 local fuel_cache    = {}
+local replacements  = {fuel = {}}
 local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
@@ -572,6 +573,7 @@ local function cache_fuel(item)
 			type = "fuel",
 			items = {item},
 			burntime = burntime,
+			replacements = replacements.fuel[item],
 		}
 	end
 end
@@ -584,7 +586,6 @@ end
 
 local function get_usages(recipe)
 	local added = {}
-
 	for _, item in pairs(recipe.items) do
 		item = reg_aliases[item] or item
 		if not added[item] then
@@ -697,7 +698,24 @@ local function cache_drops(name, drop)
 end
 
 local function cache_recipes(item)
-	recipes_cache[item] = get_all_recipes(item)
+	local recipes = get_all_recipes(item)
+	local _recipes
+
+	if replacements[item] then
+		_recipes = {}
+
+		for k, v in ipairs(recipes or {}) do
+			_recipes[#recipes + 1 - k] = v
+		end
+
+		for k, v in pairs(replacements[item]) do
+			if v.type ~= "fuel" then
+				_recipes[k].replacements = v
+			end
+		end
+	end
+
+	recipes_cache[item] = _recipes or recipes
 end
 
 local function get_recipes(item, data, player)
@@ -1056,7 +1074,13 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 			fs[#fs + 1] = fmt(FMT.image, X, Y, btn_size, btn_size, PNG.selected)
 		end
 
-		local btn_name = item ~= "" and item or (groups and groups[1] or "")
+		local btn_name = ""
+
+		if groups then
+			btn_name = groups[1]
+		elseif item ~= "" then
+			btn_name = item
+		end
 
 		fs[#fs + 1] = fmt(FMT.item_image_button,
 			X, Y, btn_size, btn_size, item, btn_name, label)
@@ -1439,6 +1463,7 @@ end)
 	See engine's issues #4901, #5745 and #8920.	]]
 
 local old_register_craft = core.register_craft
+local rcp_num = {}
 
 core.register_craft = function(def)
 	old_register_craft(def)
@@ -1460,11 +1485,15 @@ core.register_craft = function(def)
 
 	for i = 1, #output do
 		local name = output[i]
+		rcp_num[name] = (rcp_num[name] or 0) + 1
 
-		if def.type == "fuel" then
-			def.replacements = def.replacements
-			def.items = {def.recipe}
-			fuel_cache[name] = def
+		if def.replacements then
+			if def.type == "fuel" then
+				replacements.fuel[name] = def.replacements
+			else
+				replacements[name] = replacements[name] or {}
+				replacements[name][rcp_num[name]] = def.replacements
+			end
 		end
 	end
 end
