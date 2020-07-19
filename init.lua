@@ -1077,7 +1077,7 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		local btn_name = ""
 
 		if groups then
-			btn_name = groups[1]
+			btn_name = fmt("group|%s|%s", groups[1], item)
 		elseif item ~= "" then
 			btn_name = item
 		end
@@ -1690,6 +1690,8 @@ local function fields(player, _f)
 			item = sub(item, 1, -5)
 		elseif sub(item, 1, 1) == "_" then
 			item = sub(item, 2)
+		elseif sub(item, 1, 6) == "group|" then
+			item = match(item, "([%w:_]+)$")
 		end
 
 		item = reg_aliases[item] or item
