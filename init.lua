@@ -1163,7 +1163,7 @@ local function get_title_fs(query_item, lang_code, favs, fs, spacing)
 	local t_desc = query_item
 	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
 
-	fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;item_title;%s]",
+	fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;;%s]",
 		spacing - 0.1,
 		fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
 		    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
@@ -1332,7 +1332,10 @@ local function make_fs(data)
 			lbl = ES"Collect items to reveal more recipes"
 		end
 
-		fs[#fs + 1] = fmt(FMT.button, -0.25, 3, 8.3, 1, "no_item", lbl)
+		fs[#fs + 1] = fmt("hypertext[%f,%f;%f,%f;;%s]",
+			0.05, 3, 8.29, 1,
+			fmt("<center><style size=20><b>%s</b></style></center>]",
+				translate(data.lang_code, lbl)))
 	end
 
 	local first_item = (data.pagenum - 1) * IPP
