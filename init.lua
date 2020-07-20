@@ -699,23 +699,22 @@ end
 
 local function cache_recipes(item)
 	local recipes = get_all_recipes(item)
-	local _recipes
 
 	if replacements[item] then
-		_recipes = {}
+		local _recipes = {}
 
 		for k, v in ipairs(recipes or {}) do
 			_recipes[#recipes + 1 - k] = v
 		end
 
 		for k, v in pairs(replacements[item]) do
-			if v.type ~= "fuel" then
-				_recipes[k].replacements = v
-			end
+			_recipes[k].replacements = v
 		end
+
+		recipes = _recipes
 	end
 
-	recipes_cache[item] = _recipes or recipes
+	recipes_cache[item] = recipes
 end
 
 local function get_recipes(item, data, player)
