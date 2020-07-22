@@ -792,7 +792,7 @@ local function is_fav(favs, query_item)
 end
 
 local function weird_desc(str)
-	return not true_str(str) or find(str, "\n") or not find(str, "%u")
+	return not true_str(str) or find(str, "[\\]*") or not find(str, "%u")
 end
 
 local function toupper(str)
@@ -801,6 +801,10 @@ end
 
 local function strip_newline(str)
 	return match(str, "[^\n]*")
+end
+
+local function strip_prefix(str)
+	return match(str, ".*@.*%)(.*)()") or str
 end
 
 local function get_desc(item, lang_code)
@@ -813,10 +817,16 @@ local function get_desc(item, lang_code)
 	if def then
 		local desc = def.description
 		if true_str(desc) then
+			desc = translate(lang_code, desc)
+			desc = desc:trim()
+			desc = strip_newline(desc)
+			desc = strip_prefix(desc)
+
 			if not find(desc, "%u") then
-				return strip_newline(toupper(desc))
+				desc = toupper(desc)
 			end
-			return strip_newline(translate(lang_code, desc))
+
+			return desc
 
 		elseif true_str(item) then
 			return toupper(match(item, ":(.*)"))
