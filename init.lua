@@ -23,6 +23,7 @@ local reg_aliases = core.registered_aliases
 local log = core.log
 local after = core.after
 local clr = core.colorize
+local sound_play = core.sound_play
 local parse_json = core.parse_json
 local write_json = core.write_json
 local chat_send = core.chat_send_player
@@ -1641,8 +1642,13 @@ on_joinplayer(function(player)
 end)
 
 local function fields(player, _f)
+	if _f.quit then return end
 	local name = player:get_player_name()
 	local data = pdata[name]
+
+	if not _f.key_enter_field then
+		sound_play("craftguide_click", {to_player = name, gain = 0.2})
+	end
 
 	if _f.clear then
 		reset_data(data)
