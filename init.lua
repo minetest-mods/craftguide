@@ -104,6 +104,7 @@ local FMT = {
 	image = "image[%f,%f;%f,%f;%s]",
 	button = "button[%f,%f;%f,%f;%s;%s]",
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
+	hypertext = "hypertext[%f,%f;%f,%f;;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	animated_image = "animated_image[%f,%f;%f,%f;;%s;%u;%u]",
@@ -1174,8 +1175,8 @@ local function get_title_fs(query_item, lang_code, favs, fs, spacing)
 	local t_desc = query_item
 	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
 
-	fs[#fs + 1] = fmt("hypertext[9.05,%f;5.85,1.2;;%s]",
-		spacing - 0.1,
+	fs[#fs + 1] = fmt(FMT.hypertext,
+		9.05, spacing - 0.1, 5.85, 1.2,
 		fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
 		    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
 			query_item, desc, t_desc))
@@ -1343,7 +1344,7 @@ local function make_fs(data)
 			lbl = ES"Collect items to reveal more recipes"
 		end
 
-		fs[#fs + 1] = fmt("hypertext[%f,%f;%f,%f;;%s]",
+		fs[#fs + 1] = fmt(FMT.hypertext,
 			0.05, 3, 8.29, 1,
 			fmt("<center><style size=20><b>%s</b></style></center>]",
 				translate(data.lang_code, lbl)))
