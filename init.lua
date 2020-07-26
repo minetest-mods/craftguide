@@ -709,8 +709,14 @@ local function cache_recipes(item)
 			_recipes[#recipes + 1 - k] = v
 		end
 
+		local shift = 0
+
+		if maxn(replacements[item]) > #_recipes then
+			shift = -1
+		end
+
 		for k, v in pairs(replacements[item]) do
-			_recipes[k].replacements = v
+			_recipes[k + shift].replacements = v
 		end
 
 		recipes = _recipes
