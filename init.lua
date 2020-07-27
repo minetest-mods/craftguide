@@ -1506,15 +1506,15 @@ core.register_craft = function(def)
 	end
 
 	for i = 1, #output do
-		local name = output[i]
-		rcp_num[name] = (rcp_num[name] or 0) + 1
+		local item = output[i]
+		rcp_num[item] = (rcp_num[item] or 0) + 1
 
 		if def.replacements then
 			if def.type == "fuel" then
-				replacements.fuel[name] = def.replacements
+				replacements.fuel[item] = def.replacements
 			else
-				replacements[name] = replacements[name] or {}
-				replacements[name][rcp_num[name]] = def.replacements
+				replacements[item] = replacements[item] or {}
+				replacements[item][rcp_num[item]] = def.replacements
 			end
 		end
 	end
