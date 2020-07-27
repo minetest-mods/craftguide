@@ -710,9 +710,11 @@ local function cache_recipes(item)
 		end
 
 		local shift = 0
+		local size_rpl = maxn(replacements[item])
+		local size_rcp = #_recipes
 
-		if maxn(replacements[item]) > #_recipes then
-			shift = -1
+		if size_rpl > size_rcp then
+			shift = size_rcp - size_rpl
 		end
 
 		for k, v in pairs(replacements[item]) do
