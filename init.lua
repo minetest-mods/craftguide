@@ -1223,11 +1223,11 @@ end
 local function get_panels(lang_code, query_item, recipes, usages, show_usages,
 			  favs, unum, rnum, fs)
 
-	local _title    = {name = "title", height = 1.2}
-	local _favs     = {name = "favs",  height = 1.91}
-	local _recipes  = {name = "recipes", rcp = recipes, height = 3.5}
-	local _usages   = {name = "usages",  rcp = usages,  height = 3.5}
-	local panels    = {_title, _recipes, _usages, _favs}
+	local _title   = {name = "title", height = 1.2}
+	local _favs    = {name = "favs",  height = 1.91}
+	local _recipes = {name = "recipes", rcp = recipes, height = 3.5}
+	local _usages  = {name = "usages",  rcp = usages,  height = 3.5}
+	local panels   = {_title, _recipes, _usages, _favs}
 
 	if sfinv_only then
 		panels = {show_usages and _usages or _recipes}
@@ -2048,8 +2048,8 @@ if progressive_mode then
 		local players = get_players()
 		for i = 1, #players do
 			local player = players[i]
-			local name   = player:get_player_name()
-			local data   = pdata[name]
+			local name = player:get_player_name()
+			local data = pdata[name]
 
 			local inv_items = get_inv_items(player)
 			local diff = array_diff(inv_items, data.inv_items)
@@ -2083,8 +2083,8 @@ if progressive_mode then
 		local players = get_players()
 		for i = 1, #players do
 			local player = players[i]
-			local name   = player:get_player_name()
-			local data   = pdata[name]
+			local name = player:get_player_name()
+			local data = pdata[name]
 
 			if data.show_hud ~= nil and singleplayer then
 				show_hud_success(player, data)
@@ -2137,7 +2137,7 @@ on_leaveplayer(function(player)
 end)
 
 function craftguide.show(name, item, show_usages)
-	if not true_str(name)then
+	if not true_str(name) then
 		return err "craftguide.show(): player name missing"
 	end
 
