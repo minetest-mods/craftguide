@@ -884,13 +884,13 @@ local function get_tooltip(item, info, lang_code)
 	end
 
 	if info.replace then
-		for i = 1, #info.replace do
-			local rpl = match(info.replace[i], "%S+")
+		for i = 1, #info.replace.items do
+			local rpl = match(info.replace.items[i], "%S+")
 			local desc = clr("#ff0", get_desc(rpl, lang_code))
 
-			if info.cooktime then
+			if info.replace.type == "cooking" then
 				tooltip = add(S("Replaced by @1 on smelting", desc))
-			elseif info.burntime then
+			elseif info.replace.type == "fuel" then
 				tooltip = add(S("Replaced by @1 on burning", desc))
 			else
 				tooltip = add(S("Replaced by @1 on crafting", desc))
@@ -1073,11 +1073,11 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 		for j = 1, #(rcp.replacements or {}) do
 			local replacement = rcp.replacements[j]
 			if replacement[1] == name then
-				replace = replace or {}
+				replace = replace or {type = rcp.type, items = {}}
 
 				local added
 
-				for _, v in ipairs(replace) do
+				for _, v in ipairs(replace.items) do
 					if replacement[2] == v then
 						added = true
 						break
@@ -1086,7 +1086,7 @@ local function get_grid_fs(lang_code, fs, rcp, spacing)
 
 				if not added then
 					label = fmt("%s%s\nR", label ~= "" and "\n" or "", label)
-					replace[#replace + 1] = replacement[2]
+					replace.items[#replace.items + 1] = replacement[2]
 				end
 			end
 		end
