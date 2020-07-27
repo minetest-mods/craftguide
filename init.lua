@@ -718,7 +718,11 @@ local function cache_recipes(item)
 		end
 
 		for k, v in pairs(replacements[item]) do
-			_recipes[k + shift].replacements = v
+			k = k + shift
+
+			if _recipes[k] then
+				_recipes[k].replacements = v
+			end
 		end
 
 		recipes = _recipes
