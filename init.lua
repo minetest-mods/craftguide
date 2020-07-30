@@ -588,6 +588,7 @@ end
 
 local function get_usages(recipe)
 	local added = {}
+
 	for _, item in pairs(recipe.items) do
 		item = reg_aliases[item] or item
 		if not added[item] then
@@ -1151,7 +1152,7 @@ local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacin
 	end
 
 	lbl = translate(lang_code, lbl)
-	local lbl_len = #(lbl):gsub("[\128-\191]", "") -- Count chars, not bytes in UTF-8 strings
+	local lbl_len = #lbl:gsub("[\128-\191]", "") -- Count chars, not bytes in UTF-8 strings
 	local shift = min(0.9, abs(13 - max(13, lbl_len)) * 0.1)
 
 	fs[#fs + 1] = fmt(FMT.label,
