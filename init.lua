@@ -627,56 +627,42 @@ local function cache_usages(item)
 end
 
 local function drop_table(name, drop)
-	local drop_sure, drop_maybe = {}, {}
+	local drops, count_sure = {}, 0
 	local drop_items = drop.items or {}
+	local max_items = drop.max_items
 
 	for i = 1, #drop_items do
 		local di = drop_items[i]
+		local valid_rarity = di.rarity and di.rarity > 1
 
-		for j = 1, #di.items do
-			local dstack = ItemStack(di.items[j])
-			local dname  = dstack:get_name()
-			local dcount = dstack:get_count()
+		if di.rarity or not max_items or
+				(max_items and not di.rarity and count_sure < max_items) then
+			for j = 1, #di.items do
+				local dstack = ItemStack(di.items[j])
+				local dname  = dstack:get_name()
+				local dcount = dstack:get_count()
+				local empty  = dstack:is_empty()
 
-			if not dstack:is_empty() and (dname ~= name or
-					(dname == name and dcount > 1)) then
-				if not di.rarity or di.rarity <= 1 then
-					if drop_sure[dname] then
-						if dcount > drop_sure[dname].output then
-							dcount = dcount + drop_sure[dname].output
-						else
-							dcount = drop_sure[dname].output
-						end
-					end
-
-					drop_sure[dname] = {
-						output = dcount,
-						tools  = di.tools,
-					}
-				else
-					drop_maybe[#drop_maybe + 1] = {
+				if not empty and (dname ~= name or
+						(dname == name and dcount > 1)) then
+					drops[#drops + 1] = {
 						item   = dname,
 						output = dcount,
-						rarity = di.rarity,
 						tools  = di.tools,
+						rarity = valid_rarity and di.rarity,
 					}
 				end
 			end
 		end
+
+		if not di.rarity then
+			count_sure = count_sure + 1
+		end
 	end
 
-	for item, data in pairs(drop_sure) do
+	for _, data in ipairs(drops) do
 		craftguide.register_craft{
-			type   = "digging",
-			items  = {name},
-			output = fmt("%s %u", item, data.output),
-			tools  = data.tools,
-		}
-	end
-
-	for _, data in ipairs(drop_maybe) do
-		craftguide.register_craft{
-			type   = "digging_chance",
+			type   = data.rarity and "digging_chance" or "digging",
 			items  = {name},
 			output = fmt("%s %u", data.item, data.output),
 			rarity = data.rarity,
