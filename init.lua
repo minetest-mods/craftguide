@@ -627,7 +627,7 @@ local function cache_usages(item)
 end
 
 local function drop_table(name, drop)
-	local drops, count_sure = {}, 0
+	local count_sure = 0
 	local drop_items = drop.items or {}
 	local max_items = drop.max_items
 
@@ -645,11 +645,14 @@ local function drop_table(name, drop)
 
 				if not empty and (dname ~= name or
 						(dname == name and dcount > 1)) then
-					drops[#drops + 1] = {
-						item   = dname,
-						output = dcount,
+					local rarity = valid_rarity and di.rarity
+
+					craftguide.register_craft{
+						type   = rarity and "digging_chance" or "digging",
+						items  = {name},
+						output = fmt("%s %u", dname, dcount),
+						rarity = rarity,
 						tools  = di.tools,
-						rarity = valid_rarity and di.rarity,
 					}
 				end
 			end
@@ -659,22 +662,15 @@ local function drop_table(name, drop)
 			count_sure = count_sure + 1
 		end
 	end
-
-	for _, data in ipairs(drops) do
-		craftguide.register_craft{
-			type   = data.rarity and "digging_chance" or "digging",
-			items  = {name},
-			output = fmt("%s %u", data.item, data.output),
-			rarity = data.rarity,
-			tools  = data.tools,
-		}
-	end
 end
 
 local function cache_drops(name, drop)
 	if true_str(drop) then
 		local dstack = ItemStack(drop)
-		if not dstack:is_empty() and dstack:get_name() ~= name then
+		local dname  = dstack:get_name()
+		local empty  = dstack:is_empty()
+
+		if not empty and dname ~= name then
 			craftguide.register_craft{
 				type = "digging",
 				items = {name},
