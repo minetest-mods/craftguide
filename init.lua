@@ -1240,13 +1240,12 @@ local function get_panels(lang_code, query_item, recipes, usages, show_usages,
 			-0.2 + spacing, panel.height, PNG.bg_full, 10)
 
 		if recipe_or_usage and not rn then
-			local X = XOFFSET - 0.7
-			local Y = YOFFSET - 0.4 + spacing
+			local lbl = is_recipe and ES"No recipes" or ES"No usages"
 
-			fs[#fs + 1] = fmt(FMT.image, X, Y, 2, 2, PNG.nothing)
-
-			fs[#fs + 1] = fmt(FMT.tooltip,
-				X, Y, 2, 2, is_recipe and ES"No recipes" or ES"No usages")
+			fs[#fs + 1] = fmt(FMT.hypertext,
+				8.29, YOFFSET + spacing + 0.3, 6.8, 1,
+				fmt("<center><style size=20><b>%s</b></style></center>",
+					translate(lang_code, lbl)))
 
 		elseif panel.name == "title" then
 			get_title_fs(query_item, lang_code, favs, fs, spacing)
@@ -1341,7 +1340,7 @@ local function make_fs(data)
 
 		fs[#fs + 1] = fmt(FMT.hypertext,
 			0.05, 3, 8.29, 1,
-			fmt("<center><style size=20><b>%s</b></style></center>]",
+			fmt("<center><style size=20><b>%s</b></style></center>",
 				translate(data.lang_code, lbl)))
 	end
 
