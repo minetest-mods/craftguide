@@ -147,6 +147,7 @@ craftguide.group_stereotypes = {
 	wool = "wool:white",
 	wood = "default:wood",
 	tree = "default:tree",
+	stone = "default:stone",
 	coal = "default:coal_lump",
 	vessel = "vessels:glass_bottle",
 	flower = "flowers:dandelion_yellow",
