@@ -1,5 +1,7 @@
 # ![Preview1](http://i.imgur.com/fIPNYkb.png) Crafting Guide
 
+[![ContentDB](https://content.minetest.net/packages/jp/craftguide/shields/title/)](https://content.minetest.net/packages/jp/craftguide/) [![ContentDB](https://content.minetest.net/packages/jp/craftguide/shields/downloads/)](https://content.minetest.net/packages/jp/craftguide/)
+
 #### `craftguide` is the most comprehensive crafting guide on Minetest.
 #### Consult the [Minetest Wiki](http://wiki.minetest.net/Crafting_guide) for more details.
 
