@@ -112,6 +112,31 @@ local FMT = {
 	arrow = "image_button[%f,%f;0.8,0.8;%s;%s;;;false;%s]",
 }
 
+local styles = fmt([[
+	style[filter;border=false]
+	style_type[label,field;font_size=16]
+	style_type[image_button;border=false]
+	style_type[button;border=false;font=bold;font_size=18]
+	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
+	style[search;fgimg=%s;fgimg_hovered=%s]
+	style[clear;fgimg=%s;fgimg_hovered=%s]
+	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[prev_recipe;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[next_recipe;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[prev_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[next_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+]],
+PNG.selected, PNG.selected,
+PNG.search, PNG.search_hover,
+PNG.clear, PNG.clear_hover,
+PNG.prev, PNG.prev_hover, PNG.prev_hover,
+PNG.next, PNG.next_hover, PNG.next_hover,
+PNG.prev, PNG.prev_hover, PNG.prev_hover,
+PNG.next, PNG.next_hover, PNG.next_hover,
+PNG.prev, PNG.prev_hover, PNG.prev_hover,
+PNG.next, PNG.next_hover, PNG.next_hover)
+
 local function get_lang_code(name)
 	local info = get_player_info(name)
 	return info and info.lang_code
@@ -1153,13 +1178,6 @@ local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacin
 		local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 		local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
 
-		fs[#fs + 1] = fmt([[
-			style[%s;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-			style[%s;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-		]],
-		prev_name, PNG.prev, PNG.prev_hover, PNG.prev_hover,
-		next_name, PNG.next, PNG.next_hover, PNG.next_hover)
-
 		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
 			x_arrow - shift, y_arrow, PNG.prev, prev_name, "",
 			x_arrow + 1.8,   y_arrow, PNG.next, next_name, "")
@@ -1290,29 +1308,14 @@ local function make_fs(data)
 			9 - 0.9, LINES + 0.4, PNG.bg_full, 10)
 	end
 
+	fs[#fs + 1] = styles
+
 	fs[#fs + 1] = fmt([[
-		style[filter;border=false]
 		field[0.4,0.2;2.6,1;filter;;%s]
 		field_close_on_enter[filter;false]
 		box[0,0;2.5,0.6;#bababa25]
 	]],
 	ESC(data.filter))
-
-	fs[#fs + 1] = fmt([[
-		style_type[label,field;font_size=16]
-		style_type[image_button;border=false]
-		style_type[button;border=false;font=bold;font_size=18]
-		style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
-		style[search;fgimg=%s;fgimg_hovered=%s]
-		style[clear;fgimg=%s;fgimg_hovered=%s]
-		style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-		style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-	]],
-	PNG.selected, PNG.selected,
-	PNG.search, PNG.search_hover,
-	PNG.clear, PNG.clear_hover,
-	PNG.prev, PNG.prev_hover, PNG.prev_hover,
-	PNG.next, PNG.next_hover, PNG.next_hover)
 
 	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 2),
 		2.6, -0.06, 0.85, 0.85, "", "search", "",
