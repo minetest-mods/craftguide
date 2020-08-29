@@ -1191,13 +1191,17 @@ local function get_title_fs(query_item, lang_code, favs, fs, spacing)
 	local desc = ESC(get_desc(query_item, lang_code))
 	desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
 	local t_desc = query_item
-	t_desc = #t_desc > 40 and fmt("%s...", sub(t_desc, 1, 37)) or t_desc
+	t_desc = #t_desc > 35 and fmt("%s...", sub(t_desc, 1, 32)) or t_desc
+
+	fs[#fs + 1] = "style_type[label;font=bold;font_size=22]"
+	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing - 0.1, desc)
+	fs[#fs + 1] = "style_type[label;font=mono;font_size=16]"
+	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing + 0.3, clr("#7bf", t_desc))
+	fs[#fs + 1] = "style_type[label;font=normal;font_size=16]"
 
 	fs[#fs + 1] = fmt(FMT.hypertext,
-		9.05, spacing - 0.1, 5.85, 1.2,
-		fmt("<item name=%s float=right width=64 height=64 rotate=yes>" ..
-		    "<big><b>%s</b></big>\n<style color=#7bf font=mono>%s</style>",
-			query_item, desc, t_desc))
+		13.8, spacing - 0.15, 1.1, 1.3,
+		fmt("<item name=%s float=center width=64 height=64 rotate=yes>", query_item))
 
 	local fav = is_fav(favs, query_item)
 	local nfavs = #favs
