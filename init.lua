@@ -1148,21 +1148,21 @@ local function get_grid_fs(fs, rcp, spacing)
 	get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spacing)
 end
 
-local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacing, rn, is_recipe)
+local function get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 	local lbl
 
-	if (not sfinv_only and is_recipe) or (sfinv_only and not show_usages) then
-		lbl = ES("Recipe @1 of @2", rnum, rn)
+	if (not sfinv_only and is_recipe) or (sfinv_only and not data.show_usages) then
+		lbl = ES("Recipe @1 of @2", data.rnum, rn)
 
-	elseif not sfinv_only or (sfinv_only and show_usages) then
-		lbl = ES("Usage @1 of @2", unum, rn)
+	elseif not sfinv_only or (sfinv_only and data.show_usages) then
+		lbl = ES("Usage @1 of @2", data.unum, rn)
 
 	elseif sfinv_only then
-		lbl = show_usages and ES("Usage @1 of @2", unum, rn) or
-			ES("Recipe @1 of @2", rnum, rn)
+		lbl = data.show_usages and ES("Usage @1 of @2", data.unum, rn) or
+			ES("Recipe @1 of @2", data.rnum, rn)
 	end
 
-	local _lbl = translate(lang_code, lbl)
+	local _lbl = translate(data.lang_code, lbl)
 	local lbl_len = #_lbl:gsub("[\128-\191]", "") -- Count chars, not bytes in UTF-8 strings
 	local shift = min(0.9, abs(13 - max(13, lbl_len)) * 0.1)
 
@@ -1182,7 +1182,7 @@ local function get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel, spacin
 			x_arrow + 1.8,   y_arrow, PNG.next, next_name, "")
 	end
 
-	local rcp = is_recipe and panel.rcp[rnum] or panel.rcp[unum]
+	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
 	get_grid_fs(fs, rcp, spacing)
 end
 
@@ -1200,7 +1200,7 @@ local function get_title_fs(query_item, favs, fs, spacing)
 
 	fs[#fs + 1] = fmt(FMT.hypertext,
 		13.8, spacing - 0.15, 1.1, 1.3,
-		fmt("<item name=%s float=center width=64 height=64 rotate=yes>", query_item))
+		fmt("<item name=%s width=64 rotate=yes>", query_item))
 
 	local fav = is_fav(favs, query_item)
 	local nfavs = #favs
@@ -1229,17 +1229,15 @@ local function get_title_fs(query_item, favs, fs, spacing)
 	end
 end
 
-local function get_panels(lang_code, query_item, recipes, usages, show_usages,
-			  favs, unum, rnum, fs)
-
+local function get_panels(data, fs)
 	local _title   = {name = "title", height = 1.2}
 	local _favs    = {name = "favs",  height = 1.91}
-	local _recipes = {name = "recipes", rcp = recipes, height = 3.5}
-	local _usages  = {name = "usages",  rcp = usages,  height = 3.5}
+	local _recipes = {name = "recipes", rcp = data.recipes, height = 3.5}
+	local _usages  = {name = "usages",  rcp = data.usages,  height = 3.5}
 	local panels   = {_title, _recipes, _usages, _favs}
 
 	if sfinv_only then
-		panels = {show_usages and _usages or _recipes}
+		panels = {data.show_usages and _usages or _recipes}
 	end
 
 	for idx = 1, #panels do
@@ -1252,12 +1250,11 @@ local function get_panels(lang_code, query_item, recipes, usages, show_usages,
 		end
 
 		local rn = panel.rcp and #panel.rcp
-		local is_recipe = sfinv_only and not show_usages or panel.name == "recipes"
+		local is_recipe = sfinv_only and not data.show_usages or panel.name == "recipes"
 		local recipe_or_usage = panel.name == "recipes" or panel.name == "usages"
 
 		if rn then
-			get_rcp_lbl(lang_code, show_usages, unum, rnum, fs, panel,
-				    spacing, rn, is_recipe)
+			get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 		end
 
 		if sfinv_only then return end
@@ -1273,17 +1270,17 @@ local function get_panels(lang_code, query_item, recipes, usages, show_usages,
 				fmt("<center><style size=20><b>%s</b></style></center>", lbl))
 
 		elseif panel.name == "title" then
-			get_title_fs(query_item, favs, fs, spacing)
+			get_title_fs(data.query_item, data.favs, fs, spacing)
 
 		elseif panel.name == "favs" then
 			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.15, ES"Bookmarks")
 
-			for i = 1, #favs do
-				local item = favs[i]
+			for i = 1, #data.favs do
+				local item = data.favs[i]
 				local X = 7.85 + (i - 0.5)
 				local Y = spacing + 0.4
 
-				if query_item == item then
+				if data.query_item == item then
 					fs[#fs + 1] = fmt(FMT.image, X, Y,
 						ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 				end
@@ -1373,8 +1370,7 @@ local function make_fs(data)
 	end
 
 	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
-		get_panels(data.lang_code, data.query_item, data.recipes, data.usages,
-			   data.show_usages, data.favs, data.unum, data.rnum, fs)
+		get_panels(data, fs)
 	end
 
 	return concat(fs)
