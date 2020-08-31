@@ -819,7 +819,7 @@ local function is_fav(favs, query_item)
 end
 
 local function weird_desc(str)
-	return not true_str(str) or find(str, "[\\]*") or not find(str, "%u")
+	return not true_str(str) or find(str, "\n") or not find(str, "%u")
 end
 
 local function toupper(str)
