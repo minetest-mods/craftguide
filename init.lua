@@ -826,8 +826,8 @@ local function toupper(str)
 	return str:gsub("%f[%w]%l", upper):gsub("_", " ")
 end
 
-local function strip_newline(str)
-	return match(str, "[^\n]*")
+local function nice_strip(str, limit)
+	return #str > limit and fmt("%s...", sub(str, 1, limit - 3)) or str
 end
 
 local function get_desc(item)
@@ -840,8 +840,7 @@ local function get_desc(item)
 	if def then
 		local desc = def.description
 		if true_str(desc) then
-			desc = desc:trim()
-			desc = strip_newline(desc)
+			desc = desc:trim():match("[^\n]*")
 
 			if not find(desc, "%u") then
 				desc = toupper(desc)
@@ -1176,15 +1175,10 @@ local function get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 end
 
 local function get_title_fs(query_item, favs, fs, spacing)
-	local desc = ESC(get_desc(query_item))
-	desc = #desc > 33 and fmt("%s...", sub(desc, 1, 30)) or desc
-	local t_desc = query_item
-	t_desc = #t_desc > 35 and fmt("%s...", sub(t_desc, 1, 32)) or t_desc
-
 	fs[#fs + 1] = "style_type[label;font=bold;font_size=22]"
-	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing - 0.1, desc)
+	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing - 0.1, nice_strip(ESC(get_desc(query_item)), 45))
 	fs[#fs + 1] = "style_type[label;font=mono;font_size=16]"
-	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing + 0.3, clr("#7bf", t_desc))
+	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
 	fs[#fs + 1] = "style_type[label;font=normal;font_size=16]"
 
 	fs[#fs + 1] = fmt(FMT.hypertext,
