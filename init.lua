@@ -59,7 +59,7 @@ local fmt, find, gmatch, match, sub, split, upper, lower =
 	string.sub, string.split, string.upper, string.lower
 
 local min, max, floor, ceil, abs = math.min, math.max, math.floor, math.ceil, math.abs
-local pairs, next, type, unpack = pairs, next, type, unpack
+local pairs, next, type = pairs, next, type
 local vec_add, vec_mul = vector.add, vector.multiply
 
 local ROWS = 9
@@ -98,7 +98,7 @@ local PNG = {
 	next_hover = "craftguide_next_icon_hover.png",
 }
 
-local FMT = {
+local FSe = {
 	box = "box[%f,%f;%f,%f;%s]",
 	label = "label[%f,%f;%s]",
 	image = "image[%f,%f;%f,%f;%s]",
@@ -154,17 +154,6 @@ local function outdated(name)
 	"Get the latest version on minetest.net to use the Crafting Guide.")
 
 	return show_formspec(name, "craftguide", fs)
-end
-
-local function mul_elem(elem, n)
-	local fstr, elems = "", {}
-
-	for i = 1, n do
-		fstr = fstr .. "%s"
-		elems[i] = elem
-	end
-
-	return fmt(fstr, unpack(elems))
 end
 
 craftguide.group_stereotypes = {
@@ -252,6 +241,20 @@ end
 
 local function is_group(item)
 	return sub(item, 1, 6) == "group:"
+end
+
+local function FMT(elem, rep, ...)
+	if rep == 1 then
+		return fmt(FSe[elem], ...)
+	end
+
+	local t = {}
+
+	for i = 1, rep do
+		t[i] = FSe[elem]
+	end
+
+	return fmt(concat(t), ...)
 end
 
 local function clean_name(item)
@@ -949,34 +952,33 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 		local pos_y = YOFFSET + (sfinv_only and 1.55 or -0.45) + spacing
 
 		if sub(icon, 1, 18) == "craftguide_furnace" then
-			fs[#fs + 1] = fmt(FMT.animated_image,
+			fs[#fs + 1] = FMT("animated_image", 1,
 				pos_x, pos_y, 0.5, 0.5, PNG.furnace_anim, 8, 180)
 		else
-			fs[#fs + 1] = fmt(FMT.image, pos_x, pos_y, 0.5, 0.5, icon)
+			fs[#fs + 1] = FMT("image", 1, pos_x, pos_y, 0.5, 0.5, icon)
 		end
 
 		local tooltip = custom_recipe and custom_recipe.description or
 				shapeless and S"Shapeless" or S"Cooking"
 
-		fs[#fs + 1] = fmt(FMT.tooltip, pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
+		fs[#fs + 1] = FMT("tooltip", 1, pos_x, pos_y, 0.5, 0.5, ESC(tooltip))
 	end
 
 	local arrow_X = right + (_btn_size or ITEM_BTN_SIZE)
 	local X = arrow_X + 0.9
 	local Y = YOFFSET + (sfinv_only and 2 or 0) + spacing
 
-	fs[#fs + 1] = fmt(FMT.image, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
+	fs[#fs + 1] = FMT("image", 1, arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow)
 
 	if rcp.type == "fuel" then
-		fs[#fs + 1] = fmt(FMT.animated_image, X, Y,
-			ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180)
+		fs[#fs + 1] = FMT("animated_image", 1,
+			X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180)
 	else
 		local item = rcp.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs[#fs + 1] = fmt(FMT.image, X, Y,
-			ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
+		fs[#fs + 1] = FMT("image", 1, X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 
 		local _name = sfinv_only and name or fmt("_%s", name)
 
@@ -1003,11 +1005,11 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 		end
 
 		if infos.burntime then
-			fs[#fs + 1] = fmt(FMT.image,
+			fs[#fs + 1] = FMT("image", 1,
 				X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
 				0.6, 0.4, PNG.arrow)
 
-			fs[#fs + 1] = fmt(FMT.animated_image,
+			fs[#fs + 1] = FMT("animated_image", 1,
 				X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + spacing,
 				0.6, 0.6, PNG.fire_anim, 8, 180)
 		end
@@ -1030,7 +1032,7 @@ local function get_grid_fs(fs, rcp, spacing)
 	local rows = ceil(maxn(rcp.items) / width)
 
 	if width > WH_LIMIT or rows > WH_LIMIT then
-		fs[#fs + 1] = fmt(FMT.label,
+		fs[#fs + 1] = FMT("label", 1,
 			XOFFSET + (sfinv_only and -1.5 or -1.6),
 			YOFFSET + (sfinv_only and 0.5 or spacing),
 			ES("Recipe's too big to be displayed (@1x@2)", width, rows))
@@ -1100,12 +1102,12 @@ local function get_grid_fs(fs, rcp, spacing)
 		Y = Y + (sfinv_only and 2 or 0)
 
 		if not large_recipe then
-			fs[#fs + 1] = fmt(FMT.image, X, Y, btn_size, btn_size, PNG.selected)
+			fs[#fs + 1] = FMT("image", 1, X, Y, btn_size, btn_size, PNG.selected)
 		end
 
 		local btn_name = groups and fmt("group|%s|%s", groups[1], item) or item
 
-		fs[#fs + 1] = fmt(FMT.item_image_button,
+		fs[#fs + 1] = FMT("item_image_button", 1,
 			X, Y, btn_size, btn_size, item, btn_name, label)
 
 		local def = reg_items[name]
@@ -1154,7 +1156,7 @@ local function get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 	local lbl_len = #_lbl:gsub("[\128-\191]", "") -- Count chars, not bytes in UTF-8 strings
 	local shift = min(0.9, abs(13 - max(13, lbl_len)) * 0.1)
 
-	fs[#fs + 1] = fmt(FMT.label,
+	fs[#fs + 1] = FMT("label", 1,
 		XOFFSET + (sfinv_only and 2.3 or 1.6) - shift,
 		YOFFSET + (sfinv_only and 3.4 or 1.5 + spacing), lbl)
 
@@ -1165,7 +1167,7 @@ local function get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 		local x_arrow = XOFFSET + (sfinv_only and 1.7 or 1)
 		local y_arrow = YOFFSET + (sfinv_only and 3.3 or 1.4 + spacing)
 
-		fs[#fs + 1] = fmt(mul_elem(FMT.arrow, 2),
+		fs[#fs + 1] = FMT("arrow", 2,
 			x_arrow - shift, y_arrow, PNG.prev, prev_name, "",
 			x_arrow + 1.8,   y_arrow, PNG.next, next_name, "")
 	end
@@ -1176,13 +1178,14 @@ end
 
 local function get_title_fs(query_item, favs, fs, spacing)
 	fs[#fs + 1] = "style_type[label;font=bold;font_size=+6]"
-	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing - 0.1, nice_strip(ESC(get_desc(query_item)), 45))
+	fs[#fs + 1] = FMT("label", 1, 8.75,
+		spacing - 0.1, nice_strip(ESC(get_desc(query_item)), 45))
 	fs[#fs + 1] = "style_type[label;font=mono;font_size=+0]"
-	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
+	fs[#fs + 1] = FMT("label", 1, 8.75,
+		spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
 	fs[#fs + 1] = "style_type[label;font=normal]"
 
-	fs[#fs + 1] = fmt(FMT.hypertext,
-		13.8, spacing - 0.15, 1.1, 1.3,
+	fs[#fs + 1] = FMT("hypertext", 1, 13.8, spacing - 0.15, 1.1, 1.3,
 		fmt("<item name=%s width=64 rotate=yes>", query_item))
 
 	local fav = is_fav(favs, query_item)
@@ -1195,7 +1198,7 @@ local function get_title_fs(query_item, favs, fs, spacing)
 			"style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
 			fmt("craftguide_fav%s.png", fav and "" or "_off"), fav_marked, fav_marked)
 
-		fs[#fs + 1] = fmt(FMT.image_button, 8.25, spacing + 0.15, 0.5, 0.45, "", "fav", "")
+		fs[#fs + 1] = FMT("image_button", 1, 8.25, spacing + 0.15, 0.5, 0.45, "", "fav", "")
 
 		fs[#fs + 1] = fmt("tooltip[fav;%s]",
 			fav and ES"Unmark this item" or ES"Mark this item")
@@ -1204,7 +1207,7 @@ local function get_title_fs(query_item, favs, fs, spacing)
 			"style[fav_no;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
 			"craftguide_fav_off.png", PNG.nothing, PNG.nothing)
 
-		fs[#fs + 1] = fmt(FMT.image_button,
+		fs[#fs + 1] = FMT("image_button", 1,
 			8.25, spacing + 0.15, 0.5, 0.45, "", "fav_no", "")
 
 		fs[#fs + 1] = fmt("tooltip[fav_no;%s]",
@@ -1247,13 +1250,13 @@ local function get_panels(data, fs)
 
 		if recipe_or_usage and not rn then
 			local lbl = is_recipe and ES"No recipes" or ES"No usages"
-			fs[#fs + 1] = fmt(FMT.button, 8, YOFFSET + spacing + 0.1, 6.8, 1, "", lbl)
+			fs[#fs + 1] = FMT("button", 1, 8, YOFFSET + spacing + 0.1, 6.8, 1, "", lbl)
 
 		elseif panel.name == "title" then
 			get_title_fs(data.query_item, data.favs, fs, spacing)
 
 		elseif panel.name == "favs" then
-			fs[#fs + 1] = fmt(FMT.label, 8.3, spacing - 0.15, ES"Bookmarks")
+			fs[#fs + 1] = FMT("label", 1, 8.3, spacing - 0.15, ES"Bookmarks")
 
 			for i = 1, #data.favs do
 				local item = data.favs[i]
@@ -1261,11 +1264,11 @@ local function get_panels(data, fs)
 				local Y = spacing + 0.4
 
 				if data.query_item == item then
-					fs[#fs + 1] = fmt(FMT.image, X, Y,
-						ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
+					fs[#fs + 1] = FMT("image", 1,
+						X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected)
 				end
 
-				fs[#fs + 1] = fmt(FMT.item_image_button,
+				fs[#fs + 1] = FMT("item_image_button", 1,
 					X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, item, "")
 			end
 		end
@@ -1296,7 +1299,7 @@ local function make_fs(data)
 	]],
 	ESC(data.filter))
 
-	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 2),
+	fs[#fs + 1] = FMT("image_button", 2,
 		2.6, -0.06, 0.85, 0.85, "", "search", "",
 		3.3, -0.06, 0.85, 0.85, "", "clear", "")
 
@@ -1304,13 +1307,13 @@ local function make_fs(data)
 		fs[#fs + 1] = "container[0.2,0]"
 	end
 
-	fs[#fs + 1] = fmt(mul_elem(FMT.image_button, 2),
+	fs[#fs + 1] = FMT("image_button", 2,
 		5.35, -0.06, 0.85, 0.85, "", "prev_page", "",
 		7.1, -0.06, 0.85, 0.85, "", "next_page", "")
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
-	fs[#fs + 1] = fmt(FMT.button,
+	fs[#fs + 1] = FMT("button", 1,
 		5.97, -0.06, 1.36, 0.85, "pagenum",
 		fmt("%s / %u", clr("#ff0", data.pagenum), data.pagemax))
 
@@ -1325,7 +1328,7 @@ local function make_fs(data)
 			lbl = ES"Collect items to reveal more recipes"
 		end
 
-		fs[#fs + 1] = fmt(FMT.button, -0.25, 3, 8.3, 1, "", lbl)
+		fs[#fs + 1] = FMT("button", 1, -0.25, 3, 8.3, 1, "", lbl)
 	end
 
 	local first_item = (data.pagenum - 1) * IPP
@@ -1340,7 +1343,7 @@ local function make_fs(data)
 		Y = Y - (Y * 0.08) - 0.15
 
 		if data.query_item == item then
-			fs[#fs + 1] = fmt(FMT.image, X, Y, 1, 1, PNG.selected)
+			fs[#fs + 1] = FMT("image", 1, X, Y, 1, 1, PNG.selected)
 		end
 
 		fs[#fs + 1] = fmt("item_image_button[%f,%f;%f,%f;%s;%s_inv;]",
