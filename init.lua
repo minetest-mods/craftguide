@@ -114,9 +114,9 @@ local FMT = {
 
 local styles = fmt([[
 	style[filter;border=false]
-	style_type[label,field;font_size=16]
+	style_type[label,field;font_size=+0]
 	style_type[image_button;border=false]
-	style_type[button;border=false;font=bold;font_size=18]
+	style_type[button;border=false;font=bold;font_size=+2]
 	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
 	style[search;fgimg=%s;fgimg_hovered=%s]
 	style[clear;fgimg=%s;fgimg_hovered=%s]
@@ -1175,11 +1175,11 @@ local function get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 end
 
 local function get_title_fs(query_item, favs, fs, spacing)
-	fs[#fs + 1] = "style_type[label;font=bold;font_size=22]"
+	fs[#fs + 1] = "style_type[label;font=bold;font_size=+6]"
 	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing - 0.1, nice_strip(ESC(get_desc(query_item)), 45))
-	fs[#fs + 1] = "style_type[label;font=mono;font_size=16]"
+	fs[#fs + 1] = "style_type[label;font=mono;font_size=+0]"
 	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
-	fs[#fs + 1] = "style_type[label;font=normal;font_size=16]"
+	fs[#fs + 1] = "style_type[label;font=normal;font_size=+0]"
 
 	fs[#fs + 1] = fmt(FMT.hypertext,
 		13.8, spacing - 0.15, 1.1, 1.3,
