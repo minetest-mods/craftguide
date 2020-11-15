@@ -1179,7 +1179,7 @@ local function get_title_fs(query_item, favs, fs, spacing)
 	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing - 0.1, nice_strip(ESC(get_desc(query_item)), 45))
 	fs[#fs + 1] = "style_type[label;font=mono;font_size=+0]"
 	fs[#fs + 1] = fmt(FMT.label, 8.75, spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
-	fs[#fs + 1] = "style_type[label;font=normal;font_size=+0]"
+	fs[#fs + 1] = "style_type[label;font=normal;font_size=]"
 
 	fs[#fs + 1] = fmt(FMT.hypertext,
 		13.8, spacing - 0.15, 1.1, 1.3,
@@ -1312,6 +1312,8 @@ local function make_fs(data)
 		7.1, -0.06, 0.85, 0.85, "", "next_page", "")
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
+
+	fs[#fs + 1] = "style[pagenum;content_offset=0]"
 
 	fs[#fs + 1] = fmt(FMT.button,
 		5.97, -0.06, 1.36, 0.85, "pagenum",
@@ -1657,7 +1659,7 @@ local function fields(player, _f)
 		data.pagenum = 1
 		search(data)
 
-	elseif _f.prev_page or _f.next_page or _f.pagenum then
+	elseif _f.prev_page or _f.next_page then
 		if data.pagemax == 1 then return end
 		data.pagenum = data.pagenum - (_f.prev_page and 1 or -1)
 
