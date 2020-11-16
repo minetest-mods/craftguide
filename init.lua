@@ -106,6 +106,7 @@ local fs_elements = {
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	hypertext = "hypertext[%f,%f;%f,%f;;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
+	model = "model[%f,%f;%f,%f;%s;%s;%s;0,0;true]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	animated_image = "animated_image[%f,%f;%f,%f;;%s;%u;%u]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
@@ -1180,8 +1181,39 @@ local function get_title_fs(query_item, favs, fs, spacing)
 		spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
 	fs[#fs + 1] = "style_type[label;font=normal]"
 
-	fs[#fs + 1] = fmt("hypertext", 1, 13.8, spacing - 0.15, 1.1, 1.3,
-		sprintf("<item name=%s width=64 rotate=yes>", query_item))
+	local def = reg_items[query_item]
+
+	if def.drawtype == "mesh" then
+		local tiles = def.tiles or def.textures
+		local t = {}
+
+		for _, v in ipairs(tiles) do
+			local _name
+
+			if v.color then
+				local hex = sprintf("%02x", v.color)
+
+				while #hex < 8 do
+					hex = "0" .. hex
+				end
+
+				_name = sprintf("%s^[multiply:%s", v.name,
+					sprintf("#%s%s", sub(hex, 3), sub(hex, 1, 2)))
+			end
+
+			t[#t + 1] = _name or v.name or v
+		end
+
+		while #t < 6 do
+			t[#t + 1] = t[#t]
+		end
+
+		fs[#fs + 1] = fmt("model", 1,
+			13.5, spacing - 0.2, 1.2, 1.2, "", def.mesh, concat(t, ","))
+	else
+		fs[#fs + 1] = fmt("hypertext", 1, 13.8, spacing - 0.15, 1.1, 1.3,
+			sprintf("<item name=%s width=64 rotate=yes>", query_item))
+	end
 
 	local fav = is_fav(favs, query_item)
 	local nfavs = #favs
