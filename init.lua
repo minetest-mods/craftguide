@@ -828,7 +828,7 @@ local function nice_strip(str, limit)
 	return #str > limit and sprintf("%s...", sub(str, 1, limit - 3)) or str
 end
 
-local function get_desc(item)
+local function get_desc(item, lang_code)
 	if sub(item, 1, 1) == "_" then
 		item = sub(item, 2)
 	end
@@ -837,6 +837,8 @@ local function get_desc(item)
 
 	if def then
 		local desc = def.description
+		desc = lang_code and translate(lang_code, desc) or desc
+
 		if true_str(desc) then
 			desc = desc:trim():match("[^\n]*")
 
@@ -1172,10 +1174,10 @@ local function get_rcp_lbl(fs, data, panel, spacing, rn, is_recipe)
 	get_grid_fs(fs, rcp, spacing)
 end
 
-local function get_title_fs(query_item, favs, fs, spacing)
+local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	fs[#fs + 1] = "style_type[label;font=bold;font_size=+6]"
 	fs[#fs + 1] = fmt("label", 1, 8.75,
-		spacing - 0.1, nice_strip(ESC(get_desc(query_item)), 45))
+		spacing - 0.1, nice_strip(ESC(get_desc(query_item, lang_code)), 45))
 	fs[#fs + 1] = "style_type[label;font=mono;font_size=+0]"
 	fs[#fs + 1] = fmt("label", 1, 8.75,
 		spacing + 0.3, clr("#7bf", nice_strip(query_item, 35)))
@@ -1281,7 +1283,7 @@ local function get_panels(data, fs)
 			fs[#fs + 1] = fmt("button", 1, 8, YOFFSET + spacing + 0.1, 6.8, 1, "", lbl)
 
 		elseif panel.name == "title" then
-			get_title_fs(data.query_item, data.favs, fs, spacing)
+			get_title_fs(data.query_item, data.favs, data.lang_code, fs, spacing)
 
 		elseif panel.name == "favs" then
 			fs[#fs + 1] = fmt("label", 1, 8.3, spacing - 0.15, ES"Bookmarks")
