@@ -1550,9 +1550,8 @@ local function resolve_aliases(hash)
 				local rcp_old = recipes_cache[oldname][i]
 
 				for j = 1, #recipes_cache[newname] do
-					local rcp_new = recipes_cache[newname][j]
-					rcp_new.type = nil
-					rcp_new.method = nil
+					local rcp_new = copy(recipes_cache[newname][j])
+					rcp_new.output = oldname
 
 					if table_eq(rcp_old, rcp_new) then
 						similar = true
