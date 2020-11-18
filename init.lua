@@ -1201,6 +1201,10 @@ local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 
 				_name = sprintf("%s^[multiply:%s", v.name,
 					sprintf("#%s%s", sub(hex, 3), sub(hex, 1, 2)))
+
+			elseif v.animation then
+				_name = sprintf("%s^[verticalframe:%u:0", v.name,
+						v.animation.aspect_h)
 			end
 
 			t[#t + 1] = _name or v.name or v
