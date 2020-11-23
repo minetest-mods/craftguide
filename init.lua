@@ -117,9 +117,9 @@ local fs_elements = {
 local styles = sprintf([[
 	style[filter;border=false]
 	style_type[label,field;font_size=+0]
-	style_type[image_button;border=false]
+	style_type[image_button;border=false;sound=craftguide_click]
 	style_type[button;border=false;font=bold;font_size=+2;content_offset=0]
-	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s]
+	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s;sound=craftguide_click]
 	style[search;fgimg=%s;fgimg_hovered=%s]
 	style[clear;fgimg=%s;fgimg_hovered=%s]
 	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
@@ -1633,10 +1633,6 @@ local function fields(player, _f)
 	if _f.quit then return end
 	local name = player:get_player_name()
 	local data = pdata[name]
-
-	if not _f.key_enter_field then
-		sound_play("craftguide_click", {to_player = name, gain = 0.2})
-	end
 
 	if _f.clear then
 		reset_data(data)
