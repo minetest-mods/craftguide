@@ -18,12 +18,12 @@ local singleplayer = core.is_singleplayer()
 
 local reg_items = core.registered_items
 local reg_tools = core.registered_tools
+local reg_entities = core.registered_entities
 local reg_aliases = core.registered_aliases
 
 local log = core.log
 local after = core.after
 local clr = core.colorize
-local sound_play = core.sound_play
 local parse_json = core.parse_json
 local write_json = core.write_json
 local chat_send = core.chat_send_player
@@ -215,6 +215,11 @@ local group_names = {
 	["color_magenta,dye"] = S"Any magenta dye",
 	["color_dark_grey,dye"] = S"Any dark grey dye",
 	["color_dark_green,dye"] = S"Any dark green dye",
+}
+
+craftguide.model_alias = {
+	["boats:boat"] = {name = "boats:boat", drawtype = "entity"},
+	--["carts:cart"] = {name = "carts:cart", drawtype = "entity"}, -- the cart animation is broken
 }
 
 local function err(str)
@@ -1173,8 +1178,20 @@ local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	   "style_type[label;font=normal]")
 
 	local def = reg_items[query_item]
+	local model_alias = craftguide.model_alias[query_item]
 
-	if def.drawtype == "mesh" then
+	if def.drawtype == "mesh" or model_alias then
+		if model_alias then
+			if model_alias.drawtype == "entity" then
+				def = reg_entities[model_alias.name]
+				local init_props = def.initial_properties
+				def.textures = init_props and init_props.textures or def.textures
+				def.mesh = init_props and init_props.mesh or def.mesh
+			else
+				def = reg_items[model_alias.name]
+			end
+		end
+
 		local tiles = def.tiles or def.textures
 		local t = {}
 
