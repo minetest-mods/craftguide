@@ -1192,7 +1192,7 @@ local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 			end
 		end
 
-		local tiles = def.tiles or def.textures
+		local tiles = def.tiles or def.textures or {}
 		local t = {}
 
 		for _, v in ipairs(tiles) do
