@@ -114,11 +114,12 @@ local fs_elements = {
 }
 
 local styles = sprintf([[
-	style[filter;border=false]
 	style_type[label,field;font_size=+0]
 	style_type[image_button;border=false;sound=craftguide_click]
 	style_type[button;border=false;font=bold;font_size=+2;content_offset=0]
 	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s;sound=craftguide_click]
+
+	style[filter;border=false]
 	style[search;fgimg=%s;fgimg_hovered=%s]
 	style[clear;fgimg=%s;fgimg_hovered=%s]
 	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
@@ -999,7 +1000,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 			fs(get_tooltip(_name, infos))
 		end
 
-		if infos.burntime then
+		if infos.burntime and sfinv_only then
 			fs(fmt("image",
 				X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
 				0.6, 0.4, PNG.arrow),
