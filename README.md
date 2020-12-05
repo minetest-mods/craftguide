@@ -18,8 +18,6 @@ Use the command `/craft` to show the recipe(s) of the pointed node.
 
 For developers, `craftguide` also has a [modding API](https://github.com/minetest-mods/craftguide/blob/master/API.md).
 
-For the best visuals, it is recommended to enable `inventory_items_animations` in `minetest.conf`.
-
 Love this mod? Donations are appreciated: https://www.paypal.me/jpg84240
 
 

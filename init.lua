@@ -104,7 +104,6 @@ local fs_elements = {
 	image = "image[%f,%f;%f,%f;%s]",
 	button = "button[%f,%f;%f,%f;%s;%s]",
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
-	hypertext = "hypertext[%f,%f;%f,%f;;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	bg9 = "background9[%f,%f;%f,%f;%s;false;%u]",
 	model = "model[%f,%f;%f,%f;%s;%s;%s;0,0;true]",
@@ -1172,7 +1171,7 @@ end
 
 local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	fs("style_type[label;font=bold;font_size=+6]",
-	   fmt("label", 8.75, spacing - 0.1, snip(ESC(get_desc(query_item, lang_code)), 45)),
+	   fmt("label", 8.75, spacing - 0.1, snip(ESC(get_desc(query_item, lang_code)), 33)),
 	   "style_type[label;font=mono;font_size=+0]",
 	   fmt("label", 8.75, spacing + 0.3, clr("#7bf", snip(query_item, 35))),
 	   "style_type[label;font=normal]")
@@ -1222,8 +1221,7 @@ local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 
 		fs(fmt("model", 13.5, spacing - 0.2, 1.2, 1.2, "", def.mesh, concat(t, ",")))
 	else
-		fs(fmt("hypertext", 13.8, spacing - 0.15, 1.1, 1.3,
-			sprintf("<item name=%s width=64 rotate=yes>", query_item)))
+		fs(fmt("item_image", 13.6, spacing - 0.13, 1.1, 1.1, query_item))
 	end
 
 	local fav = is_fav(favs, query_item)
