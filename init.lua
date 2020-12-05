@@ -975,11 +975,12 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs(fmt("image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected))
+		fs(fmt("image", X, Y - 0.1, ITEM_BTN_SIZE * 1.2, ITEM_BTN_SIZE * 1.2, PNG.selected))
 
 		local _name = sfinv_only and name or sprintf("_%s", name)
 
-		fs(fmt("item_image_button", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, ""))
+		fs(fmt("item_image_button",
+			X + 0.09, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, ""))
 
 		local def = reg_items[name]
 		local unknown = not def or nil
@@ -1002,10 +1003,10 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 
 		if infos.burntime and sfinv_only then
 			fs(fmt("image",
-				X + 1, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
+				X + 1.15, YOFFSET + (sfinv_only and 2 or 0.1) + spacing,
 				0.6, 0.4, PNG.arrow),
 			   fmt("animated_image",
-				X + 1.6, YOFFSET + (sfinv_only and 1.85 or 0) + spacing,
+				X + 1.75, YOFFSET + (sfinv_only and 1.85 or 0) + spacing,
 				0.6, 0.6, PNG.fire_anim, 8, 180))
 		end
 	end
