@@ -76,6 +76,8 @@ local YOFFSET = sfinv_only and 4.9 or 1
 local POLL_FREQ = 0.25
 local HUD_TIMER_MAX = 1.5
 
+local MIN_FORMSPEC_VERSION = 4
+
 local PNG = {
 	bg = "craftguide_bg.png",
 	bg_full = "craftguide_bg_full.png",
@@ -139,17 +141,20 @@ PNG.next, PNG.next_hover, PNG.next_hover,
 PNG.prev, PNG.prev_hover, PNG.prev_hover,
 PNG.next, PNG.next_hover, PNG.next_hover)
 
-local function get_lang_code(name)
-	local info = get_player_info(name)
+local function get_lang_code(info)
 	return info and info.lang_code
+end
+
+local function get_formspec_version(info)
+	return info and info.formspec_version or 1
 end
 
 local function outdated(name)
 	local fs = sprintf([[
-		size[6.6,1.3]
+		size[7.1,1.3]
 		image[0,0;1,1;%s]
 		label[1,0;%s]
-		button_exit[2.8,0.8;1,1;;OK]
+		button_exit[3.1,0.8;1,1;;OK]
 	]],
 	PNG.book,
 	"Your Minetest client is outdated.\n" ..
@@ -1613,13 +1618,16 @@ local function get_init_items()
 end
 
 local function init_data(name)
+	local info = get_player_info(name)
+
 	pdata[name] = {
-		filter    = "",
-		pagenum   = 1,
-		items     = init_items,
-		items_raw = init_items,
-		favs      = {},
-		lang_code = get_lang_code(name),
+		filter     = "",
+		pagenum    = 1,
+		items      = init_items,
+		items_raw  = init_items,
+		favs       = {},
+		lang_code  = get_lang_code(info),
+		fs_version = get_formspec_version(info),
 	}
 end
 
@@ -1640,8 +1648,9 @@ on_mods_loaded(get_init_items)
 on_joinplayer(function(player)
 	local name = player:get_player_name()
 	init_data(name)
+	local data = pdata[name]
 
-	if not pdata[name].lang_code then
+	if data.fs_version < MIN_FORMSPEC_VERSION then
 		outdated(name)
 	end
 end)
@@ -1745,7 +1754,9 @@ if sfinv_only then
 
 		is_in_nav = function(self, player, context)
 			local name = player:get_player_name()
-			return get_lang_code(name)
+			local info = get_player_info(name)
+
+			return get_formspec_version(info) >= MIN_FORMSPEC_VERSION
 		end,
 
 		get = function(self, player, context)
@@ -1780,7 +1791,7 @@ else
 		local name = user:get_player_name()
 		local data = pdata[name]
 
-		if not data.lang_code then
+		if data.fs_version < MIN_FORMSPEC_VERSION then
 			return outdated(name)
 		end
 
