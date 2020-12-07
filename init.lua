@@ -61,7 +61,7 @@ local min, max, floor, ceil, abs = math.min, math.max, math.floor, math.ceil, ma
 local pairs, ipairs, next, type, setmetatable = pairs, ipairs, next, type, setmetatable
 local vec_add, vec_mul = vector.add, vector.multiply
 
-local ROWS, _ROWS = 9
+local ROWS, _ROWS = 10
 local LINES = 10
 local IPP = ROWS * LINES
 local MAX_FAVS = 6
@@ -1140,7 +1140,7 @@ end
 local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	local fav = is_fav(favs, query_item)
 	local nfavs = #favs
-	local star_x, star_y, star_size = _ROWS + 0.4, spacing + 0.45, 0.45
+	local star_x, star_y, star_size = _ROWS + 0.4, spacing + 0.47, 0.45
 
 	if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
 		local fav_marked = sprintf("craftguide_fav%s.png", fav and "_off" or "")
@@ -1158,9 +1158,9 @@ local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	end
 
 	fs("style_type[label;font=bold;font_size=+6]",
-	   fmt("label", _ROWS + 1.1, spacing + 0.45, snip(ESC(get_desc(query_item, lang_code)), 31)),
+	   fmt("label", _ROWS + 1.1, spacing + 0.47, snip(ESC(get_desc(query_item, lang_code)), 31)),
 	   "style_type[label;font=mono;font_size=+0]",
-	   fmt("label", _ROWS + 1.1, spacing + 0.95, clr("#7bf", snip(query_item, 34))),
+	   fmt("label", _ROWS + 1.1, spacing + 0.97, clr("#7bf", snip(query_item, 34))),
 	   "style_type[label;font=normal]")
 
 	local def = reg_items[query_item]
@@ -1295,13 +1295,13 @@ local function make_fs(data)
 	   fmt("image_button", 3.75, 0.15, 0.7, 0.7, "", "search", ""),
 	   fmt("image_button", 4.43, 0.15, 0.7, 0.7, "", "clear", ""))
 
-	fs(fmt("image_button", 6.8, 0.15, 0.7, 0.7, "", "prev_page", ""),
-	   fmt("image_button", 9.1, 0.15, 0.7, 0.7, "", "next_page", ""))
+	fs(fmt("image_button", ROWS - 2.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
+	   fmt("image_button", ROWS + 0.1, 0.15, 0.7, 0.7, "", "next_page", ""))
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	fs(fmt("button",
-		7.48, 0.15, 1.68, 0.7, "pagenum",
+		ROWS - 1.52, 0.15, 1.68, 0.7, "pagenum",
 		sprintf("%s / %u", clr("#ff0", data.pagenum), data.pagemax)))
 
 	if #data.items == 0 then
