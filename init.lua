@@ -61,7 +61,7 @@ local min, max, floor, ceil, abs = math.min, math.max, math.floor, math.ceil, ma
 local pairs, ipairs, next, type, setmetatable = pairs, ipairs, next, type, setmetatable
 local vec_add, vec_mul = vector.add, vector.multiply
 
-local ROWS, _ROWS = 10
+local ROWS, _ROWS = 9
 local LINES = 10
 local IPP = ROWS * LINES
 local MAX_FAVS = 6
@@ -1949,6 +1949,7 @@ if progressive_mode then
 			if #diff > 0 then
 				data.inv_items = table_merge(diff, data.inv_items)
 				local oldknown = data.known_recipes or 0
+				get_filtered_items(player, data)
 				data.discovered = data.known_recipes - oldknown
 
 				if data.show_hud == nil and data.discovered > 0 then
