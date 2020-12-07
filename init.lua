@@ -1287,7 +1287,7 @@ local function make_fs(data)
 	fs(fmt("bg9", 0, 0, _ROWS, LINES + 1.7, PNG.bg_full, 10))
 
 	fs(sprintf([[
-		set_focus[filter;true]
+		set_focus[filter]
 		field[0.2,0.2;3.5,0.6;filter;;%s]
 		field_close_on_enter[filter;false]
 		box[0.2,0.2;3.5,0.6;#bababa25]
