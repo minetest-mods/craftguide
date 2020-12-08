@@ -1321,8 +1321,9 @@ local function make_fs(data)
 		if not item then break end
 
 		local X = i % ROWS
+		X = X + (X * 0.05) + 0.2
+
 		local Y = (i % IPP - X) / ROWS + 1
-		X = X - (X * -0.05) + 0.2
 		Y = Y + (Y * 0.05)
 
 		if data.query_item == item then
