@@ -1065,8 +1065,7 @@ local function get_grid_fs(fs, rcp, spacing)
 				end
 
 				if not added then
-					label = sprintf("%s%s\nR",
-						label ~= "" and "\n" or "", label)
+					label = sprintf("%s%s\nR", label ~= "" and "\n" or "", label)
 					replace.items[#replace.items + 1] = replacement[2]
 				end
 			end
@@ -1139,7 +1138,7 @@ end
 local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	local fav = is_fav(favs, query_item)
 	local nfavs = #favs
-	local star_x, star_y, star_size = _ROWS + 0.4, spacing + 0.47, 0.45
+	local star_x, star_y, star_size = _ROWS + 0.4, spacing + 0.5, 0.4
 
 	if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
 		local fav_marked = sprintf("craftguide_fav%s.png", fav and "_off" or "")
@@ -1157,9 +1156,9 @@ local function get_title_fs(query_item, favs, lang_code, fs, spacing)
 	end
 
 	fs("style_type[label;font=bold;font_size=+6]",
-	   fmt("label", _ROWS + 1.1, spacing + 0.47, snip(ESC(get_desc(query_item, lang_code)), 31)),
+	   fmt("label", _ROWS + 1.05, spacing + 0.47, snip(ESC(get_desc(query_item, lang_code)), 32)),
 	   "style_type[label;font=mono;font_size=+0]",
-	   fmt("label", _ROWS + 1.1, spacing + 0.97, clr("#7bf", snip(query_item, 34))),
+	   fmt("label", _ROWS + 1.05, spacing + 0.97, clr("#7bf", snip(query_item, 34))),
 	   "style_type[label;font=normal]")
 
 	local def = reg_items[query_item]
