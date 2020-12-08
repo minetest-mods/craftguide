@@ -1286,10 +1286,10 @@ local function make_fs(data)
 	fs(fmt("bg9", 0, 0, _ROWS, LINES + 1.7, PNG.bg_full, 10))
 
 	fs(sprintf([[
+		box[0.2,0.2;3.5,0.6;#bababa25]
 		set_focus[filter]
 		field[0.2,0.2;3.5,0.6;filter;;%s]
 		field_close_on_enter[filter;false]
-		box[0.2,0.2;3.5,0.6;#bababa25]
 	   ]], ESC(data.filter)),
 	   fmt("image_button", 3.75, 0.15, 0.7, 0.7, "", "search", ""),
 	   fmt("image_button", 4.43, 0.15, 0.7, 0.7, "", "clear", ""))
