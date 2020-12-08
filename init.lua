@@ -1525,11 +1525,7 @@ local function get_init_items()
 	for name, def in pairs(reg_items) do
 		if name ~= "" and show_item(def) then
 			cache_drops(name, def.drop)
-
-			if not fuel_cache[name] then
-				cache_fuel(name)
-			end
-
+			cache_fuel(name)
 			cache_recipes(name)
 
 			_preselect[name] = true
