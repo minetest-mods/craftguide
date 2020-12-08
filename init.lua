@@ -957,7 +957,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 	local X = arrow_X + 1.2
 	local Y = spacing + 1.4
 
-	fs(fmt("image", arrow_X, Y + 0.1, 1, 1, PNG.arrow))
+	fs(fmt("image", arrow_X, Y + 0.06, 1, 1, PNG.arrow))
 
 	if rcp.type == "fuel" then
 		fs(fmt("animated_image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
