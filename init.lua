@@ -938,7 +938,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 			icon = sprintf("craftguide_%s.png^[resize:16x16", icon)
 		end
 
-		local pos_x = right + btn_size + 0.35
+		local pos_x = right + btn_size + 0.42
 		local pos_y = spacing + 0.9
 
 		if sub(icon, 1, 18) == "craftguide_furnace" then
@@ -954,10 +954,10 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 	end
 
 	local arrow_X = right + 0.2 + (_btn_size or ITEM_BTN_SIZE)
-	local X = arrow_X + 1.1
+	local X = arrow_X + 1.2
 	local Y = spacing + 1.4
 
-	fs(fmt("image", arrow_X, Y + 0.2, 0.9, 0.7, PNG.arrow))
+	fs(fmt("image", arrow_X, Y + 0.1, 1, 1, PNG.arrow))
 
 	if rcp.type == "fuel" then
 		fs(fmt("animated_image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
@@ -966,8 +966,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size, spa
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs(fmt("image",
-			X, Y - 0.11, ITEM_BTN_SIZE * 1.2, ITEM_BTN_SIZE * 1.2, PNG.selected))
+		fs(fmt("image", X, Y - 0.11, ITEM_BTN_SIZE * 1.2, ITEM_BTN_SIZE * 1.2, PNG.selected))
 
 		local _name = sprintf("_%s", name)
 
