@@ -1274,7 +1274,7 @@ local function make_fs(data)
 		end
 	})
 
-	_ROWS = ROWS + 0.8
+	_ROWS = ROWS + 1.04
 
 	fs(sprintf([[
 		formspec_version[%u]
@@ -1295,13 +1295,13 @@ local function make_fs(data)
 	   fmt("image_button", 3.75, 0.15, 0.7, 0.7, "", "search", ""),
 	   fmt("image_button", 4.43, 0.15, 0.7, 0.7, "", "clear", ""))
 
-	fs(fmt("image_button", ROWS - 2.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
-	   fmt("image_button", ROWS + 0.1, 0.15, 0.7, 0.7, "", "next_page", ""))
+	fs(fmt("image_button", _ROWS - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
+	   fmt("image_button", _ROWS - 0.7, 0.15, 0.7, 0.7, "", "next_page", ""))
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	fs(fmt("button",
-		ROWS - 1.52, 0.15, 1.68, 0.7, "pagenum",
+		_ROWS - 2.53, 0.15, 1.88, 0.7, "pagenum",
 		sprintf("%s / %u", clr("#ff0", data.pagenum), data.pagemax)))
 
 	if #data.items == 0 then
@@ -1321,10 +1321,10 @@ local function make_fs(data)
 		if not item then break end
 
 		local X = i % ROWS
-		X = X + (X * 0.05) + 0.2
+		X = X + (X * 0.08) + 0.2
 
 		local Y = (i % IPP - X) / ROWS + 1
-		Y = Y + (Y * 0.05)
+		Y = Y + (Y * 0.06)
 
 		if data.query_item == item then
 			fs(fmt("image", X, Y, 1, 1, PNG.selected))
