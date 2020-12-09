@@ -895,8 +895,9 @@ local function craft_stack(player, pname, data, _f)
 	end
 end
 
-local function show_recipes(player, data, _f)
+local function select_item(player, data, _f)
 	local item
+
 	for field in pairs(_f) do
 		if find(field, ":") then
 			item = field
@@ -1374,11 +1375,15 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 	local _name = match(item, "%S*")
 	local stack = ItemStack(_name)
 	local stack_max = stack:get_stack_max()
+	local craft_max = is_recipe and max_stacks_rcp or max_stacks_usg
 	local stack_fs = (is_recipe and data.scrbar_rcp) or (is_usage and data.scrbar_usg) or 1
 
+	if stack_fs > craft_max then
+		stack_fs = craft_max
+	end
+
 	fs(sprintf("style[scrbar_%s;noclip=true]", name),
-	   sprintf("scrollbaroptions[min=1;max=%u;smallstep=1]",
-		min((is_recipe and max_stacks_rcp or max_stacks_usg), stack_max)),
+	   sprintf("scrollbaroptions[min=1;max=%u;smallstep=1]", min(craft_max, stack_max)),
 	   fmt("scrollbar", _ROWS + 8.1, SPACING, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
 	   fmt("button", _ROWS + 8.1, SPACING + 0.4, 3, 0.7, sprintf("craft_%s", name),
 		sprintf("%s", stack_fs == 1 and ES"Craft stack" or
@@ -1869,7 +1874,7 @@ local function fields(player, _f)
 	elseif _f.craft_rcp or _f.craft_usg then
 		craft_stack(player, name, data, _f)
 	else
-		show_recipes(player, data, _f)
+		select_item(player, data, _f)
 	end
 
 	return true, show_fs(player, name)
