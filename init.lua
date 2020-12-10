@@ -860,21 +860,28 @@ local function craft_stack(player, pname, data, _f)
 	local scrbar_val = data[sprintf("scrbar_%s", _f.craft_rcp and "rcp" or "usg")]
 
 	for name, count in pairs(data.export_counts[rcp_usg].rcp) do
-		if is_group(name) then
-			local groups = extract_groups(name)
-			local items = groups_to_items(groups, true)
+		local items = {[name] = count}
 
-			for _, item in ipairs(items) do
+		if is_group(name) then
+			items = {}
+			local groups = extract_groups(name)
+			local item_groups = groups_to_items(groups, true)
+			local remaining = count
+
+			for _, item in ipairs(item_groups) do
 			for _name, _count in pairs(data.export_counts[rcp_usg].inv) do
-				if item == _name and _count >= count then
-					name = _name
-					break
+				if item == _name and remaining > 0 then
+					local c = min(remaining, _count)
+					items[item] = c
+					remaining = remaining - c
 				end
 			end
 			end
 		end
 
-		inv:remove_item("main", sprintf("%s %s", name, count * scrbar_val))
+		for k, v in pairs(items) do
+			inv:remove_item("main", sprintf("%s %s", k, v * scrbar_val))
+		end
 	end
 
 	local count = stackcount * scrbar_val
@@ -883,7 +890,7 @@ local function craft_stack(player, pname, data, _f)
 
 	if inv:room_for_item("main", stack) then
 		inv:add_item("main", stack)
-		msg(pname, sprintf(S"%s added to your inventory", message))
+		msg(pname, sprintf("%s added in your inventory", message))
 	else
 		local dir     = player:get_look_dir()
 		local ppos    = player:get_pos()
@@ -891,7 +898,7 @@ local function craft_stack(player, pname, data, _f)
 		local look_at = vec_add(ppos, vec_mul(dir, 1))
 
 		core.add_item(look_at, stack)
-		msg(pname, sprintf(S"%s crafted", message))
+		msg(pname, sprintf("%s crafted", message))
 	end
 end
 
