@@ -916,6 +916,8 @@ local function craft_stack(player, pname, data, _f)
 					items[item] = c
 					remaining = remaining - c
 				end
+
+				if remaining == 0 then break end
 			end
 			end
 		end
