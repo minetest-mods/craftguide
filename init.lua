@@ -63,12 +63,11 @@ local pairs, ipairs, next, type, setmetatable, tonum =
 
 local vec_add, vec_mul = vector.add, vector.multiply
 
-local ROWS, _ROWS = 9
+local ROWS = 9
 local LINES = 10
 local IPP = ROWS * LINES
 local MAX_FAVS = 6
 local ITEM_BTN_SIZE = 1.1
-local _H = 0
 
 -- Progressive mode
 local POLL_FREQ = 0.25
@@ -894,7 +893,7 @@ local function craft_stack(player, pname, data, _f)
 	local inv = player:get_inventory()
 	local rcp_usg = _f.craft_rcp and "recipe" or "usage"
 	local output = _f.craft_rcp and
-		data.recipes[data.rnum].output or data.usages[data.unum].output
+			data.recipes[data.rnum].output or data.usages[data.unum].output
 	output = ItemStack(output)
 	local stackname, stackcount = output:get_name(), output:get_count()
 	local scrbar_val = data[sprintf("scrbar_%s", _f.craft_rcp and "rcp" or "usg")]
@@ -1077,7 +1076,7 @@ local function get_tooltip(item, info)
 	return sprintf("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
-local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size)
+local function get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_size)
 	local custom_recipe = craft_types[rcp.type]
 
 	if custom_recipe or shapeless or rcp.type == "cooking" then
@@ -1089,7 +1088,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size)
 		end
 
 		local pos_x = right + btn_size + 0.42
-		local pos_y = _H + 0.9
+		local pos_y = data.yoffset + 0.9
 
 		if sub(icon, 1, 18) == "craftguide_furnace" then
 			fs(fmt("animated_image", pos_x, pos_y, 0.5, 0.5, PNG.furnace_anim, 8, 180))
@@ -1105,7 +1104,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size)
 
 	local arrow_X = right + 0.2 + (_btn_size or ITEM_BTN_SIZE)
 	local X = arrow_X + 1.2
-	local Y = _H + 1.4
+	local Y = data.yoffset + 1.4
 
 	fs(fmt("image", arrow_X, Y + 0.06, 1, 1, PNG.arrow))
 
@@ -1144,7 +1143,7 @@ local function get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size)
 	end
 end
 
-local function get_grid_fs(fs, rcp)
+local function get_grid_fs(fs, data, rcp)
 	local width = rcp.width or 1
 	local right, btn_size, _btn_size = 0, ITEM_BTN_SIZE
 	local cooktime, shapeless
@@ -1170,10 +1169,10 @@ local function get_grid_fs(fs, rcp)
 		local name = match(item, "%S*")
 
 		local X = ceil((i - 1) % width - width)
-		X = X + (X * 0.2) + _ROWS + 3.9
+		X = X + (X * 0.2) + data.xoffset + 3.9
 
 		local Y = ceil(i / width) - min(2, rows)
-		Y = Y + (Y * 0.15)  + _H + 1.4
+		Y = Y + (Y * 0.15)  + data.yoffset + 1.4
 
 		if large_recipe then
 			btn_size = (3 / width) * (3 / rows) + 0.3
@@ -1182,8 +1181,8 @@ local function get_grid_fs(fs, rcp)
 			local xi = (i - 1) % width
 			local yi = floor((i - 1) / width)
 
-			X = btn_size * xi + _ROWS + 0.3 + (xi * 0.05)
-			Y = btn_size * yi + _H + 0.2 + (yi * 0.05)
+			X = btn_size * xi + data.xoffset + 0.3 + (xi * 0.05)
+			Y = btn_size * yi + data.yoffset + 0.2 + (yi * 0.05)
 		end
 
 		if X > right then
@@ -1254,7 +1253,7 @@ local function get_grid_fs(fs, rcp)
 		fs("style_type[item_image_button;border=false]")
 	end
 
-	get_output_fs(fs, rcp, shapeless, right, btn_size, _btn_size)
+	get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_size)
 end
 
 local function get_rcp_lbl(fs, data, panel, rn, is_recipe)
@@ -1268,24 +1267,24 @@ local function get_rcp_lbl(fs, data, panel, rn, is_recipe)
 	local lbl_len = #_lbl:gsub("[\128-\191]", "") -- Count chars, not bytes in UTF-8 strings
 	local shift = min(0.9, abs(12 - max(12, lbl_len)) * 0.15)
 
-	fs(fmt("label", _ROWS + 5.65 - shift, _H + 3.37, lbl))
+	fs(fmt("label", data.xoffset + 5.65 - shift, data.yoffset + 3.37, lbl))
 
 	if rn > 1 then
 		local btn_suffix = is_recipe and "recipe" or "usage"
 		local prev_name = sprintf("prev_%s", btn_suffix)
 		local next_name = sprintf("next_%s", btn_suffix)
-		local x_arrow = _ROWS + 4.9
-		local y_arrow = _H + 3
+		local x_arrow = data.xoffset + 4.9
+		local y_arrow = data.yoffset + 3
 
 		fs(fmt("arrow", x_arrow - shift, y_arrow, PNG.prev, prev_name, ""),
 		   fmt("arrow", x_arrow + 2.3,   y_arrow, PNG.next, next_name, ""))
 	end
 
 	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
-	get_grid_fs(fs, rcp)
+	get_grid_fs(fs, data, rcp)
 end
 
-local function get_model_fs(fs, def, model_alias)
+local function get_model_fs(fs, data, def, model_alias)
 	if model_alias then
 		if model_alias.drawtype == "entity" then
 			def = reg_entities[model_alias.name]
@@ -1324,13 +1323,14 @@ local function get_model_fs(fs, def, model_alias)
 		t[#t + 1] = t[#t]
 	end
 
-	fs(fmt("model", _ROWS + 6.6, _H + 0.05, 1.3, 1.3, "", def.mesh, concat(t, ",")))
+	fs(fmt("model",
+		data.xoffset + 6.6, data.yoffset + 0.05, 1.3, 1.3, "", def.mesh, concat(t, ",")))
 end
 
-local function get_title_fs(fs, query_item, favs, lang_code)
-	local fav = is_fav(favs, query_item)
-	local nfavs = #favs
-	local star_x, star_y, star_size = _ROWS + 0.4, _H + 0.5, 0.4
+local function get_title_fs(fs, data)
+	local fav = is_fav(data.favs, data.query_item)
+	local nfavs = #data.favs
+	local star_x, star_y, star_size = data.xoffset + 0.4, data.yoffset + 0.5, 0.4
 
 	if nfavs < MAX_FAVS or (nfavs == MAX_FAVS and fav) then
 		local fav_marked = sprintf("craftguide_fav%s.png", fav and "_off" or "")
@@ -1348,18 +1348,21 @@ local function get_title_fs(fs, query_item, favs, lang_code)
 	end
 
 	fs("style_type[label;font=bold;font_size=+6]",
-	   fmt("label", _ROWS + 1.05, _H + 0.47, snip(ESC(get_desc(query_item, lang_code)), 32)),
+	   fmt("label", data.xoffset + 1.05, data.yoffset + 0.47,
+		snip(ESC(get_desc(data.query_item, data.lang_code)), 32)),
 	   "style_type[label;font=mono;font_size=+0]",
-	   fmt("label", _ROWS + 1.05, _H + 0.97, clr("#7bf", snip(query_item, 34))),
+	   fmt("label", data.xoffset + 1.05, data.yoffset + 0.97,
+		clr("#7bf", snip(data.query_item, 34))),
 	   "style_type[label;font=normal]")
 
-	local def = reg_items[query_item]
-	local model_alias = craftguide.model_alias[query_item]
+	local def = reg_items[data.query_item]
+	local model_alias = craftguide.model_alias[data.query_item]
 
 	if def.drawtype == "mesh" or model_alias then
-		get_model_fs(fs, def, model_alias)
+		get_model_fs(fs, data, def, model_alias)
 	else
-		fs(fmt("item_image", _ROWS + 6.8, _H + 0.17, 1.1, 1.1, query_item))
+		fs(fmt("item_image",
+			data.xoffset + 6.8, data.yoffset + 0.17, 1.1, 1.1, data.query_item))
 	end
 end
 
@@ -1371,7 +1374,8 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 		name, sprintf("craftguide_export%s.png", show_export and "" or "_off"),
 		"craftguide_export.png", "craftguide_export.png"),
 	   fmt("image_button",
-		_ROWS + 7.35, _H + 0.2, 0.45, 0.45, "", sprintf("export_%s", name), ""),
+		data.xoffset + 7.35, data.yoffset + 0.2, 0.45, 0.45, "",
+		sprintf("export_%s", name), ""),
 	   sprintf("tooltip[export_%s;%s]", name, ES"Craft this stack"))
 
 	if not show_export then return end
@@ -1391,8 +1395,9 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 
 	fs(sprintf("style[scrbar_%s;noclip=true]", name),
 	   sprintf("scrollbaroptions[min=1;max=%u;smallstep=1]", min(craft_max, stack_max)),
-	   fmt("scrollbar", _ROWS + 8.1, _H, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
-	   fmt("button", _ROWS + 8.1, _H + 0.4, 3, 0.7, sprintf("craft_%s", name),
+	   fmt("scrollbar",
+		data.xoffset + 8.1, data.yoffset, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
+	   fmt("button", data.xoffset + 8.1, data.yoffset + 0.4, 3, 0.7, sprintf("craft_%s", name),
 		sprintf("%s", sprintf(ES"Craft %u stack(s)", stack_fs))))
 end
 
@@ -1421,17 +1426,18 @@ local function get_rcp_extra(fs, data, panel, is_recipe, is_usage)
 	else
 		local lbl = is_recipe and ES"No recipes" or ES"No usages"
 		fs(fmt("button",
-			_ROWS + 0.1, _H + (panel.height / 2) - 0.5, 7.8, 1, "no_rcp", lbl))
+			data.xoffset + 0.1, data.yoffset + (panel.height / 2) - 0.5,
+			7.8, 1, "no_rcp", lbl))
 	end
 end
 
 local function get_favs(fs, data)
-	fs(fmt("label", _ROWS + 0.4, _H + 0.4, ES"Bookmarks"))
+	fs(fmt("label", data.xoffset + 0.4, data.yoffset + 0.4, ES"Bookmarks"))
 
 	for i = 1, #data.favs do
 		local item = data.favs[i]
-		local X = _ROWS - 0.7 + (i * 1.2)
-		local Y = _H + 0.8
+		local X = data.xoffset - 0.7 + (i * 1.2)
+		local Y = data.yoffset + 0.8
 
 		if data.query_item == item then
 			fs(fmt("image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected))
@@ -1450,22 +1456,22 @@ local function get_panels(fs, data)
 
 	for idx = 1, #panels do
 		local panel = panels[idx]
-		_H = 0
+		data.yoffset = 0
 
 		if idx > 1 then
 			for _idx = idx - 1, 1, -1 do
-				_H = _H + panels[_idx].height + 0.1
+				data.yoffset = data.yoffset + panels[_idx].height + 0.1
 			end
 		end
 
-		fs(fmt("bg9", _ROWS + 0.1, _H, 7.9, panel.height, PNG.bg_full, 10))
+		fs(fmt("bg9", data.xoffset + 0.1, data.yoffset, 7.9, panel.height, PNG.bg_full, 10))
 
 		local is_recipe, is_usage = panel.name == "recipes", panel.name == "usages"
 
 		if is_recipe or is_usage then
 			get_rcp_extra(fs, data, panel, is_recipe, is_usage)
 		elseif panel.name == "title" then
-			get_title_fs(fs, data.query_item, data.favs, data.lang_code)
+			get_title_fs(fs, data)
 		elseif panel.name == "favs" then
 			get_favs(fs, data)
 		end
@@ -1479,7 +1485,7 @@ local function make_fs(data)
 		end
 	})
 
-	_ROWS = ROWS + 1.04
+	data.xoffset = ROWS + 1.04
 
 	fs(sprintf([[
 		formspec_version[%u]
@@ -1487,9 +1493,9 @@ local function make_fs(data)
 		no_prepend[]
 		bgcolor[#0000]
 	]],
-	MIN_FORMSPEC_VERSION, _ROWS + (data.query_item and 8 or 0), LINES + 1.7), styles)
+	MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), LINES + 1.7), styles)
 
-	fs(fmt("bg9", 0, 0, _ROWS, LINES + 1.7, PNG.bg_full, 10))
+	fs(fmt("bg9", 0, 0, data.xoffset, LINES + 1.7, PNG.bg_full, 10))
 
 	fs(sprintf([[
 		box[0.2,0.2;3.5,0.6;#bababa25]
@@ -1500,13 +1506,13 @@ local function make_fs(data)
 	   fmt("image_button", 3.75, 0.15, 0.7, 0.7, "", "search", ""),
 	   fmt("image_button", 4.43, 0.15, 0.7, 0.7, "", "clear", ""))
 
-	fs(fmt("image_button", _ROWS - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
-	   fmt("image_button", _ROWS - 0.7, 0.15, 0.7, 0.7, "", "next_page", ""))
+	fs(fmt("image_button", data.xoffset - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
+	   fmt("image_button", data.xoffset - 0.7, 0.15, 0.7, 0.7, "", "next_page", ""))
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	fs(fmt("button",
-		_ROWS - 2.53, 0.15, 1.88, 0.7, "pagenum",
+		data.xoffset - 2.53, 0.15, 1.88, 0.7, "pagenum",
 		sprintf("%s / %u", clr("#ff0", data.pagenum), data.pagemax)))
 
 	if #data.items == 0 then
@@ -1516,7 +1522,7 @@ local function make_fs(data)
 			lbl = ES"Collect items to reveal more recipes"
 		end
 
-		fs(fmt("button", 0, 3, _ROWS, 1, "no_item", lbl))
+		fs(fmt("button", 0, 3, data.xoffset, 1, "no_item", lbl))
 	end
 
 	local first_item = (data.pagenum - 1) * IPP
