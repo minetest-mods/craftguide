@@ -883,15 +883,15 @@ local function craft_stack(player, pname, data, _f)
 
 	if inv:room_for_item("main", stack) then
 		inv:add_item("main", stack)
-		msg(pname, sprintf("%s added to your inventory!", message))
+		msg(pname, sprintf(S"%s added to your inventory", message))
 	else
-		local dir    = player:get_look_dir()
-		local ppos   = player:get_pos()
-		      ppos.y = ppos.y + 1.625
+		local dir     = player:get_look_dir()
+		local ppos    = player:get_pos()
+		      ppos.y  = ppos.y + 1.625
 		local look_at = vec_add(ppos, vec_mul(dir, 1))
 
 		core.add_item(look_at, stack)
-		msg(pname, sprintf("%s crafted!", message))
+		msg(pname, sprintf(S"%s crafted", message))
 	end
 end
 
@@ -1365,7 +1365,7 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 		"craftguide_export.png", "craftguide_export.png"),
 	   fmt("image_button",
 		_ROWS + 7.35, _H + 0.2, 0.45, 0.45, "", sprintf("export_%s", name), ""),
-	   sprintf("tooltip[export_%s;%s]", name, ES"Craft this item"))
+	   sprintf("tooltip[export_%s;%s]", name, ES"Craft this stack"))
 
 	if not show_export then return end
 
