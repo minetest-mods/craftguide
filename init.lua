@@ -116,7 +116,8 @@ local fs_elements = {
 local styles = sprintf([[
 	style_type[label,field;font_size=+0]
 	style_type[image_button;border=false;sound=craftguide_click]
-	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s;sound=craftguide_click]
+	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s;
+		   sound=craftguide_click]
 
 	style[filter;border=false]
 	style[search;fgimg=%s;fgimg_hovered=%s]
@@ -128,8 +129,9 @@ local styles = sprintf([[
 	style[prev_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[next_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[pagenum,no_item,no_rcp;border=false;font=bold;font_size=+2;content_offset=0]
-	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_craft;bgimg=craftguide_btn9.png;
-	      bgimg_hovered=craftguide_btn9_hovered.png;bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
+	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_craft;
+	      bgimg=craftguide_btn9.png;bgimg_hovered=craftguide_btn9_hovered.png;
+	      bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
 PNG.selected, PNG.selected,
 PNG.search, PNG.search_hover,
@@ -224,7 +226,7 @@ local group_names = {
 
 craftguide.model_alias = {
 	["boats:boat"] = {name = "boats:boat", drawtype = "entity"},
-	--["carts:cart"] = {name = "carts:cart", drawtype = "entity"}, -- the cart animation is broken
+	--["carts:cart"] = {name = "carts:cart", drawtype = "entity"}, -- animation broken
 }
 
 local function err(str)
@@ -1109,13 +1111,15 @@ local function get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_siz
 	fs(fmt("image", arrow_X, Y + 0.06, 1, 1, PNG.arrow))
 
 	if rcp.type == "fuel" then
-		fs(fmt("animated_image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
+		fs(fmt("animated_image",
+			X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
 	else
 		local item = rcp.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
 
-		fs(fmt("image", X, Y - 0.11, ITEM_BTN_SIZE * 1.2, ITEM_BTN_SIZE * 1.2, PNG.selected))
+		fs(fmt("image",
+			X, Y - 0.11, ITEM_BTN_SIZE * 1.2, ITEM_BTN_SIZE * 1.2, PNG.selected))
 
 		local _name = sprintf("_%s", name)
 
@@ -1214,7 +1218,8 @@ local function get_grid_fs(fs, data, rcp)
 				end
 
 				if not added then
-					label = sprintf("%s%s\nR", label ~= "" and "\n" or "", label)
+					label = sprintf("%s%s\nR",
+						label ~= "" and "\n" or "", label)
 					replace.items[#replace.items + 1] = replacement[2]
 				end
 			end
@@ -1344,7 +1349,8 @@ local function get_title_fs(fs, data)
 		fs(sprintf("style[nofav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
 			"craftguide_fav_off.png", PNG.nothing, PNG.nothing),
 		   fmt("image_button", star_x, star_y, star_size, star_size, "", "nofav", ""),
-		   sprintf("tooltip[nofav;%s]", ES"Cannot mark this item. Bookmark limit reached."))
+		   sprintf("tooltip[nofav;%s]",
+			ES"Cannot mark this item. Bookmark limit reached."))
 	end
 
 	fs("style_type[label;font=bold;font_size=+6]",
@@ -1464,7 +1470,8 @@ local function get_panels(fs, data)
 			end
 		end
 
-		fs(fmt("bg9", data.xoffset + 0.1, data.yoffset, 7.9, panel.height, PNG.bg_full, 10))
+		fs(fmt("bg9",
+			data.xoffset + 0.1, data.yoffset, 7.9, panel.height, PNG.bg_full, 10))
 
 		local is_recipe, is_usage = panel.name == "recipes", panel.name == "usages"
 
