@@ -927,7 +927,14 @@ local function craft_stack(player, pname, data, _f)
 
 	local count = stackcount * scrbar_val
 	local stack = ItemStack(sprintf("%s %s", stackname, count))
-	local message = clr("#ff0", sprintf("%s x %s", count, get_desc(stackname)))
+	local desc = get_desc(stackname)
+	local message
+
+	if count > 1 then
+		message = clr("#ff0", sprintf("%s x %s", count, desc))
+	else
+		message = clr("#ff0", sprintf("%s", desc))
+	end
 
 	if inv:room_for_item("main", stack) then
 		inv:add_item("main", stack)
