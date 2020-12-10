@@ -1397,6 +1397,12 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 
 	if stack_fs > craft_max then
 		stack_fs = craft_max
+
+		if is_recipe then
+			data.scrbar_rcp = craft_max
+		elseif is_usage then
+			data.scrbar_usg = craft_max
+		end
 	end
 
 	fs(sprintf("style[scrbar_%s;noclip=true]", name),
