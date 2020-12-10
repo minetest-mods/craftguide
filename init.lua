@@ -129,7 +129,7 @@ local styles = sprintf([[
 	style[prev_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[next_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[pagenum,no_item,no_rcp;border=false;font=bold;font_size=+2;content_offset=0]
-	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_click;bgimg=craftguide_btn9.png;
+	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_craft;bgimg=craftguide_btn9.png;
 	      bgimg_hovered=craftguide_btn9_hovered.png;bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
 PNG.selected, PNG.selected,
@@ -1341,10 +1341,10 @@ local function get_title_fs(fs, query_item, favs, lang_code)
 		   fmt("image_button", star_x, star_y, star_size, star_size, "", "fav", ""),
 		   sprintf("tooltip[fav;%s]", fav and ES"Unmark this item" or ES"Mark this item"))
 	else
-		fs(sprintf("style[fav_no;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
+		fs(sprintf("style[nofav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
 			"craftguide_fav_off.png", PNG.nothing, PNG.nothing),
-		   fmt("image_button", star_x, star_y, star_size, star_size, "", "fav_no", ""),
-		   sprintf("tooltip[fav_no;%s]", ES"Cannot mark this item. Bookmark limit reached."))
+		   fmt("image_button", star_x, star_y, star_size, star_size, "", "nofav", ""),
+		   sprintf("tooltip[nofav;%s]", ES"Cannot mark this item. Bookmark limit reached."))
 	end
 
 	fs("style_type[label;font=bold;font_size=+6]",
