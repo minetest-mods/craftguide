@@ -62,6 +62,6 @@ Unmark this item=Enlever des favoris.
 Cannot mark this item. Limit of bookmarks reached.=Impossible de mettre cet item en favori. Limite des favoris atteinte.
 Only drop if using one of these tools: @1=Tombe seulement si détruit avec un de ces outils : @1
 Only drop if using this tool: @1=Tombe seulement si détruit avec cet outil : @1
-Craft this stack=Fabriquer cet objet
+Craft @1 stack(s)=Fabriquer @1 objet(s)
 @1 added in your inventory=@1 mis dans votre inventaire
 @1 crafted=@1 fabriqué(s)

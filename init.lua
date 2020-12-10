@@ -558,6 +558,46 @@ function craftguide.get_search_filters()
 	return search_filters
 end
 
+local function weird_desc(str)
+	return not true_str(str) or find(str, "\n") or not find(str, "%u")
+end
+
+local function toupper(str)
+	return str:gsub("%f[%w]%l", upper):gsub("_", " ")
+end
+
+local function snip(str, limit)
+	return #str > limit and sprintf("%s...", sub(str, 1, limit - 3)) or str
+end
+
+local function get_desc(item, lang_code)
+	if sub(item, 1, 1) == "_" then
+		item = sub(item, 2)
+	end
+
+	local def = reg_items[item]
+
+	if def then
+		local desc = def.description
+		desc = lang_code and translate(lang_code, desc) or desc
+
+		if true_str(desc) then
+			desc = desc:trim():match("[^\n]*")
+
+			if not find(desc, "%u") then
+				desc = toupper(desc)
+			end
+
+			return desc
+
+		elseif true_str(item) then
+			return toupper(match(item, ":(.*)"))
+		end
+	end
+
+	return S("Unknown Item (@1)", item)
+end
+
 local function item_has_groups(item_groups, groups)
 	for i = 1, #groups do
 		local group = groups[i]
@@ -886,7 +926,7 @@ local function craft_stack(player, pname, data, _f)
 
 	local count = stackcount * scrbar_val
 	local stack = ItemStack(sprintf("%s %s", stackname, count))
-	local message = clr("#ff0", sprintf("%s x %s", count, stackname))
+	local message = clr("#ff0", sprintf("%s x %s", count, get_desc(stackname)))
 
 	if inv:room_for_item("main", stack) then
 		inv:add_item("main", stack)
@@ -957,46 +997,6 @@ local function is_fav(favs, query_item)
 	end
 
 	return fav, i
-end
-
-local function weird_desc(str)
-	return not true_str(str) or find(str, "\n") or not find(str, "%u")
-end
-
-local function toupper(str)
-	return str:gsub("%f[%w]%l", upper):gsub("_", " ")
-end
-
-local function snip(str, limit)
-	return #str > limit and sprintf("%s...", sub(str, 1, limit - 3)) or str
-end
-
-local function get_desc(item, lang_code)
-	if sub(item, 1, 1) == "_" then
-		item = sub(item, 2)
-	end
-
-	local def = reg_items[item]
-
-	if def then
-		local desc = def.description
-		desc = lang_code and translate(lang_code, desc) or desc
-
-		if true_str(desc) then
-			desc = desc:trim():match("[^\n]*")
-
-			if not find(desc, "%u") then
-				desc = toupper(desc)
-			end
-
-			return desc
-
-		elseif true_str(item) then
-			return toupper(match(item, ":(.*)"))
-		end
-	end
-
-	return S("Unknown Item (@1)", item)
 end
 
 local function get_tooltip(item, info)
@@ -1393,8 +1393,7 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 	   sprintf("scrollbaroptions[min=1;max=%u;smallstep=1]", min(craft_max, stack_max)),
 	   fmt("scrollbar", _ROWS + 8.1, _H, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
 	   fmt("button", _ROWS + 8.1, _H + 0.4, 3, 0.7, sprintf("craft_%s", name),
-		sprintf("%s", stack_fs == 1 and ES"Craft stack" or
-			sprintf(ES"Craft %u stacks", stack_fs))))
+		sprintf("%s", sprintf(ES"Craft %u stack(s)", stack_fs))))
 end
 
 local function get_rcp_extra(fs, data, panel, is_recipe, is_usage)
