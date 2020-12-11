@@ -891,14 +891,13 @@ local function get_stack_max(data, is_recipe, rcp)
 	return max_stacks
 end
 
-local function craft_stack(player, pname, data, _f)
+local function craft_stack(player, pname, data, craft_rcp)
 	local inv = player:get_inventory()
-	local rcp_usg = _f.craft_rcp and "recipe" or "usage"
-	local output = _f.craft_rcp and
-			data.recipes[data.rnum].output or data.usages[data.unum].output
+	local rcp_usg = craft_rcp and "recipe" or "usage"
+	local output = craft_rcp and data.recipes[data.rnum].output or data.usages[data.unum].output
 	output = ItemStack(output)
 	local stackname, stackcount = output:get_name(), output:get_count()
-	local scrbar_val = data[sprintf("scrbar_%s", _f.craft_rcp and "rcp" or "usg")]
+	local scrbar_val = data[sprintf("scrbar_%s", craft_rcp and "rcp" or "usg")]
 
 	for name, count in pairs(data.export_counts[rcp_usg].rcp) do
 		local items = {[name] = count}
@@ -1120,20 +1119,18 @@ local function get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_siz
 	fs(fmt("image", arrow_X, Y + 0.06, 1, 1, PNG.arrow))
 
 	if rcp.type == "fuel" then
-		fs(fmt("animated_image",
-			X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
+		fs(fmt("animated_image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
 	else
 		local item = rcp.output
 		item = clean_name(item)
 		local name = match(item, "%S*")
+		local bt_s = ITEM_BTN_SIZE * 1.2
 
-		fs(fmt("image",
-			X, Y - 0.11, ITEM_BTN_SIZE * 1.2, ITEM_BTN_SIZE * 1.2, PNG.selected))
+		fs(fmt("image", X, Y - 0.11, bt_s, bt_s, PNG.selected))
 
 		local _name = sprintf("_%s", name)
 
-		fs(fmt("item_image_button",
-			X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, ""))
+		fs(fmt("item_image_button", X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, ""))
 
 		local def = reg_items[name]
 		local unknown = not def or nil
@@ -1227,8 +1224,7 @@ local function get_grid_fs(fs, data, rcp)
 				end
 
 				if not added then
-					label = sprintf("%s%s\nR",
-						label ~= "" and "\n" or "", label)
+					label = sprintf("%s%s\nR", label ~= "" and "\n" or "", label)
 					replace.items[#replace.items + 1] = replacement[2]
 				end
 			end
@@ -1350,16 +1346,14 @@ local function get_title_fs(fs, data)
 		local fav_marked = sprintf("craftguide_fav%s.png", fav and "_off" or "")
 
 		fs(sprintf("style[fav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
-			sprintf("craftguide_fav%s.png", fav and "" or "_off"),
-			fav_marked, fav_marked),
+			sprintf("craftguide_fav%s.png", fav and "" or "_off"), fav_marked, fav_marked),
 		   fmt("image_button", star_x, star_y, star_size, star_size, "", "fav", ""),
 		   sprintf("tooltip[fav;%s]", fav and ES"Unmark this item" or ES"Mark this item"))
 	else
 		fs(sprintf("style[nofav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
 			"craftguide_fav_off.png", PNG.nothing, PNG.nothing),
 		   fmt("image_button", star_x, star_y, star_size, star_size, "", "nofav", ""),
-		   sprintf("tooltip[nofav;%s]",
-			ES"Cannot mark this item. Bookmark limit reached."))
+		   sprintf("tooltip[nofav;%s]", ES"Cannot mark this item. Bookmark limit reached."))
 	end
 
 	fs("style_type[label;font=bold;font_size=+6]",
@@ -1486,8 +1480,7 @@ local function get_panels(fs, data)
 			end
 		end
 
-		fs(fmt("bg9",
-			data.xoffset + 0.1, data.yoffset, 7.9, panel.height, PNG.bg_full, 10))
+		fs(fmt("bg9", data.xoffset + 0.1, data.yoffset, 7.9, panel.height, PNG.bg_full, 10))
 
 		local is_recipe, is_usage = panel.name == "recipes", panel.name == "usages"
 
@@ -1842,9 +1835,7 @@ local function fields(player, _f)
 	if _f.quit then return end
 	local name = player:get_player_name()
 	local data = pdata[name]
-
-	local scrbar_rcp_CHG = _f.scrbar_rcp and sub(_f.scrbar_rcp, 1, 3) == "CHG"
-	local scrbar_usg_CHG = _f.scrbar_usg and sub(_f.scrbar_usg, 1, 3) == "CHG"
+	local sb_rcp, sb_usg = _f.scrbar_rcp, _f.scrbar_usg
 
 	if _f.clear then
 		reset_data(data)
@@ -1902,12 +1893,12 @@ local function fields(player, _f)
 			data.export_usg = not data.export_usg
 		end
 
-	elseif scrbar_rcp_CHG or scrbar_usg_CHG then
-		data.scrbar_rcp = _f.scrbar_rcp and tonum(match(_f.scrbar_rcp, "%d+"))
-		data.scrbar_usg = _f.scrbar_usg and tonum(match(_f.scrbar_usg, "%d+"))
+	elseif (sb_rcp and sub(sb_rcp, 1, 3) == "CHG") or (sb_usg and sub(sb_usg, 1, 3) == "CHG") then
+		data.scrbar_rcp = sb_rcp and tonum(match(sb_rcp, "%d+"))
+		data.scrbar_usg = sb_usg and tonum(match(sb_usg, "%d+"))
 
 	elseif _f.craft_rcp or _f.craft_usg then
-		craft_stack(player, name, data, _f)
+		craft_stack(player, name, data, _f.craft_rcp)
 	else
 		select_item(player, data, _f)
 	end
