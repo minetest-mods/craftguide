@@ -839,9 +839,9 @@ local function groups_to_items(groups, get_all)
 end
 
 local function get_stack_max(data, is_recipe, rcp)
-	local inv = data.player:get_inventory()
-	local list = inv:get_list("main")
-	local size = inv:get_size("main")
+	data.inv = data.player:get_inventory()
+	local list = data.inv:get_list("main")
+	local size = data.inv:get_size("main")
 	local counts_inv, counts_rcp, counts = {}, {}, {}
 	local rcp_usg = is_recipe and "recipe" or "usage"
 
@@ -892,7 +892,6 @@ local function get_stack_max(data, is_recipe, rcp)
 end
 
 local function craft_stack(player, pname, data, craft_rcp)
-	local inv = player:get_inventory()
 	local rcp_usg = craft_rcp and "recipe" or "usage"
 	local output = craft_rcp and data.recipes[data.rnum].output or data.usages[data.unum].output
 	output = ItemStack(output)
@@ -922,7 +921,7 @@ local function craft_stack(player, pname, data, craft_rcp)
 		end
 
 		for k, v in pairs(items) do
-			inv:remove_item("main", sprintf("%s %s", k, v * scrbar_val))
+			data.inv:remove_item("main", sprintf("%s %s", k, v * scrbar_val))
 		end
 	end
 
@@ -937,8 +936,8 @@ local function craft_stack(player, pname, data, craft_rcp)
 		message = clr("#ff0", sprintf("%s", desc))
 	end
 
-	if inv:room_for_item("main", stack) then
-		inv:add_item("main", stack)
+	if data.inv:room_for_item("main", stack) then
+		data.inv:add_item("main", stack)
 		msg(pname, sprintf("%s added in your inventory", message))
 	else
 		local dir     = player:get_look_dir()
