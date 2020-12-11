@@ -897,7 +897,7 @@ local function craft_stack(player, pname, data, craft_rcp)
 	local output = craft_rcp and data.recipes[data.rnum].output or data.usages[data.unum].output
 	output = ItemStack(output)
 	local stackname, stackcount = output:get_name(), output:get_count()
-	local scrbar_val = data[sprintf("scrbar_%s", craft_rcp and "rcp" or "usg")]
+	local scrbar_val = data[sprintf("scrbar_%s", craft_rcp and "rcp" or "usg")] or 1
 
 	for name, count in pairs(data.export_counts[rcp_usg].rcp) do
 		local items = {[name] = count}
@@ -1431,6 +1431,14 @@ local function get_rcp_extra(fs, data, panel, is_recipe, is_usage)
 
 		if usg_normal then
 			max_stacks_usg = get_stack_max(data, is_recipe, panel.rcp[data.unum])
+		end
+
+		if is_recipe and max_stacks_rcp == 0 then
+			data.export_rcp = nil
+			data.scrbar_rcp = 1
+		elseif is_usage and max_stacks_usg == 0 then
+			data.export_usg = nil
+			data.scrbar_usg = 1
 		end
 
 		if max_stacks_rcp > 0 or max_stacks_usg > 0 then
