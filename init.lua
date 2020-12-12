@@ -1085,7 +1085,7 @@ local function get_tooltip(item, info)
 	return sprintf("tooltip[%s;%s]", item, ESC(tooltip))
 end
 
-local function get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_size)
+local function get_output_fs(fs, data, rcp, is_recipe, shapeless, right, btn_size, _btn_size)
 	local custom_recipe = craft_types[rcp.type]
 
 	if custom_recipe or shapeless or rcp.type == "cooking" then
@@ -1121,15 +1121,19 @@ local function get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_siz
 		fs(fmt("animated_image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.fire_anim, 8, 180))
 	else
 		local item = rcp.output
-		item = clean_name(item)
-		local name = match(item, "%S*")
+		item = ItemStack(clean_name(item))
+		local name = item:get_name()
+		local count = item:get_count()
 		local bt_s = ITEM_BTN_SIZE * 1.2
 
 		fs(fmt("image", X, Y - 0.11, bt_s, bt_s, PNG.selected))
 
 		local _name = sprintf("_%s", name)
 
-		fs(fmt("item_image_button", X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, _name, ""))
+		fs(fmt("item_image_button", X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE,
+			sprintf("%s %u", name,
+				count * (is_recipe and data.scrbar_rcp or data.scrbar_usg or 1)),
+			_name, ""))
 
 		local def = reg_items[name]
 		local unknown = not def or nil
@@ -1152,7 +1156,7 @@ local function get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_siz
 	end
 end
 
-local function get_grid_fs(fs, data, rcp)
+local function get_grid_fs(fs, data, rcp, is_recipe)
 	local width = rcp.width or 1
 	local right, btn_size, _btn_size = 0, ITEM_BTN_SIZE
 	local cooktime, shapeless
@@ -1235,7 +1239,9 @@ local function get_grid_fs(fs, data, rcp)
 
 		local btn_name = groups and sprintf("group|%s|%s", groups[1], item) or item
 
-		fs(fmt("item_image_button", X, Y, btn_size, btn_size, item, btn_name, label))
+		fs(fmt("item_image_button", X, Y, btn_size, btn_size,
+			sprintf("%s %u", item, is_recipe and data.scrbar_rcp or data.scrbar_usg or 1),
+			btn_name, label))
 
 		local def = reg_items[name]
 		local unknown = not def or nil
@@ -1262,7 +1268,7 @@ local function get_grid_fs(fs, data, rcp)
 		fs("style_type[item_image_button;border=false]")
 	end
 
-	get_output_fs(fs, data, rcp, shapeless, right, btn_size, _btn_size)
+	get_output_fs(fs, data, rcp, is_recipe, shapeless, right, btn_size, _btn_size)
 end
 
 local function get_rcp_lbl(fs, data, panel, rn, is_recipe)
@@ -1290,7 +1296,7 @@ local function get_rcp_lbl(fs, data, panel, rn, is_recipe)
 	end
 
 	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
-	get_grid_fs(fs, data, rcp)
+	get_grid_fs(fs, data, rcp, is_recipe)
 end
 
 local function get_model_fs(fs, data, def, model_alias)
