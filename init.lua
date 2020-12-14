@@ -1390,7 +1390,7 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 	   fmt("image_button",
 		data.xoffset + 7.35, data.yoffset + 0.2, 0.45, 0.45, "",
 		sprintf("export_%s", name), ""),
-	   sprintf("tooltip[export_%s;%s]", name, ES"Craft this stack"))
+	   sprintf("tooltip[export_%s;%s]", name, ES"Quick crafting"))
 
 	if not show_export then return end
 
