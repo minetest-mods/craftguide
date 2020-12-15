@@ -105,7 +105,7 @@ local fs_elements = {
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	bg9 = "background9[%f,%f;%f,%f;%s;false;%u]",
-	model = "model[%f,%f;%f,%f;%s;%s;%s;0,0;true]",
+	model = "model[%f,%f;%f,%f;%s;%s;%s;0,0;true;true;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	animated_image = "animated_image[%f,%f;%f,%f;;%s;%u;%u]",
 	scrollbar = "scrollbar[%f,%f;%f,%f;horizontal;%s;%u]",
@@ -226,7 +226,7 @@ local group_names = {
 
 craftguide.model_alias = {
 	["boats:boat"] = {name = "boats:boat", drawtype = "entity"},
-	--["carts:cart"] = {name = "carts:cart", drawtype = "entity"}, -- animation broken
+	["carts:cart"] = {name = "carts:cart", drawtype = "entity", frames = "0,0"},
 }
 
 local function err(str)
@@ -1339,7 +1339,8 @@ local function get_model_fs(fs, data, def, model_alias)
 	end
 
 	fs(fmt("model",
-		data.xoffset + 6.6, data.yoffset + 0.05, 1.3, 1.3, "", def.mesh, concat(t, ",")))
+		data.xoffset + 6.6, data.yoffset + 0.05, 1.3, 1.3, "",
+		def.mesh, concat(t, ","), model_alias.frames or ""))
 end
 
 local function get_title_fs(fs, data)
