@@ -79,7 +79,6 @@ local PNG = {
 	bg = "craftguide_bg.png",
 	bg_full = "craftguide_bg_full.png",
 	search = "craftguide_search_icon.png",
-	clear = "craftguide_clear_icon.png",
 	prev = "craftguide_next_icon.png^\\[transformFX",
 	next = "craftguide_next_icon.png",
 	arrow = "craftguide_arrow.png",
@@ -92,7 +91,6 @@ local PNG = {
 	furnace_anim = "craftguide_furnace_anim.png",
 
 	search_hover = "craftguide_search_icon_hover.png",
-	clear_hover = "craftguide_clear_icon_hover.png",
 	prev_hover = "craftguide_next_icon_hover.png^\\[transformFX",
 	next_hover = "craftguide_next_icon_hover.png",
 }
@@ -121,7 +119,6 @@ local styles = sprintf([[
 
 	style[filter;border=false]
 	style[search;fgimg=%s;fgimg_hovered=%s]
-	style[clear;fgimg=%s;fgimg_hovered=%s]
 	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[prev_recipe;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
@@ -135,7 +132,6 @@ local styles = sprintf([[
 ]],
 PNG.selected, PNG.selected,
 PNG.search, PNG.search_hover,
-PNG.clear, PNG.clear_hover,
 PNG.prev, PNG.prev_hover, PNG.prev_hover,
 PNG.next, PNG.next_hover, PNG.next_hover,
 PNG.prev, PNG.prev_hover, PNG.prev_hover,
@@ -1528,13 +1524,16 @@ local function make_fs(data)
 	fs(fmt("bg9", 0, 0, data.xoffset, LINES + 1.7, PNG.bg_full, 10))
 
 	fs(sprintf([[
-		box[0.2,0.2;3.5,0.6;#bababa25]
+		box[0.2,0.2;4,0.6;#bababa25]
 		set_focus[filter]
-		field[0.2,0.2;3.5,0.6;filter;;%s]
+		field[0.3,0.2;3.4,0.6;filter;;%s]
 		field_close_on_enter[filter;false]
 	   ]], ESC(data.filter)),
-	   fmt("image_button", 3.75, 0.15, 0.7, 0.7, "", "search", ""),
-	   fmt("image_button", 4.43, 0.15, 0.7, 0.7, "", "clear", ""))
+	   fmt("image_button", 4.25, 0.14, 0.7, 0.7, "", "search", ""))
+
+	if data.filter ~= "" then
+		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, "craftguide_cancel.png", "cancel", ""))
+	end
 
 	fs(fmt("image_button", data.xoffset - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
 	   fmt("image_button", data.xoffset - 0.7, 0.15, 0.7, 0.7, "", "next_page", ""))
@@ -1851,7 +1850,7 @@ local function fields(player, _f)
 	local data = pdata[name]
 	local sb_rcp, sb_usg = _f.scrbar_rcp, _f.scrbar_usg
 
-	if _f.clear then
+	if _f.cancel then
 		reset_data(data)
 
 	elseif _f.prev_recipe or _f.next_recipe then
