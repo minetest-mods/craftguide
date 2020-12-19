@@ -1903,8 +1903,16 @@ local function fields(player, _f)
 	elseif _f.export_rcp or _f.export_usg then
 		if _f.export_rcp then
 			data.export_rcp = not data.export_rcp
+
+			if not data.export_rcp then
+				data.scrbar_rcp = 1
+			end
 		else
 			data.export_usg = not data.export_usg
+
+			if not data.export_usg then
+				data.scrbar_usg = 1
+			end
 		end
 
 	elseif (sb_rcp and sub(sb_rcp, 1, 3) == "CHG") or (sb_usg and sub(sb_usg, 1, 3) == "CHG") then
