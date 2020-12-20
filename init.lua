@@ -1542,7 +1542,7 @@ local function make_fs(data)
 	   fmt("image_button", 4.25, 0.14, 0.7, 0.7, "", "search", ""))
 
 	if data.filter ~= "" then
-		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, PNG.cancel, "cancel", ""))
+		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, "", "cancel", ""))
 	end
 
 	fs(fmt("image_button", data.xoffset - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
