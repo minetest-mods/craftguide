@@ -86,7 +86,7 @@ local PNG = {
 	fire_anim = "craftguide_fire_anim.png",
 	book = "craftguide_book.png",
 	sign = "craftguide_sign.png",
-	nothing = "craftguide_no.png",
+	cancel = "craftguide_cancel.png",
 	selected = "craftguide_selected.png",
 	furnace_anim = "craftguide_furnace_anim.png",
 
@@ -118,6 +118,7 @@ local styles = sprintf([[
 		   sound=craftguide_click]
 
 	style[filter;border=false]
+	style[cancel;fgimg=%s;fgimg_hovered=%s^[brighten;fgimg_pressed=%s^[brighten]
 	style[search;fgimg=%s;fgimg_hovered=%s]
 	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
@@ -131,6 +132,7 @@ local styles = sprintf([[
 	      bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
 PNG.selected, PNG.selected,
+PNG.cancel, PNG.cancel, PNG.cancel,
 PNG.search, PNG.search_hover,
 PNG.prev, PNG.prev_hover, PNG.prev_hover,
 PNG.next, PNG.next_hover, PNG.next_hover,
@@ -223,6 +225,13 @@ local group_names = {
 craftguide.model_alias = {
 	["boats:boat"] = {name = "boats:boat", drawtype = "entity"},
 	["carts:cart"] = {name = "carts:cart", drawtype = "entity", frames = "0,0"},
+	["default:chest"] = {name = "default:chest_open"},
+	["default:chest_locked"] = {name = "default:chest_locked_open"},
+	["doors:door_wood"] = {name = "doors:door_wood_a"},
+	["doors:door_glass"] = {name = "doors:door_glass_a"},
+	["doors:door_obsidian_glass"] = {name = "doors:door_obsidian_glass_a"},
+	["doors:door_steel"] = {name = "doors:door_steel_a"},
+	["xpanes:door_steel_bar"] = {name = "xpanes:door_steel_bar_a"},
 }
 
 local function err(str)
@@ -1336,7 +1345,7 @@ local function get_model_fs(fs, data, def, model_alias)
 
 	fs(fmt("model",
 		data.xoffset + 6.6, data.yoffset + 0.05, 1.3, 1.3, "",
-		def.mesh, concat(t, ","), model_alias.frames or ""))
+		def.mesh, concat(t, ","), model_alias and model_alias.frames or ""))
 end
 
 local function get_title_fs(fs, data)
@@ -1353,7 +1362,7 @@ local function get_title_fs(fs, data)
 		   sprintf("tooltip[fav;%s]", fav and ES"Unmark this item" or ES"Mark this item"))
 	else
 		fs(sprintf("style[nofav;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
-			"craftguide_fav_off.png", PNG.nothing, PNG.nothing),
+			"craftguide_fav_off.png", PNG.cancel, PNG.cancel),
 		   fmt("image_button", star_x, star_y, star_size, star_size, "", "nofav", ""),
 		   sprintf("tooltip[nofav;%s]", ES"Cannot mark this item. Bookmark limit reached."))
 	end
@@ -1532,7 +1541,7 @@ local function make_fs(data)
 	   fmt("image_button", 4.25, 0.14, 0.7, 0.7, "", "search", ""))
 
 	if data.filter ~= "" then
-		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, "craftguide_cancel.png", "cancel", ""))
+		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, PNG.cancel, "cancel", ""))
 	end
 
 	fs(fmt("image_button", data.xoffset - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
