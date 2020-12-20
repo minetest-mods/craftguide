@@ -90,6 +90,7 @@ local PNG = {
 	selected = "craftguide_selected.png",
 	furnace_anim = "craftguide_furnace_anim.png",
 
+	cancel_hover = "craftguide_cancel.png^\\[brighten",
 	search_hover = "craftguide_search_icon_hover.png",
 	prev_hover = "craftguide_next_icon_hover.png^\\[transformFX",
 	next_hover = "craftguide_next_icon_hover.png",
@@ -118,7 +119,7 @@ local styles = sprintf([[
 		   sound=craftguide_click]
 
 	style[filter;border=false]
-	style[cancel;fgimg=%s;fgimg_hovered=%s^[brighten;fgimg_pressed=%s^[brighten]
+	style[cancel;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[search;fgimg=%s;fgimg_hovered=%s]
 	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
 	style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
@@ -132,7 +133,7 @@ local styles = sprintf([[
 	      bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
 PNG.selected, PNG.selected,
-PNG.cancel, PNG.cancel, PNG.cancel,
+PNG.cancel, PNG.cancel_hover, PNG.cancel_hover,
 PNG.search, PNG.search_hover,
 PNG.prev, PNG.prev_hover, PNG.prev_hover,
 PNG.next, PNG.next_hover, PNG.next_hover,
