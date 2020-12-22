@@ -115,32 +115,31 @@ local fs_elements = {
 local styles = sprintf([[
 	style_type[label,field;font_size=+0]
 	style_type[image_button;border=false;sound=craftguide_click]
-	style_type[item_image_button;border=false;bgimg_hovered=%s;bgimg_pressed=%s;
-		   sound=craftguide_click]
+	style_type[item_image_button;border=false;bgimg_hovered=%s;sound=craftguide_click]
 
 	style[filter;border=false]
-	style[cancel;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[cancel;fgimg=%s;fgimg_hovered=%s;content_offset=0]
 	style[search;fgimg=%s;fgimg_hovered=%s]
-	style[prev_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-	style[next_page;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-	style[prev_recipe;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-	style[next_recipe;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-	style[prev_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
-	style[next_usage;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]
+	style[prev_page;fgimg=%s;fgimg_hovered=%s]
+	style[next_page;fgimg=%s;fgimg_hovered=%s]
+	style[prev_recipe;fgimg=%s;fgimg_hovered=%s]
+	style[next_recipe;fgimg=%s;fgimg_hovered=%s]
+	style[prev_usage;fgimg=%s;fgimg_hovered=%s]
+	style[next_usage;fgimg=%s;fgimg_hovered=%s]
 	style[pagenum,no_item,no_rcp;border=false;font=bold;font_size=+2;content_offset=0]
 	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_craft;
 	      bgimg=craftguide_btn9.png;bgimg_hovered=craftguide_btn9_hovered.png;
 	      bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
-PNG.selected, PNG.selected,
-PNG.cancel, PNG.cancel_hover, PNG.cancel_hover,
+PNG.selected,
+PNG.cancel, PNG.cancel_hover,
 PNG.search, PNG.search_hover,
-PNG.prev, PNG.prev_hover, PNG.prev_hover,
-PNG.next, PNG.next_hover, PNG.next_hover,
-PNG.prev, PNG.prev_hover, PNG.prev_hover,
-PNG.next, PNG.next_hover, PNG.next_hover,
-PNG.prev, PNG.prev_hover, PNG.prev_hover,
-PNG.next, PNG.next_hover, PNG.next_hover)
+PNG.prev, PNG.prev_hover,
+PNG.next, PNG.next_hover,
+PNG.prev, PNG.prev_hover,
+PNG.next, PNG.next_hover,
+PNG.prev, PNG.prev_hover,
+PNG.next, PNG.next_hover)
 
 local function get_lang_code(info)
 	return info and info.lang_code
