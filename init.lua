@@ -2286,7 +2286,7 @@ function craftguide.show(name, item, show_usages)
 	if not recipes and not usages then
 		if not recipes_cache[item] and not usages_cache[item] then
 			return false, msg(name, sprintf("%s: %s",
-				S"No recipe or usage for this item", get_desc(item)))
+				S"No recipe or usage for this node", clr("#ff0", get_desc(item))))
 		end
 
 		return false, msg(name, sprintf("%s: %s",
@@ -2315,8 +2315,12 @@ register_command("craft", {
 			local node = core.get_node(look_at)
 
 			if node.name ~= "air" then
-				node_name = node.name
-				break
+				local def = reg_items[node.name]
+
+				if def then
+					node_name = node.name
+					break
+				end
 			end
 		end
 
