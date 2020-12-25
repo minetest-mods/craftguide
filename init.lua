@@ -79,8 +79,8 @@ local PNG = {
 	bg = "craftguide_bg.png",
 	bg_full = "craftguide_bg_full.png",
 	search = "craftguide_search.png",
-	prev = "craftguide_next_icon.png^\\[transformFX",
-	next = "craftguide_next_icon.png",
+	prev = "craftguide_next.png^\\[transformFX",
+	next = "craftguide_next.png",
 	arrow = "craftguide_arrow.png",
 	fire = "craftguide_fire.png",
 	fire_anim = "craftguide_fire_anim.png",
@@ -92,8 +92,8 @@ local PNG = {
 
 	cancel_hover = "craftguide_cancel.png^\\[brighten",
 	search_hover = "craftguide_search.png^\\[brighten",
-	prev_hover = "craftguide_next_icon_hover.png^\\[transformFX",
-	next_hover = "craftguide_next_icon_hover.png",
+	prev_hover = "craftguide_next_hover.png^\\[transformFX",
+	next_hover = "craftguide_next_hover.png",
 }
 
 local fs_elements = {
