@@ -109,7 +109,6 @@ local fs_elements = {
 	animated_image = "animated_image[%f,%f;%f,%f;;%s;%u;%u]",
 	scrollbar = "scrollbar[%f,%f;%f,%f;horizontal;%s;%u]",
 	item_image_button = "item_image_button[%f,%f;%f,%f;%s;%s;%s]",
-	arrow = "image_button[%f,%f;0.7,0.7;%s;%s;;;false;%s]",
 }
 
 local styles = sprintf([[
@@ -1135,9 +1134,9 @@ local function get_output_fs(fs, data, rcp, is_recipe, shapeless, right, btn_siz
 
 		local _name = sprintf("_%s", name)
 
-		fs(fmt("item_image_button", X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE,
-			sprintf("%s %u", name,
-				count * (is_recipe and data.scrbar_rcp or data.scrbar_usg or 1)),
+		fs(fmt("item_image_button",
+			X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE,
+			sprintf("%s %u", name, count * (is_recipe and data.scrbar_rcp or data.scrbar_usg or 1)),
 			_name, ""))
 
 		local def = reg_items[name]
@@ -1293,11 +1292,11 @@ local function get_rcp_lbl(fs, data, panel, rn, is_recipe)
 		local btn_suffix = is_recipe and "recipe" or "usage"
 		local prev_name = sprintf("prev_%s", btn_suffix)
 		local next_name = sprintf("next_%s", btn_suffix)
-		local x_arrow = data.xoffset + 4.9
-		local y_arrow = data.yoffset + 3
+		local x_arrow = data.xoffset + 5.1
+		local y_arrow = data.yoffset + 3.2
 
-		fs(fmt("arrow", x_arrow - shift, y_arrow, PNG.prev, prev_name, ""),
-		   fmt("arrow", x_arrow + 2.3,   y_arrow, PNG.next, next_name, ""))
+		fs(fmt("image_button", x_arrow - shift, y_arrow, 0.3, 0.3, "", prev_name, ""),
+		   fmt("image_button", x_arrow + 2.3,   y_arrow, 0.3, 0.3, "", next_name, ""))
 	end
 
 	local rcp = is_recipe and panel.rcp[data.rnum] or panel.rcp[data.unum]
@@ -1539,13 +1538,13 @@ local function make_fs(data)
 
 	fs(fmt("image_button", 4.25, 0.32, 0.35, 0.35, "", "search", ""))
 
-	fs(fmt("image_button", data.xoffset - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
-	   fmt("image_button", data.xoffset - 0.7, 0.15, 0.7, 0.7, "", "next_page", ""))
+	fs(fmt("image_button", data.xoffset - 2.73, 0.3, 0.35, 0.35, "", "prev_page", ""),
+	   fmt("image_button", data.xoffset - 0.55, 0.3, 0.35, 0.35, "", "next_page", ""))
 
 	data.pagemax = max(1, ceil(#data.items / IPP))
 
 	fs(fmt("button",
-		data.xoffset - 2.53, 0.15, 1.88, 0.7, "pagenum",
+		data.xoffset - 2.4, 0.14, 1.88, 0.7, "pagenum",
 		sprintf("%s / %u", clr("#ff0", data.pagenum), data.pagemax)))
 
 	if #data.items == 0 then

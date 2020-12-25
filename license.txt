@@ -27,8 +27,6 @@ THE SOFTWARE.
 Licenses of media (textures)
 ----------------------------
 
-Copyright © Diego Martínez (kaeza): craftguide_*_icon.png (CC BY-SA 3.0)
-
 paramat (CC BY-SA 3.0):
   sfinv_crafting_arrow.png - derived from a texture by BlockMen (CC BY-SA 3.0)
 
