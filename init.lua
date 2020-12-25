@@ -1292,7 +1292,7 @@ local function get_rcp_lbl(fs, data, panel, rn, is_recipe)
 		local btn_suffix = is_recipe and "recipe" or "usage"
 		local prev_name = sprintf("prev_%s", btn_suffix)
 		local next_name = sprintf("next_%s", btn_suffix)
-		local x_arrow = data.xoffset + 5.1
+		local x_arrow = data.xoffset + 5.09
 		local y_arrow = data.yoffset + 3.2
 
 		fs(fmt("image_button", x_arrow - shift, y_arrow, 0.3, 0.3, "", prev_name, ""),
