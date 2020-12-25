@@ -1522,27 +1522,22 @@ local function make_fs(data)
 
 	data.xoffset = ROWS + 1.04
 
-	fs(sprintf([[
-		formspec_version[%u]
-		size[%f,%f]
-		no_prepend[]
-		bgcolor[#0000]
-	]],
-	MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), LINES + 1.7), styles)
+	fs(sprintf("formspec_version[%u]size[%f,%f]no_prepend[]bgcolor[#0000]",
+		MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), LINES + 1.7),
+		styles)
+
+	local filtered = data.filter ~= ""
 
 	fs(fmt("bg9", 0, 0, data.xoffset, LINES + 1.7, PNG.bg_full, 10))
 
-	fs(sprintf([[
-		box[0.2,0.2;4.55,0.6;#bababa25]
-		set_focus[filter]
-		field[0.3,0.2;3.4,0.6;filter;;%s]
-		field_close_on_enter[filter;false]
-	   ]], ESC(data.filter)),
-	   fmt("image_button", 4.25, 0.32, 0.35, 0.35, "", "search", ""))
+	fs("box[0.2,0.2;4.55,0.6;#bababa25]set_focus[filter]field_close_on_enter[filter;false]")
+	fs(sprintf("field[0.3,0.2;%f,0.6;filter;;%s]", filtered and 3.45 or 3.9, ESC(data.filter)))
 
-	if data.filter ~= "" then
+	if filtered then
 		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, "", "cancel", ""))
 	end
+
+	fs(fmt("image_button", 4.25, 0.32, 0.35, 0.35, "", "search", ""))
 
 	fs(fmt("image_button", data.xoffset - 3.2, 0.15, 0.7, 0.7, "", "prev_page", ""),
 	   fmt("image_button", data.xoffset - 0.7, 0.15, 0.7, 0.7, "", "next_page", ""))
