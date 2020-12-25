@@ -1347,7 +1347,7 @@ local function get_model_fs(fs, data, def, model_alias)
 		def.mesh, concat(t, ","), model_alias and model_alias.frames or ""))
 end
 
-local function get_title_fs(fs, data)
+local function get_header(fs, data)
 	local fav = is_fav(data.favs, data.query_item)
 	local nfavs = #data.favs
 	local star_x, star_y, star_size = data.xoffset + 0.4, data.yoffset + 0.5, 0.4
@@ -1518,7 +1518,7 @@ local function get_panels(fs, data)
 		if is_recipe or is_usage then
 			get_rcp_extra(fs, data, panel, is_recipe, is_usage)
 		elseif panel.name == "title" then
-			get_title_fs(fs, data)
+			get_header(fs, data)
 		elseif panel.name == "favs" then
 			get_favs(fs, data)
 		end
