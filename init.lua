@@ -1366,13 +1366,26 @@ local function get_title_fs(fs, data)
 		   sprintf("tooltip[nofav;%s]", ES"Cannot mark this item. Bookmark limit reached."))
 	end
 
+	local desc_lim, name_lim = 32, 34
+	local desc = ESC(get_desc(data.query_item, data.lang_code))
+	local tech_name = data.query_item
+	local X = data.xoffset + 1.05
+	local Y1 = data.yoffset + 0.47
+	local Y2 = Y1 + 0.5
+
+	if #desc > desc_lim then
+		fs(fmt("tooltip", X, Y1 - 0.1, 5.7, 0.24, desc))
+		desc = snip(desc, desc_lim)
+	end
+
+	if #tech_name > name_lim then
+		fs(fmt("tooltip", X, Y2 - 0.1, 5.7, 0.24, tech_name))
+		tech_name = snip(tech_name, name_lim)
+	end
+
 	fs("style_type[label;font=bold;font_size=+6]",
-	   fmt("label", data.xoffset + 1.05, data.yoffset + 0.47,
-		snip(ESC(get_desc(data.query_item, data.lang_code)), 32)),
-	   "style_type[label;font=mono;font_size=+0]",
-	   fmt("label", data.xoffset + 1.05, data.yoffset + 0.97,
-		clr("#7bf", snip(data.query_item, 34))),
-	   "style_type[label;font=normal]")
+	   fmt("label", X, Y1, desc), "style_type[label;font=mono;font_size=+0]",
+	   fmt("label", X, Y2, clr("#7bf", tech_name)), "style_type[label;font=normal]")
 
 	local def = reg_items[data.query_item]
 	local model_alias = craftguide.model_alias[data.query_item]
