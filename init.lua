@@ -1596,7 +1596,7 @@ local function make_fs(data)
 	return concat(fs)
 end
 
-local show_fs = function(player, name)
+local function show_fs(player, name)
 	local data = pdata[name]
 	show_formspec(name, "craftguide", make_fs(data))
 end
@@ -1861,9 +1861,15 @@ on_joinplayer(function(player)
 end)
 
 local function fields(player, _f)
-	if _f.quit then return end
 	local name = player:get_player_name()
 	local data = pdata[name]
+
+	if _f.quit then
+		player:hud_change(data.vignette, "text", "")
+		data.vignette = nil
+		return
+	end
+
 	local sb_rcp, sb_usg = _f.scrbar_rcp, _f.scrbar_usg
 
 	if _f.cancel then
@@ -1963,6 +1969,14 @@ local function on_use(user)
 	end
 
 	show_formspec(name, "craftguide", make_fs(data))
+
+	data.vignette = user:hud_add({
+		hud_elem_type = "image",
+		position = {x = 0.5,  y = 0.5},
+		scale = {x = -100, y = -100},
+		text = "craftguide_vignette.png",
+		z_index = -0xB00B,
+	})
 end
 
 core.register_craftitem("craftguide:book", {
