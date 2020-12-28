@@ -87,11 +87,13 @@ local PNG = {
 	book = "craftguide_book.png",
 	sign = "craftguide_sign.png",
 	cancel = "craftguide_cancel.png",
+	export = "craftguide_export.png",
 	selected = "craftguide_selected.png",
 	furnace_anim = "craftguide_furnace_anim.png",
 
 	cancel_hover = "craftguide_cancel.png^\\[brighten",
 	search_hover = "craftguide_search.png^\\[brighten",
+	export_hover = "craftguide_export.png^\\[brighten",
 	prev_hover = "craftguide_next_hover.png^\\[transformFX",
 	next_hover = "craftguide_next_hover.png",
 }
@@ -1393,8 +1395,7 @@ local function get_header(fs, data)
 	if def.drawtype == "mesh" or model_alias then
 		get_model_fs(fs, data, def, model_alias)
 	else
-		fs(fmt("item_image",
-			data.xoffset + 6.8, data.yoffset + 0.17, 1.1, 1.1, data.query_item))
+		fs(fmt("item_image", data.xoffset + 6.8, data.yoffset + 0.17, 1.1, 1.1, data.query_item))
 	end
 end
 
@@ -1402,12 +1403,10 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 	local name = is_recipe and "rcp" or "usg"
 	local show_export = (is_recipe and data.export_rcp) or (is_usage and data.export_usg)
 
-	fs(sprintf("style[export_%s;fgimg=%s;fgimg_hovered=%s;fgimg_pressed=%s]",
-		name, sprintf("craftguide_export%s.png", show_export and "" or "_off"),
-		"craftguide_export.png", "craftguide_export.png"),
+	fs(sprintf("style[export_%s;fgimg=%s;fgimg_hovered=%s]",
+		name, sprintf("%s", show_export and PNG.export_hover or PNG.export), PNG.export_hover),
 	   fmt("image_button",
-		data.xoffset + 7.35, data.yoffset + 0.2, 0.45, 0.45, "",
-		sprintf("export_%s", name), ""),
+		data.xoffset + 7.35, data.yoffset + 0.2, 0.45, 0.45, "", sprintf("export_%s", name), ""),
 	   sprintf("tooltip[export_%s;%s]", name, ES"Quick crafting"))
 
 	if not show_export then return end
