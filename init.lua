@@ -1496,7 +1496,7 @@ end
 
 local function get_panels(fs, data)
 	local _title   = {name = "title", height = 1.4}
-	local _favs    = {name = "favs",  height = 2.2}
+	local _favs    = {name = "favs",  height = 2.23}
 	local _recipes = {name = "recipes", rcp = data.recipes, height = 3.9}
 	local _usages  = {name = "usages",  rcp = data.usages,  height = 3.9}
 	local panels   = {_title, _recipes, _usages, _favs}
@@ -1533,14 +1533,15 @@ local function make_fs(data)
 	})
 
 	data.xoffset = ROWS + 1.04
+	local full_height = LINES + 1.73
 
 	fs(sprintf("formspec_version[%u]size[%f,%f]no_prepend[]bgcolor[#0000]",
-		MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), LINES + 1.7),
+		MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), full_height),
 		styles)
 
 	local filtered = data.filter ~= ""
 
-	fs(fmt("bg9", 0, 0, data.xoffset, LINES + 1.7, PNG.bg_full, 10))
+	fs(fmt("bg9", 0, 0, data.xoffset, full_height, PNG.bg_full, 10))
 
 	fs("box[0.2,0.2;4.55,0.6;#bababa25]set_focus[filter]field_close_on_enter[filter;false]")
 	fs(sprintf("field[0.3,0.2;%f,0.6;filter;;%s]", filtered and 3.45 or 3.9, ESC(data.filter)))
@@ -1579,8 +1580,8 @@ local function make_fs(data)
 		local X = i % ROWS
 		X = X + (X * 0.08) + 0.2
 
-		local Y = (i % IPP - X) / ROWS + 1
-		Y = Y + (Y * 0.06)
+		local Y = floor((i % IPP - X) / ROWS + 1)
+		Y = Y + (Y * 0.06) + 1
 
 		if data.query_item == item then
 			fs(fmt("image", X, Y, 1, 1, PNG.selected))
