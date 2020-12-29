@@ -11,6 +11,8 @@ local replacements  = {fuel = {}}
 local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
+local inventory_mode = core.settings:get_bool "craftguide_inventory_mode"
+local __3d_armor
 
 local http = core.request_http_api()
 local singleplayer = core.is_singleplayer()
@@ -82,20 +84,30 @@ local PNG = {
 	prev = "craftguide_next.png^\\[transformFX",
 	next = "craftguide_next.png",
 	arrow = "craftguide_arrow.png",
+	trash = "craftguide_trash.png",
+	sort_az = "craftguide_sort.png",
+	sort_za = "craftguide_sort2.png",
+	compress = "craftguide_compress.png",
 	fire = "craftguide_fire.png",
 	fire_anim = "craftguide_fire_anim.png",
 	book = "craftguide_book.png",
 	sign = "craftguide_sign.png",
 	cancel = "craftguide_cancel.png",
 	export = "craftguide_export.png",
-	selected = "craftguide_selected.png",
+	slot = "craftguide_slot.png",
+	tab = "craftguide_tab.png",
 	furnace_anim = "craftguide_furnace_anim.png",
 
 	cancel_hover = "craftguide_cancel.png^\\[brighten",
 	search_hover = "craftguide_search.png^\\[brighten",
 	export_hover = "craftguide_export.png^\\[brighten",
+	trash_hover = "craftguide_trash.png^\\[brighten",
+	compress_hover = "craftguide_compress.png^\\[brighten",
+	sort_az_hover = "craftguide_sort.png^\\[brighten",
+	sort_za_hover = "craftguide_sort2.png^\\[brighten",
 	prev_hover = "craftguide_next_hover.png^\\[transformFX",
 	next_hover = "craftguide_next_hover.png",
+	tab_hover = "craftguide_tab_hover.png",
 }
 
 local fs_elements = {
@@ -106,7 +118,7 @@ local fs_elements = {
 	tooltip = "tooltip[%f,%f;%f,%f;%s]",
 	item_image = "item_image[%f,%f;%f,%f;%s]",
 	bg9 = "background9[%f,%f;%f,%f;%s;false;%u]",
-	model = "model[%f,%f;%f,%f;%s;%s;%s;0,0;true;true;%s]",
+	model = "model[%f,%f;%f,%f;%s;%s;%s;%s;%s;true;%s]",
 	image_button = "image_button[%f,%f;%f,%f;%s;%s;%s]",
 	animated_image = "animated_image[%f,%f;%f,%f;;%s;%u;%u]",
 	scrollbar = "scrollbar[%f,%f;%f,%f;horizontal;%s;%u]",
@@ -121,26 +133,36 @@ local styles = sprintf([[
 	style[filter;border=false]
 	style[cancel;fgimg=%s;fgimg_hovered=%s;content_offset=0]
 	style[search;fgimg=%s;fgimg_hovered=%s;content_offset=0]
+	style[trash;fgimg=%s;fgimg_hovered=%s;content_offset=0;sound=craftguide_delete]
+	style[sort_az;fgimg=%s;fgimg_hovered=%s;content_offset=0]
+	style[sort_za;fgimg=%s;fgimg_hovered=%s;content_offset=0]
+	style[compress;fgimg=%s;fgimg_hovered=%s;content_offset=0]
 	style[prev_page;fgimg=%s;fgimg_hovered=%s]
 	style[next_page;fgimg=%s;fgimg_hovered=%s]
 	style[prev_recipe;fgimg=%s;fgimg_hovered=%s]
 	style[next_recipe;fgimg=%s;fgimg_hovered=%s]
 	style[prev_usage;fgimg=%s;fgimg_hovered=%s]
 	style[next_usage;fgimg=%s;fgimg_hovered=%s]
+	style[guide_mode,inv_mode;fgimg_hovered=%s;noclip=true;content_offset=0;sound=craftguide_tab]
 	style[pagenum,no_item,no_rcp;border=false;font=bold;font_size=+2;content_offset=0]
 	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_craft;
 	      bgimg=craftguide_btn9.png;bgimg_hovered=craftguide_btn9_hovered.png;
 	      bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
-PNG.selected,
+PNG.slot,
 PNG.cancel, PNG.cancel_hover,
 PNG.search, PNG.search_hover,
+PNG.trash, PNG.trash_hover,
+PNG.sort_az, PNG.sort_az_hover,
+PNG.sort_za, PNG.sort_za_hover,
+PNG.compress, PNG.compress_hover,
 PNG.prev, PNG.prev_hover,
 PNG.next, PNG.next_hover,
 PNG.prev, PNG.prev_hover,
 PNG.next, PNG.next_hover,
 PNG.prev, PNG.prev_hover,
-PNG.next, PNG.next_hover)
+PNG.next, PNG.next_hover,
+PNG.tab_hover)
 
 local function get_lang_code(info)
 	return info and info.lang_code
@@ -665,8 +687,7 @@ local function cache_fuel(item)
 end
 
 local function show_item(def)
-	return def and not (def.groups.not_in_craft_guide == 1 or
-		def.groups.not_in_creative_inventory == 1) and
+	return def and def.groups.not_in_creative_inventory ~= 1 and
 		def.description and def.description ~= ""
 end
 
@@ -844,10 +865,86 @@ local function groups_to_items(groups, get_all)
 	return get_all and names or ""
 end
 
-local function get_stack_max(data, is_recipe, rcp)
-	data.inv = data.player:get_inventory()
-	local list = data.inv:get_list("main")
-	local size = data.inv:get_size("main")
+local function sort_itemlist(player, az)
+	local inv = player:get_inventory()
+	local list = inv:get_list("main")
+	local size = inv:get_size("main")
+	local new_inv, stack_meta = {}, {}
+
+	for i = 1, size do
+		local stack = list[i]
+		local name = stack:get_name()
+		local count = stack:get_count()
+		local empty = stack:is_empty()
+		local meta = stack:get_meta():to_table()
+
+		if not empty then
+			if next(meta.fields) then
+				stack_meta[#stack_meta + 1] = stack
+			else
+				new_inv[#new_inv + 1] = sprintf("%s %u", name, count)
+			end
+		end
+	end
+
+	if az then
+		sort(new_inv)
+	else
+		sort(new_inv, function(a, b) return a > b end)
+	end
+
+	inv:set_list("main", new_inv)
+
+	for i = 1, #stack_meta do
+		inv:set_stack("main", #new_inv + i, stack_meta[i])
+	end
+end
+
+local function compress_items(player)
+	local inv = player:get_inventory()
+	local list = inv:get_list("main")
+	local size = inv:get_size("main")
+	local new_inv, _new_inv, stack_meta = {}, {}, {}
+
+	for i = 1, size do
+		local stack = list[i]
+		local name = stack:get_name()
+		local count = stack:get_count()
+		local empty = stack:is_empty()
+		local meta = stack:get_meta():to_table()
+
+		if not empty then
+			if next(meta.fields) then
+				stack_meta[#stack_meta + 1] = stack
+			else
+				new_inv[name] = new_inv[name] or 0
+				new_inv[name] = new_inv[name] + count
+			end
+		end
+	end
+
+	for name, count in pairs(new_inv) do
+		local stackmax = ItemStack(name):get_stack_max()
+		local iter = ceil(count / stackmax)
+		local leftover = count
+
+		for _ = 1, iter do
+			_new_inv[#_new_inv + 1] = sprintf("%s %u", name, min(stackmax, leftover))
+			leftover = leftover - stackmax
+		end
+	end
+
+	sort(_new_inv)
+	inv:set_list("main", _new_inv)
+
+	for i = 1, #stack_meta do
+		inv:set_stack("main", #_new_inv + i, stack_meta[i])
+	end
+end
+
+local function get_stack_max(inv, data, is_recipe, rcp)
+	local list = inv:get_list("main")
+	local size = inv:get_size("main")
 	local counts_inv, counts_rcp, counts = {}, {}, {}
 	local rcp_usg = is_recipe and "recipe" or "usage"
 
@@ -897,11 +994,29 @@ local function get_stack_max(data, is_recipe, rcp)
 	return max_stacks
 end
 
+local function get_stack(player, pname, stack, message)
+	local inv = player:get_inventory()
+
+	if inv:room_for_item("main", stack) then
+		inv:add_item("main", stack)
+		msg(pname, sprintf("%s added in your inventory", message))
+	else
+		local dir     = player:get_look_dir()
+		local ppos    = player:get_pos()
+		      ppos.y  = ppos.y + 1.625
+		local look_at = vec_add(ppos, vec_mul(dir, 1))
+
+		core.add_item(look_at, stack)
+		msg(pname, sprintf("%s spawned", message))
+	end
+end
+
 local function craft_stack(player, pname, data, craft_rcp)
+	local inv = player:get_inventory()
 	local rcp_usg = craft_rcp and "recipe" or "usage"
 	local output = craft_rcp and data.recipes[data.rnum].output or data.usages[data.unum].output
 	output = ItemStack(output)
-	local stackname, stackcount = output:get_name(), output:get_count()
+	local stackname, stackcount, stackmax = output:get_name(), output:get_count(), output:get_stack_max()
 	local scrbar_val = data[sprintf("scrbar_%s", craft_rcp and "rcp" or "usg")] or 1
 
 	for name, count in pairs(data.export_counts[rcp_usg].rcp) do
@@ -927,36 +1042,32 @@ local function craft_stack(player, pname, data, craft_rcp)
 		end
 
 		for k, v in pairs(items) do
-			data.inv:remove_item("main", sprintf("%s %s", k, v * scrbar_val))
+			inv:remove_item("main", sprintf("%s %s", k, v * scrbar_val))
 		end
 	end
 
 	local count = stackcount * scrbar_val
-	local stack = ItemStack(sprintf("%s %s", stackname, count))
 	local desc = get_desc(stackname)
-	local message
+	local iter = ceil(count / stackmax)
+	local leftover = count
 
-	if count > 1 then
-		message = clr("#ff0", sprintf("%s x %s", count, desc))
-	else
-		message = clr("#ff0", sprintf("%s", desc))
-	end
+	for _ = 1, iter do
+		local c = min(stackmax, leftover)
+		local message
 
-	if data.inv:room_for_item("main", stack) then
-		data.inv:add_item("main", stack)
-		msg(pname, sprintf("%s added in your inventory", message))
-	else
-		local dir     = player:get_look_dir()
-		local ppos    = player:get_pos()
-		      ppos.y  = ppos.y + 1.625
-		local look_at = vec_add(ppos, vec_mul(dir, 1))
+		if c > 1 then
+			message = clr("#ff0", sprintf("%s x %s", c, desc))
+		else
+			message = clr("#ff0", sprintf("%s", desc))
+		end
 
-		core.add_item(look_at, stack)
-		msg(pname, sprintf("%s crafted", message))
+		local stack = ItemStack(sprintf("%s %s", stackname, c))
+		get_stack(player, pname, stack, message)
+		leftover = leftover - stackmax
 	end
 end
 
-local function select_item(player, data, _f)
+local function select_item(player, name, data, _f)
 	local item
 
 	for field in pairs(_f) do
@@ -978,11 +1089,17 @@ local function select_item(player, data, _f)
 
 	item = reg_aliases[item] or item
 
-	if item == data.query_item then return end
+	if item == data.query_item then
+		if data.creative then
+			local stack = ItemStack(item)
+			local stackmax = stack:get_stack_max()
+			stack = sprintf("%s %s", item, stackmax)
+			get_stack(player, name, stack, clr("#ff0", sprintf("%u x %s", stackmax, item)))
+		end
+		return
+	end
 
 	local recipes, usages = get_recipes(item, data, player)
-	if not recipes and not usages      then return end
-	if data.show_usages and not usages then return end
 
 	data.query_item = item
 	data.recipes    = recipes
@@ -1132,7 +1249,7 @@ local function get_output_fs(fs, data, rcp, is_recipe, shapeless, right, btn_siz
 		local count = item:get_count()
 		local bt_s = ITEM_BTN_SIZE * 1.2
 
-		fs(fmt("image", X, Y - 0.11, bt_s, bt_s, PNG.selected))
+		fs(fmt("image", X, Y - 0.11, bt_s, bt_s, PNG.slot))
 
 		local _name = sprintf("_%s", name)
 
@@ -1240,7 +1357,7 @@ local function get_grid_fs(fs, data, rcp, is_recipe)
 		end
 
 		if not large_recipe then
-			fs(fmt("image", X, Y, btn_size, btn_size, PNG.selected))
+			fs(fmt("image", X, Y, btn_size, btn_size, PNG.slot))
 		end
 
 		local btn_name = groups and sprintf("group|%s|%s", groups[1], item) or item
@@ -1346,7 +1463,7 @@ local function get_model_fs(fs, data, def, model_alias)
 
 	fs(fmt("model",
 		data.xoffset + 6.6, data.yoffset + 0.05, 1.3, 1.3, "",
-		def.mesh, concat(t, ","), model_alias and model_alias.frames or ""))
+		def.mesh, concat(t, ","), "0,0", "true", model_alias and model_alias.frames or ""))
 end
 
 local function get_header(fs, data)
@@ -1387,7 +1504,7 @@ local function get_header(fs, data)
 
 	fs("style_type[label;font=bold;font_size=+6]",
 	   fmt("label", X, Y1, desc), "style_type[label;font=mono;font_size=+0]",
-	   fmt("label", X, Y2, clr("#7bf", tech_name)), "style_type[label;font=normal]")
+	   fmt("label", X, Y2, clr("#7bf", tech_name)), "style_type[label;font=normal;font_size=+0]")
 
 	local def = reg_items[data.query_item]
 	local model_alias = craftguide.model_alias[data.query_item]
@@ -1411,12 +1528,6 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 
 	if not show_export then return end
 
-	local item = (is_recipe and panel.rcp[data.rnum].output) or
-		     (is_usage and panel.rcp[data.unum].output)
-	item = clean_name(item)
-	local _name = match(item, "%S*")
-	local stack = ItemStack(_name)
-	local stack_max = stack:get_stack_max()
 	local craft_max = is_recipe and max_stacks_rcp or max_stacks_usg
 	local stack_fs = (is_recipe and data.scrbar_rcp) or (is_usage and data.scrbar_usg) or 1
 
@@ -1431,28 +1542,29 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 	end
 
 	fs(sprintf("style[scrbar_%s;noclip=true]", name),
-	   sprintf("scrollbaroptions[min=1;max=%u;smallstep=1]", min(craft_max, stack_max)),
+	   sprintf("scrollbaroptions[min=1;max=%u;smallstep=1]", craft_max),
 	   fmt("scrollbar",
 		data.xoffset + 8.1, data.yoffset, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
 	   fmt("button", data.xoffset + 8.1, data.yoffset + 0.4, 3, 0.7, sprintf("craft_%s", name),
-		sprintf("%s", sprintf(stack_fs > 1 and ES"Craft %u stacks" or ES"Craft %u stack",
+		sprintf("%s", sprintf(stack_fs > 1 and ES"Craft %u items" or ES"Craft %u item",
 			stack_fs))))
 end
 
-local function get_rcp_extra(fs, data, panel, is_recipe, is_usage)
+local function get_rcp_extra(player, fs, data, panel, is_recipe, is_usage)
 	local rn = panel.rcp and #panel.rcp
 
 	if rn then
 		local rcp_normal = is_recipe and panel.rcp[data.rnum].type == "normal"
 		local usg_normal = is_usage and panel.rcp[data.unum].type == "normal"
 		local max_stacks_rcp, max_stacks_usg = 0, 0
+		local inv = player:get_inventory()
 
 		if rcp_normal then
-			max_stacks_rcp = get_stack_max(data, is_recipe, panel.rcp[data.rnum])
+			max_stacks_rcp = get_stack_max(inv, data, is_recipe, panel.rcp[data.rnum])
 		end
 
 		if usg_normal then
-			max_stacks_usg = get_stack_max(data, is_recipe, panel.rcp[data.unum])
+			max_stacks_usg = get_stack_max(inv, data, is_recipe, panel.rcp[data.unum])
 		end
 
 		if is_recipe and max_stacks_rcp == 0 then
@@ -1486,14 +1598,14 @@ local function get_favs(fs, data)
 		local Y = data.yoffset + 0.8
 
 		if data.query_item == item then
-			fs(fmt("image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.selected))
+			fs(fmt("image", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, PNG.slot))
 		end
 
 		fs(fmt("item_image_button", X, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE, item, item, ""))
 	end
 end
 
-local function get_panels(fs, data)
+local function get_panels(player, fs, data)
 	local _title   = {name = "title", height = 1.4}
 	local _favs    = {name = "favs",  height = 2.23}
 	local _recipes = {name = "recipes", rcp = data.recipes, height = 3.9}
@@ -1515,7 +1627,7 @@ local function get_panels(fs, data)
 		local is_recipe, is_usage = panel.name == "recipes", panel.name == "usages"
 
 		if is_recipe or is_usage then
-			get_rcp_extra(fs, data, panel, is_recipe, is_usage)
+			get_rcp_extra(player, fs, data, panel, is_recipe, is_usage)
 		elseif panel.name == "title" then
 			get_header(fs, data)
 		elseif panel.name == "favs" then
@@ -1524,26 +1636,14 @@ local function get_panels(fs, data)
 	end
 end
 
-local function make_fs(data)
-	local fs = setmetatable({}, {
-		__call = function(t, ...)
-			t[#t + 1] = concat({...})
-		end
-	})
-
-	data.xoffset = ROWS + 1.04
-	local full_height = LINES + 1.73
-
-	fs(sprintf("formspec_version[%u]size[%f,%f]no_prepend[]bgcolor[#0000]",
-		MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), full_height),
-		styles)
+local function get_item_list(fs, data, full_height)
+	fs(fmt("bg9", 0, 0, data.xoffset, full_height, PNG.bg_full, 10))
 
 	local filtered = data.filter ~= ""
 
-	fs(fmt("bg9", 0, 0, data.xoffset, full_height, PNG.bg_full, 10))
-
-	fs("box[0.2,0.2;4.55,0.6;#bababa25]set_focus[filter]field_close_on_enter[filter;false]")
+	fs("box[0.2,0.2;4.55,0.6;#bababa25]", "set_focus[filter]")
 	fs(sprintf("field[0.3,0.2;%f,0.6;filter;;%s]", filtered and 3.45 or 3.9, ESC(data.filter)))
+	fs("field_close_on_enter[filter;false]")
 
 	if filtered then
 		fs(fmt("image_button", 3.75, 0.35, 0.3, 0.3, "", "cancel", ""))
@@ -1577,20 +1677,127 @@ local function make_fs(data)
 		if not item then break end
 
 		local X = i % ROWS
-		X = X + (X * 0.08) + 0.2
+		X = X + (X * 0.1) + 0.2
 
 		local Y = floor((i % IPP - X) / ROWS + 1)
 		Y = Y + (Y * 0.06) + 1
 
 		if data.query_item == item then
-			fs(fmt("image", X, Y, 1, 1, PNG.selected))
+			fs(fmt("image", X, Y, 1, 1, PNG.slot))
 		end
 
 		fs(fmt("item_image_button", X, Y, 1, 1, item, sprintf("%s_inv", item), ""))
 	end
+end
 
-	if (data.recipes and #data.recipes > 0) or (data.usages and #data.usages > 0) then
-		get_panels(fs, data)
+local function get_inventory_mode(player, fs, data, full_height)
+	fs(fmt("bg9", 0, 0, data.xoffset, full_height, PNG.bg_full, 10))
+
+	local player_props = player:get_properties()
+	local name = player:get_player_name()
+
+	fs(fmt("model", 0.2, 0.2, 4, 5.4, "player_model",
+		player_props.mesh, concat(player_props.textures, ","), "0,-150", "false", "0,0"))
+
+	local xoffset = __3d_armor and 0 or 4.5
+
+	if __3d_armor then
+		fs(sprintf("scrollbaroptions[max=35]scrollbar[-1,0;0.3,3;vertical;scrbar_inv;%u]",
+			data.scrbar_inv or 0))
+		fs("scroll_container[4.5,0;5.5,5.5;scrbar_inv;vertical]")
+	end
+
+	fs("style_type[label;font=bold;font_size=+6]")
+	fs(fmt("label", xoffset, 0.4, ESC(name)))
+	fs("style_type[label;font=normal;font_size=+0]")
+	fs(fmt("box", xoffset, 0.7, 5.5, 0.05, "#666"))
+
+	fs("listcolors[#bababa50;#bababa99]")
+
+	local hp = data.hp or player:get_hp()
+	local half = ceil((hp / 2) % 1)
+	local hearts = (hp / 2) + half
+
+	for i = 1, hearts do
+		fs(fmt("image", xoffset + ((i - 1) * 0.4), 0.9, 0.4, 0.4,
+			(half == 1 and i == floor(hearts)) and
+			"craftguide_heart_half.png" or "craftguide_heart.png"))
+	end
+
+	fs(sprintf("list[current_player;craft;%f,1.75;3,3;]", xoffset))
+	fs(fmt("image", xoffset + 3.64, 3.18, 0.7, 0.7, PNG.arrow))
+	fs(sprintf("list[current_player;craftpreview;%f,3;1,1;]", xoffset + 4.45))
+	fs("listring[detached:craftguide_trash;main]")
+	fs(sprintf("list[detached:craftguide_trash;main;%f,4.25;1,1;]", xoffset + 4.45))
+	fs(fmt("image", xoffset + 4.45, 4.25, 1, 1, PNG.trash))
+
+	if __3d_armor then
+		fs("style_type[label;font=bold;font_size=+2]")
+		fs(fmt("label", 0, 5.8, ES"Armor"))
+		fs("style_type[label;font=normal;font_size=+0]")
+		fs(fmt("box", 0, 6.1, 5.5, 0.05, "#666"))
+		fs(sprintf("list[detached:%s_armor;armor;0,6.4;3,2;]", name))
+
+		fs(fmt("label", 3.75, 7.35, sprintf("%s: %s", ES"Level", armor.def[name].level)))
+		fs(fmt("label", 3.75, 7.75, sprintf("%s: %s", ES"Heal", armor.def[name].heal)))
+
+		fs("scroll_container_end[]")
+	end
+
+	for i = 0, 7 do
+		fs(fmt("image", i + 0.23 + (i * 0.25), 6.1, 1, 1, "craftguide_hb_bg.png"))
+	end
+
+	fs("listring[current_player;main]")
+	fs("list[current_player;main;0.23,6.1;8,1;]")
+	fs("list[current_player;main;0.23,7.4;8,3;8]")
+
+	local i = 0
+	local btn = {
+		trash = ES"Trash all items",
+		sort_az = ES"Sort items (A-Z)",
+		sort_za = ES"Sort items (Z-A)",
+		compress = ES"Compress items",
+	}
+
+	for btn_name, tooltip in pairs(btn) do
+		fs(fmt("image_button", i + 4 - (i * 0.4),
+			full_height - 0.6, 0.35, 0.35, "", btn_name, ""))
+		i = i + 1
+		fs(sprintf("tooltip[%s;%s]", btn_name, tooltip))
+	end
+end
+
+local function make_fs(player, data)
+	local fs = setmetatable({}, {
+		__call = function(t, ...)
+			t[#t + 1] = concat({...})
+		end
+	})
+
+	data.xoffset = ROWS + 1.2
+	local full_height = LINES + 1.73
+	local half_height = full_height / 2
+
+	fs(sprintf("formspec_version[%u]size[%f,%f]no_prepend[]bgcolor[#0000]",
+		MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), full_height), styles)
+
+	if not data.on_use then
+		fs(sprintf("style[guide_mode;fgimg=%s]", data.inv_mode and PNG.tab or PNG.tab_hover))
+		fs(sprintf("style[inv_mode;fgimg=%s]", data.inv_mode and PNG.tab_hover or PNG.tab))
+
+		fs(fmt("image_button", 2.05, full_height, 3, 0.5, "", "guide_mode", ES"Crafting Guide"))
+		fs(fmt("image_button", 5.15, full_height, 3, 0.5, "", "inv_mode", ES"Inventory"))
+	end
+
+	if data.inv_mode then
+		get_inventory_mode(player, fs, data, full_height, half_height)
+	else
+		get_item_list(fs, data, full_height)
+	end
+
+	if data.query_item then
+		get_panels(player, fs, data)
 	end
 
 	return concat(fs)
@@ -1598,7 +1805,38 @@ end
 
 local function show_fs(player, name)
 	local data = pdata[name]
-	show_formspec(name, "craftguide", make_fs(data))
+	local fs = make_fs(player, data)
+
+	if data.on_use then
+		show_formspec(name, "craftguide", fs)
+	end
+
+	if inventory_mode then
+		player:set_inventory_formspec(fs)
+	end
+end
+
+if inventory_mode then
+	local trash = core.create_detached_inventory("craftguide_trash", {
+		allow_put = function(inv, listname, index, stack, player)
+			return stack:get_count()
+		end,
+		on_put = function(inv, listname)
+			inv:set_list(listname, {})
+		end,
+	})
+
+	trash:set_size("main", 1)
+
+	core.register_on_player_inventory_action(function(player)
+		after(0, function()
+			local name = player:get_player_name()
+			local data = pdata[name]
+			local fs = make_fs(player, data)
+
+			player:set_inventory_formspec(fs)
+		end)
+	end)
 end
 
 craftguide.register_craft_type("digging", {
@@ -1791,13 +2029,9 @@ local function get_init_items()
 
 	for name in pairs(_preselect) do
 		cache_usages(name)
-	end
 
-	for name in pairs(_preselect) do
-		if recipes_cache[name] or usages_cache[name] then
-			init_items[#init_items + 1] = name
-			_select[name] = true
-		end
+		init_items[#init_items + 1] = name
+		_select[name] = true
 	end
 
 	resolve_aliases(_select)
@@ -1816,7 +2050,7 @@ local function get_init_items()
 	end
 end
 
-local function init_data(name)
+local function init_data(player, name)
 	local info = get_player_info(name)
 
 	pdata[name] = {
@@ -1826,10 +2060,18 @@ local function init_data(name)
 		items_raw     = init_items,
 		favs          = {},
 		export_counts = {},
+		inv_mode      = inventory_mode,
 		lang_code     = get_lang_code(info),
 		fs_version    = get_formspec_version(info),
-		player        = get_player_by_name(name),
+		creative      = core.is_creative_enabled(name),
 	}
+
+	if inventory_mode then
+		local data = pdata[name]
+		local fs = make_fs(player, data)
+
+		player:set_inventory_formspec(fs)
+	end
 end
 
 local function reset_data(data)
@@ -1842,37 +2084,72 @@ local function reset_data(data)
 	data.query_item  = nil
 	data.recipes     = nil
 	data.usages      = nil
-	data.show_usages = nil
 	data.export_rcp  = nil
 	data.export_usg  = nil
 	data.items       = data.items_raw
 end
 
-on_mods_loaded(get_init_items)
+on_mods_loaded(function()
+	get_init_items()
 
-on_joinplayer(function(player)
-	local name = player:get_player_name()
-	init_data(name)
-	local data = pdata[name]
+	if inventory_mode then
+		local creative = rawget(_G, "creative")
+		if creative then
+			function creative.set_creative_formspec() return end
+		end
 
-	if data.fs_version < MIN_FORMSPEC_VERSION then
-		outdated(name)
+		local sfinv = rawget(_G, "sfinv")
+		if sfinv then
+			sfinv.enabled = false
+		end
+
+		local unified_inventory = rawget(_G, "unified_inventory")
+		if unified_inventory then
+			function unified_inventory.set_inventory_formspec() return end
+		end
+
+		if rawget(_G, "armor") then
+			__3d_armor = true
+		end
 	end
 end)
 
-local function fields(player, _f)
+on_joinplayer(function(player)
+	after(0, function()
+		local name = player:get_player_name()
+		init_data(player, name)
+		local data = pdata[name]
+
+		if data.fs_version < MIN_FORMSPEC_VERSION then
+			outdated(name)
+		end
+	end)
+end)
+
+on_receive_fields(function(player, formname, _f)
 	local name = player:get_player_name()
 	local data = pdata[name]
 
-	if _f.quit then
-		player:hud_change(data.vignette, "text", "")
-		data.vignette = nil
-		return
+	if not ((inventory_mode and formname == "") or (data.on_use and formname == "craftguide")) then
+		return false
 	end
 
 	local sb_rcp, sb_usg = _f.scrbar_rcp, _f.scrbar_usg
 
-	if _f.cancel then
+	if _f.quit then
+		if data.on_use then
+			data.on_use = nil
+			data.inv_mode = true
+
+			player:hud_change(data.vignette, "text", "")
+			data.vignette = nil
+
+			data.hud_flags.crosshair = true
+			player:hud_set_flags(data.hud_flags)
+			data.hud_flags = nil
+		end
+
+	elseif _f.cancel then
 		reset_data(data)
 
 	elseif _f.prev_recipe or _f.next_recipe then
@@ -1936,6 +2213,29 @@ local function fields(player, _f)
 			end
 		end
 
+	elseif _f.guide_mode or _f.inv_mode then
+		if _f.guide_mode then
+			data.inv_mode = nil
+		else
+			data.inv_mode = true
+		end
+
+	elseif _f.trash then
+		local inv = player:get_inventory()
+		if not inv:is_empty("main") then
+			inv:set_list("main", {})
+		end
+
+	elseif _f.compress then
+		compress_items(player)
+
+	elseif _f.sort_az or _f.sort_za then
+		sort_itemlist(player, _f.sort_az)
+
+	elseif _f.scrbar_inv then
+		data.scrbar_inv = tonumber(match(_f.scrbar_inv, "%d+"))
+		return true
+
 	elseif (sb_rcp and sub(sb_rcp, 1, 3) == "CHG") or (sb_usg and sub(sb_usg, 1, 3) == "CHG") then
 		data.scrbar_rcp = sb_rcp and tonum(match(sb_rcp, "%d+"))
 		data.scrbar_usg = sb_usg and tonum(match(sb_usg, "%d+"))
@@ -1943,21 +2243,16 @@ local function fields(player, _f)
 	elseif _f.craft_rcp or _f.craft_usg then
 		craft_stack(player, name, data, _f.craft_rcp)
 	else
-		select_item(player, data, _f)
+		select_item(player, name, data, _f)
 	end
 
 	return true, show_fs(player, name)
-end
-
-on_receive_fields(function(player, formname, _f)
-	if formname == "craftguide" then
-		fields(player, _f)
-	end
 end)
 
 local function on_use(user)
 	local name = user:get_player_name()
 	local data = pdata[name]
+	if not data then return end
 
 	if data.fs_version < MIN_FORMSPEC_VERSION then
 		return outdated(name)
@@ -1968,7 +2263,10 @@ local function on_use(user)
 		search(data)
 	end
 
-	show_formspec(name, "craftguide", make_fs(data))
+	data.on_use = true
+	data.inv_mode = nil
+
+	show_fs(user, name)
 
 	data.vignette = user:hud_add({
 		hud_elem_type = "image",
@@ -1977,6 +2275,23 @@ local function on_use(user)
 		text = "craftguide_vignette.png",
 		z_index = -0xB00B,
 	})
+
+	data.hud_flags = user:hud_get_flags()
+	data.hud_flags.crosshair = false
+	user:hud_set_flags(data.hud_flags)
+end
+
+if inventory_mode then
+	core.register_on_player_hpchange(function(player, hpchange)
+		local name = player:get_player_name()
+		local data = pdata[name]
+		local hp_max = player:get_properties().hp_max
+
+		data.hp = min(hp_max, player:get_hp() + hpchange)
+
+		local fs = make_fs(player, data)
+		player:set_inventory_formspec(fs)
+	end)
 end
 
 core.register_craftitem("craftguide:book", {
@@ -2219,11 +2534,18 @@ if progressive_mode then
 			if #diff > 0 then
 				data.inv_items = table_merge(diff, data.inv_items)
 				local oldknown = data.known_recipes or 0
-				get_filtered_items(player, data)
+				local items = get_filtered_items(player, data)
 				data.discovered = data.known_recipes - oldknown
 
 				if data.show_hud == nil and data.discovered > 0 then
 					data.show_hud = true
+				end
+
+				if inventory_mode then
+					data.items_raw = items
+					search(data)
+					local fs = make_fs(player, data)
+					player:set_inventory_formspec(fs)
 				end
 			end
 		end
@@ -2290,7 +2612,7 @@ on_leaveplayer(function(player)
 	pdata[name] = nil
 end)
 
-function craftguide.show(name, item, show_usages)
+function craftguide.show(name, item)
 	if not true_str(name) then
 		return err "craftguide.show(): player name missing"
 	end

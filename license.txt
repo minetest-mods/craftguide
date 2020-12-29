@@ -28,7 +28,7 @@ Licenses of media (textures)
 ----------------------------
 
 paramat (CC BY-SA 3.0):
-  sfinv_crafting_arrow.png - derived from a texture by BlockMen (CC BY-SA 3.0)
+  craftguide_arrow.png - derived from a texture by BlockMen (CC BY-SA 3.0)
 
 You are free to:
 Share — copy and redistribute the material in any medium or format.
