@@ -1960,15 +1960,13 @@ end
 on_mods_loaded(get_init_items)
 
 on_joinplayer(function(player)
-	after(0, function()
-		local name = player:get_player_name()
-		init_data(player, name)
-		local data = pdata[name]
+	local name = player:get_player_name()
+	init_data(player, name)
+	local data = pdata[name]
 
-		if data.fs_version < MIN_FORMSPEC_VERSION then
-			outdated(name)
-		end
-	end)
+	if data.fs_version < MIN_FORMSPEC_VERSION then
+		outdated(name)
+	end
 end)
 
 on_receive_fields(function(player, formname, _f)
