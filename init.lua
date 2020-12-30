@@ -11,8 +11,6 @@ local replacements  = {fuel = {}}
 local toolrepair
 
 local progressive_mode = core.settings:get_bool "craftguide_progressive_mode"
-local inventory_mode = core.settings:get_bool "craftguide_inventory_mode"
-local __3d_armor
 
 local http = core.request_http_api()
 local singleplayer = core.is_singleplayer()
@@ -687,7 +685,8 @@ local function cache_fuel(item)
 end
 
 local function show_item(def)
-	return def and def.groups.not_in_creative_inventory ~= 1 and
+	return def and not (def.groups.not_in_craft_guide == 1 or
+		def.groups.not_in_creative_inventory == 1) and
 		def.description and def.description ~= ""
 end
 
@@ -1089,17 +1088,10 @@ local function select_item(player, name, data, _f)
 
 	item = reg_aliases[item] or item
 
-	if item == data.query_item then
-		if data.creative then
-			local stack = ItemStack(item)
-			local stackmax = stack:get_stack_max()
-			stack = sprintf("%s %s", item, stackmax)
-			get_stack(player, name, stack, clr("#ff0", sprintf("%u x %s", stackmax, item)))
-		end
-		return
-	end
+	if item == data.query_item then return end
 
 	local recipes, usages = get_recipes(item, data, player)
+	if not recipes and not usages then return end
 
 	data.query_item = item
 	data.recipes    = recipes
@@ -1690,84 +1682,6 @@ local function get_item_list(fs, data, full_height)
 	end
 end
 
-local function get_inventory_mode(player, fs, data, full_height)
-	fs(fmt("bg9", 0, 0, data.xoffset, full_height, PNG.bg_full, 10))
-
-	local player_props = player:get_properties()
-	local name = player:get_player_name()
-
-	fs(fmt("model", 0.2, 0.2, 4, 5.4, "player_model",
-		player_props.mesh, concat(player_props.textures, ","), "0,-150", "false", "0,0"))
-
-	local xoffset = __3d_armor and 0 or 4.5
-
-	if __3d_armor then
-		fs(sprintf("scrollbaroptions[max=35]scrollbar[-1,0;0.3,3;vertical;scrbar_inv;%u]",
-			data.scrbar_inv or 0))
-		fs("scroll_container[4.5,0;5.5,5.5;scrbar_inv;vertical]")
-	end
-
-	fs("style_type[label;font=bold;font_size=+6]")
-	fs(fmt("label", xoffset, 0.4, ESC(name)))
-	fs("style_type[label;font=normal;font_size=+0]")
-	fs(fmt("box", xoffset, 0.7, 5.5, 0.05, "#666"))
-
-	fs("listcolors[#bababa50;#bababa99]")
-
-	local hp = data.hp or player:get_hp()
-	local half = ceil((hp / 2) % 1)
-	local hearts = (hp / 2) + half
-
-	for i = 1, hearts do
-		fs(fmt("image", xoffset + ((i - 1) * 0.4), 0.9, 0.4, 0.4,
-			(half == 1 and i == floor(hearts)) and
-			"craftguide_heart_half.png" or "craftguide_heart.png"))
-	end
-
-	fs(sprintf("list[current_player;craft;%f,1.75;3,3;]", xoffset))
-	fs(fmt("image", xoffset + 3.64, 3.18, 0.7, 0.7, PNG.arrow))
-	fs(sprintf("list[current_player;craftpreview;%f,3;1,1;]", xoffset + 4.45))
-	fs("listring[detached:craftguide_trash;main]")
-	fs(sprintf("list[detached:craftguide_trash;main;%f,4.25;1,1;]", xoffset + 4.45))
-	fs(fmt("image", xoffset + 4.45, 4.25, 1, 1, PNG.trash))
-
-	if __3d_armor then
-		fs("style_type[label;font=bold;font_size=+2]")
-		fs(fmt("label", 0, 5.8, ES"Armor"))
-		fs("style_type[label;font=normal;font_size=+0]")
-		fs(fmt("box", 0, 6.1, 5.5, 0.05, "#666"))
-		fs(sprintf("list[detached:%s_armor;armor;0,6.4;3,2;]", name))
-
-		fs(fmt("label", 3.75, 7.35, sprintf("%s: %s", ES"Level", armor.def[name].level)))
-		fs(fmt("label", 3.75, 7.75, sprintf("%s: %s", ES"Heal", armor.def[name].heal)))
-
-		fs("scroll_container_end[]")
-	end
-
-	for i = 0, 7 do
-		fs(fmt("image", i + 0.23 + (i * 0.25), 6.1, 1, 1, "craftguide_hb_bg.png"))
-	end
-
-	fs("listring[current_player;main]")
-	fs("list[current_player;main;0.23,6.1;8,1;]")
-	fs("list[current_player;main;0.23,7.4;8,3;8]")
-
-	local i = 0
-	local btn = {
-		trash = ES"Trash all items",
-		sort_az = ES"Sort items (A-Z)",
-		sort_za = ES"Sort items (Z-A)",
-		compress = ES"Compress items",
-	}
-
-	for btn_name, tooltip in pairs(btn) do
-		fs(fmt("image_button", i + 4 - (i * 0.4),
-			full_height - 0.6, 0.35, 0.35, "", btn_name, ""))
-		i = i + 1
-		fs(sprintf("tooltip[%s;%s]", btn_name, tooltip))
-	end
-end
-
 local function make_fs(player, data)
 	local fs = setmetatable({}, {
 		__call = function(t, ...)
@@ -1777,24 +1691,11 @@ local function make_fs(player, data)
 
 	data.xoffset = ROWS + 1.2
 	local full_height = LINES + 1.73
-	local half_height = full_height / 2
 
 	fs(sprintf("formspec_version[%u]size[%f,%f]no_prepend[]bgcolor[#0000]",
 		MIN_FORMSPEC_VERSION, data.xoffset + (data.query_item and 8 or 0), full_height), styles)
 
-	if not data.on_use then
-		fs(sprintf("style[guide_mode;fgimg=%s]", data.inv_mode and PNG.tab or PNG.tab_hover))
-		fs(sprintf("style[inv_mode;fgimg=%s]", data.inv_mode and PNG.tab_hover or PNG.tab))
-
-		fs(fmt("image_button", 2.05, full_height, 3, 0.5, "", "guide_mode", ES"Crafting Guide"))
-		fs(fmt("image_button", 5.15, full_height, 3, 0.5, "", "inv_mode", ES"Inventory"))
-	end
-
-	if data.inv_mode then
-		get_inventory_mode(player, fs, data, full_height, half_height)
-	else
-		get_item_list(fs, data, full_height)
-	end
+	get_item_list(fs, data, full_height)
 
 	if data.query_item then
 		get_panels(player, fs, data)
@@ -1807,36 +1708,7 @@ local function show_fs(player, name)
 	local data = pdata[name]
 	local fs = make_fs(player, data)
 
-	if data.on_use then
-		show_formspec(name, "craftguide", fs)
-	end
-
-	if inventory_mode then
-		player:set_inventory_formspec(fs)
-	end
-end
-
-if inventory_mode then
-	local trash = core.create_detached_inventory("craftguide_trash", {
-		allow_put = function(inv, listname, index, stack, player)
-			return stack:get_count()
-		end,
-		on_put = function(inv, listname)
-			inv:set_list(listname, {})
-		end,
-	})
-
-	trash:set_size("main", 1)
-
-	core.register_on_player_inventory_action(function(player)
-		after(0, function()
-			local name = player:get_player_name()
-			local data = pdata[name]
-			local fs = make_fs(player, data)
-
-			player:set_inventory_formspec(fs)
-		end)
-	end)
+	show_formspec(name, "craftguide", fs)
 end
 
 craftguide.register_craft_type("digging", {
@@ -2030,8 +1902,10 @@ local function get_init_items()
 	for name in pairs(_preselect) do
 		cache_usages(name)
 
-		init_items[#init_items + 1] = name
-		_select[name] = true
+		if recipes_cache[name] or usages_cache[name] then
+			init_items[#init_items + 1] = name
+			_select[name] = true
+		end
 	end
 
 	resolve_aliases(_select)
@@ -2060,18 +1934,9 @@ local function init_data(player, name)
 		items_raw     = init_items,
 		favs          = {},
 		export_counts = {},
-		inv_mode      = inventory_mode,
 		lang_code     = get_lang_code(info),
 		fs_version    = get_formspec_version(info),
-		creative      = core.is_creative_enabled(name),
 	}
-
-	if inventory_mode then
-		local data = pdata[name]
-		local fs = make_fs(player, data)
-
-		player:set_inventory_formspec(fs)
-	end
 end
 
 local function reset_data(data)
@@ -2089,30 +1954,7 @@ local function reset_data(data)
 	data.items       = data.items_raw
 end
 
-on_mods_loaded(function()
-	get_init_items()
-
-	if inventory_mode then
-		local creative = rawget(_G, "creative")
-		if creative then
-			function creative.set_creative_formspec() return end
-		end
-
-		local sfinv = rawget(_G, "sfinv")
-		if sfinv then
-			sfinv.enabled = false
-		end
-
-		local unified_inventory = rawget(_G, "unified_inventory")
-		if unified_inventory then
-			function unified_inventory.set_inventory_formspec() return end
-		end
-
-		if rawget(_G, "armor") then
-			__3d_armor = true
-		end
-	end
-end)
+on_mods_loaded(get_init_items)
 
 on_joinplayer(function(player)
 	after(0, function()
@@ -2127,27 +1969,23 @@ on_joinplayer(function(player)
 end)
 
 on_receive_fields(function(player, formname, _f)
-	local name = player:get_player_name()
-	local data = pdata[name]
-
-	if not ((inventory_mode and formname == "") or (data.on_use and formname == "craftguide")) then
+	if formname ~= "craftguide" then
 		return false
 	end
 
+	local name = player:get_player_name()
+	local data = pdata[name]
 	local sb_rcp, sb_usg = _f.scrbar_rcp, _f.scrbar_usg
 
 	if _f.quit then
-		if data.on_use then
-			data.on_use = nil
-			data.inv_mode = true
+		player:hud_change(data.vignette, "text", "")
+		data.vignette = nil
 
-			player:hud_change(data.vignette, "text", "")
-			data.vignette = nil
+		data.hud_flags.crosshair = true
+		player:hud_set_flags(data.hud_flags)
+		data.hud_flags = nil
 
-			data.hud_flags.crosshair = true
-			player:hud_set_flags(data.hud_flags)
-			data.hud_flags = nil
-		end
+		return false
 
 	elseif _f.cancel then
 		reset_data(data)
@@ -2213,13 +2051,6 @@ on_receive_fields(function(player, formname, _f)
 			end
 		end
 
-	elseif _f.guide_mode or _f.inv_mode then
-		if _f.guide_mode then
-			data.inv_mode = nil
-		else
-			data.inv_mode = true
-		end
-
 	elseif _f.trash then
 		local inv = player:get_inventory()
 		if not inv:is_empty("main") then
@@ -2263,9 +2094,6 @@ local function on_use(user)
 		search(data)
 	end
 
-	data.on_use = true
-	data.inv_mode = nil
-
 	show_fs(user, name)
 
 	data.vignette = user:hud_add({
@@ -2279,19 +2107,6 @@ local function on_use(user)
 	data.hud_flags = user:hud_get_flags()
 	data.hud_flags.crosshair = false
 	user:hud_set_flags(data.hud_flags)
-end
-
-if inventory_mode then
-	core.register_on_player_hpchange(function(player, hpchange)
-		local name = player:get_player_name()
-		local data = pdata[name]
-		local hp_max = player:get_properties().hp_max
-
-		data.hp = min(hp_max, player:get_hp() + hpchange)
-
-		local fs = make_fs(player, data)
-		player:set_inventory_formspec(fs)
-	end)
 end
 
 core.register_craftitem("craftguide:book", {
@@ -2534,18 +2349,11 @@ if progressive_mode then
 			if #diff > 0 then
 				data.inv_items = table_merge(diff, data.inv_items)
 				local oldknown = data.known_recipes or 0
-				local items = get_filtered_items(player, data)
+				get_filtered_items(player, data)
 				data.discovered = data.known_recipes - oldknown
 
 				if data.show_hud == nil and data.discovered > 0 then
 					data.show_hud = true
-				end
-
-				if inventory_mode then
-					data.items_raw = items
-					search(data)
-					local fs = make_fs(player, data)
-					player:set_inventory_formspec(fs)
 				end
 			end
 		end
