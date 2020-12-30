@@ -964,10 +964,13 @@ local function get_stack_max(inv, data, is_recipe, rcp)
 			for name in pairs(counts_rcp) do
 				if is_group(name) then
 					local def = reg_items[item]
-					local groups = extract_groups(name)
 
-					if item_has_groups(def.groups, groups) then
-						counts_inv[name] = (counts_inv[name] or 0) + count
+					if def then
+						local groups = extract_groups(name)
+
+						if item_has_groups(def.groups, groups) then
+							counts_inv[name] = (counts_inv[name] or 0) + count
+						end
 					end
 				end
 			end
