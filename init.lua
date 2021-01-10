@@ -1253,7 +1253,7 @@ local function get_output_fs(fs, data, rcp, is_recipe, shapeless, right, btn_siz
 		local _name = sprintf("_%s", name)
 
 		fs(fmt("item_image_button",
-			X + 0.1, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE,
+			X + 0.11, Y, ITEM_BTN_SIZE, ITEM_BTN_SIZE,
 			sprintf("%s %u", name, count * (is_recipe and data.scrbar_rcp or data.scrbar_usg or 1)),
 			_name, ""))
 
