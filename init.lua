@@ -1518,7 +1518,7 @@ local function get_header(fs, data)
 	end
 end
 
-local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rcp, max_stacks_usg)
+local function get_export_fs(fs, data, is_recipe, is_usage, max_stacks_rcp, max_stacks_usg)
 	local name = is_recipe and "rcp" or "usg"
 	local show_export = (is_recipe and data.export_rcp) or (is_usage and data.export_usg)
 
@@ -1548,8 +1548,7 @@ local function get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rc
 	   fmt("scrollbar",
 		data.xoffset + 8.1, data.yoffset, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
 	   fmt("button", data.xoffset + 8.1, data.yoffset + 0.4, 3, 0.7, sprintf("craft_%s", name),
-		sprintf("%s", sprintf(stack_fs > 1 and ES"Craft %u items" or ES"Craft %u item",
-			stack_fs))))
+		fmt("%s", fmt(ES"Craft x %u", stack_fs))))
 end
 
 local function get_rcp_extra(player, fs, data, panel, is_recipe, is_usage)
@@ -1578,8 +1577,7 @@ local function get_rcp_extra(player, fs, data, panel, is_recipe, is_usage)
 		end
 
 		if max_stacks_rcp > 0 or max_stacks_usg > 0 then
-			get_export_fs(fs, data, panel, is_recipe, is_usage, max_stacks_rcp,
-				      max_stacks_usg)
+			get_export_fs(fs, data, is_recipe, is_usage, max_stacks_rcp, max_stacks_usg)
 		end
 
 		get_rcp_lbl(fs, data, panel, rn, is_recipe)
