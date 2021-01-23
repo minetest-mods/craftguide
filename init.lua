@@ -1984,12 +1984,17 @@ on_receive_fields(function(player, formname, _f)
 	local sb_rcp, sb_usg = _f.scrbar_rcp, _f.scrbar_usg
 
 	if _f.quit then
-		player:hud_change(data.vignette, "text", "")
-		data.vignette = nil
+		-- Neither the vignette nor hud_flags are available when /craft is used
+		if data.vignette then
+			player:hud_change(data.vignette, "text", "")
+			data.vignette = nil
+		end
 
-		data.hud_flags.crosshair = true
-		player:hud_set_flags(data.hud_flags)
-		data.hud_flags = nil
+		if data.hud_flags then
+			data.hud_flags.crosshair = true
+			player:hud_set_flags(data.hud_flags)
+			data.hud_flags = nil
+		end
 
 		return false
 
