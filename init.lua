@@ -1548,7 +1548,7 @@ local function get_export_fs(fs, data, is_recipe, is_usage, max_stacks_rcp, max_
 	   fmt("scrollbar",
 		data.xoffset + 8.1, data.yoffset, 3, 0.35, sprintf("scrbar_%s", name), stack_fs),
 	   fmt("button", data.xoffset + 8.1, data.yoffset + 0.4, 3, 0.7, sprintf("craft_%s", name),
-		fmt("%s", fmt(ES"Craft x %u", stack_fs))))
+		ES("Craft (x@1)", stack_fs)))
 end
 
 local function get_rcp_extra(player, fs, data, panel, is_recipe, is_usage)
