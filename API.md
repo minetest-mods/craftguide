@@ -97,7 +97,7 @@ mode is implemented as a recipe filter.
 
 #### `craftguide.add_recipe_filter(name, function(recipes, player))`
 
-Adds a recipe filter with the given name. The filter function should return the
+Adds a recipe filter with the given `name`. The filter function returns the
 recipes to be displayed, given the available recipes and an `ObjectRef` to the
 user. Each recipe is a table of the form returned by
 `minetest.get_craft_recipe`.
@@ -123,7 +123,7 @@ Removes all recipe filters and adds a new one.
 
 #### `craftguide.remove_recipe_filter(name)`
 
-Removes the recipe filter with the given name.
+Removes the recipe filter with the given `name`.
 
 #### `craftguide.get_recipe_filters()`
 
@@ -134,50 +134,41 @@ Returns a map of recipe filters, indexed by name.
 ### Search filters
 
 Search filters are used to perform specific searches inside the search field.
-They can be used like so: `<optional name>+<filter name>=<value1>,<value2>,<...>`
+You can cumulate several filters to perform a specific search.
+They can be used like so: `<optional_name> +<filter name>=<value1>,<value2>,<...>`
 
-Examples:
+Example usages:
 
 - `+groups=cracky,crumbly`: search for groups `cracky` and `crumbly` in all items.
-- `sand+groups=falling_node`: search for group `falling_node` for items which contain `sand` in their names.
+- `wood +groups=flammable +type=node`: search for group `flammable` amongst items which contain
+  `wood` in their names AND have a `node` drawtype.
 
 Notes:
-- If `optional name` is omitted, the search filter will apply to all items, without pre-filtering.
-- Filters can be combined.
-- The `groups` filter is currently implemented by default.
+- If `optional_name` is omitted, the search filter will apply to all items, without pre-filtering.
+- The `groups` and `type` filters are currently implemented by default.
 
 #### `craftguide.add_search_filter(name, function(item, values))`
 
-Adds a search filter with the given name.
-The search function should return a boolean value (whether the given item should be listed or not).
+Adds a search filter with the given `name`.
+The search function must return a boolean value (whether the given item should be listed or not).
 
-Example function to show items which contain at least a recipe of given width(s):
+Example function sorting items by drawtype:
 
 ```lua
-craftguide.add_search_filter("widths", function(item, widths)
-	local has_width
-	local recipes = recipes_cache[item]
-
-	if recipes then
-		for i = 1, #recipes do
-			local recipe_width = recipes[i].width
-			for j = 1, #widths do
-				local width = tonumber(widths[j])
-				if width == recipe_width then
-					has_width = true
-					break
-				end
-			end
-		end
+craftguide.add_search_filter("type", function(item, drawtype)
+	if drawtype == "node" then
+		return reg_nodes[item]
+	elseif drawtype == "item" then
+		return reg_craftitems[item]
+	elseif drawtype == "tool" then
+		return reg_tools[item]
 	end
-
-	return has_width
 end)
 ```
 
 #### `craftguide.remove_search_filter(name)`
 
-Removes the search filter with the given name.
+Removes the search filter with the given `name`.
 
 #### `craftguide.get_search_filters()`
 

@@ -16,6 +16,8 @@ local http = core.request_http_api()
 local singleplayer = core.is_singleplayer()
 
 local reg_items = core.registered_items
+local reg_nodes = core.registered_nodes
+local reg_craftitems = core.registered_craftitems
 local reg_tools = core.registered_tools
 local reg_entities = core.registered_entities
 local reg_aliases = core.registered_aliases
@@ -824,7 +826,7 @@ local function cache_recipes(item)
 	end
 end
 
-local function get_recipes(item, data, player)
+local function get_recipes(player, item)
 	local clean_item = reg_aliases[item] or item
 	local recipes = recipes_cache[clean_item]
 	local usages = usages_cache[clean_item]
@@ -1073,7 +1075,7 @@ local function craft_stack(player, pname, data, craft_rcp)
 	end
 end
 
-local function select_item(player, name, data, _f)
+local function select_item(player, data, _f)
 	local item
 
 	for field in pairs(_f) do
@@ -1097,7 +1099,7 @@ local function select_item(player, name, data, _f)
 
 	if item == data.query_item then return end
 
-	local recipes, usages = get_recipes(item, data, player)
+	local recipes, usages = get_recipes(player, item)
 	if not recipes and not usages then return end
 
 	data.query_item = item
@@ -1757,14 +1759,21 @@ local function search(data)
 		local def = reg_items[item]
 		local desc = lower(translate(data.lang_code, def and def.description)) or ""
 		local search_in = sprintf("%s %s", item, desc)
-		local to_add
+		local temp, j, to_add = {}, 1
 
 		if search_filter then
 			for filter_name, values in pairs(filters) do
 				if values then
 					local func = search_filters[filter_name]
-					to_add = func(item, values) and (search_filter == "" or
+					to_add = (j > 1 and temp[item] or j == 1) and
+						func(item, values) and (search_filter == "" or
 						find(search_in, search_filter, 1, true))
+
+					if to_add then
+						temp[item] = true
+					end
+
+					j = j + 1
 				end
 			end
 		else
@@ -1802,6 +1811,16 @@ craftguide.add_search_filter("groups", function(item, groups)
 	end
 
 	return has_groups
+end)
+
+craftguide.add_search_filter("type", function(item, drawtype)
+	if drawtype == "node" then
+		return reg_nodes[item]
+	elseif drawtype == "item" then
+		return reg_craftitems[item]
+	elseif drawtype == "tool" then
+		return reg_tools[item]
+	end
 end)
 
 --[[	As `core.get_craft_recipe` and `core.get_all_craft_recipes` do not
@@ -1932,7 +1951,7 @@ local function get_init_items()
 	end
 end
 
-local function init_data(player, name)
+local function init_data(name)
 	local info = get_player_info(name)
 
 	pdata[name] = {
@@ -1966,7 +1985,7 @@ on_mods_loaded(get_init_items)
 
 on_joinplayer(function(player)
 	local name = player:get_player_name()
-	init_data(player, name)
+	init_data(name)
 	local data = pdata[name]
 
 	if data.fs_version < MIN_FORMSPEC_VERSION then
@@ -2085,7 +2104,7 @@ on_receive_fields(function(player, formname, _f)
 	elseif _f.craft_rcp or _f.craft_usg then
 		craft_stack(player, name, data, _f.craft_rcp)
 	else
-		select_item(player, name, data, _f)
+		select_item(player, data, _f)
 	end
 
 	return true, show_fs(player, name)
@@ -2126,7 +2145,7 @@ core.register_craftitem("craftguide:book", {
 	wield_image = PNG.book,
 	stack_max = 1,
 	groups = {book = 1},
-	on_use = function(itemstack, user)
+	on_use = function(_, user)
 		on_use(user)
 	end
 })
@@ -2158,7 +2177,7 @@ core.register_node("craftguide:sign", {
 		meta:set_string("infotext", "Crafting Guide Sign")
 	end,
 
-	on_rightclick = function(pos, node, user, itemstack)
+	on_rightclick = function(_, _, user)
 		on_use(user)
 	end
 })
