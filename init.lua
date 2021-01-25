@@ -126,7 +126,7 @@ local fs_elements = {
 }
 
 local styles = sprintf([[
-	style_type[label,field;font_size=+0]
+	style_type[label,field;font_size=16]
 	style_type[image_button;border=false;sound=craftguide_click]
 	style_type[item_image_button;border=false;bgimg_hovered=%s;sound=craftguide_click]
 
@@ -144,8 +144,8 @@ local styles = sprintf([[
 	style[prev_usage;fgimg=%s;fgimg_hovered=%s]
 	style[next_usage;fgimg=%s;fgimg_hovered=%s]
 	style[guide_mode,inv_mode;fgimg_hovered=%s;noclip=true;content_offset=0;sound=craftguide_tab]
-	style[pagenum,no_item,no_rcp;border=false;font=bold;font_size=+2;content_offset=0]
-	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=+0;sound=craftguide_craft;
+	style[pagenum,no_item,no_rcp;border=false;font=bold;font_size=18;content_offset=0]
+	style[craft_rcp,craft_usg;border=false;noclip=true;font_size=16;sound=craftguide_craft;
 	      bgimg=craftguide_btn9.png;bgimg_hovered=craftguide_btn9_hovered.png;
 	      bgimg_pressed=craftguide_btn9_pressed.png;bgimg_middle=4,6]
 ]],
@@ -1506,9 +1506,9 @@ local function get_header(fs, data)
 		tech_name = snip(tech_name, name_lim)
 	end
 
-	fs("style_type[label;font=bold;font_size=+6]",
-	   fmt("label", X, Y1, desc), "style_type[label;font=mono;font_size=+0]",
-	   fmt("label", X, Y2, clr("#7bf", tech_name)), "style_type[label;font=normal;font_size=+0]")
+	fs("style_type[label;font=bold;font_size=22]",
+	   fmt("label", X, Y1, desc), "style_type[label;font=mono;font_size=16]",
+	   fmt("label", X, Y2, clr("#7bf", tech_name)), "style_type[label;font=normal;font_size=16]")
 
 	local def = reg_items[data.query_item]
 	local model_alias = craftguide.model_alias[data.query_item]
