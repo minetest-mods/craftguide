@@ -603,7 +603,7 @@ local function snip(str, limit)
 	return #str > limit and sprintf("%s...", sub(str, 1, limit - 3)) or str
 end
 
-local function get_desc(item, lang_code)
+local function get_desc(item)
 	if sub(item, 1, 1) == "_" then
 		item = sub(item, 2)
 	end
@@ -611,11 +611,10 @@ local function get_desc(item, lang_code)
 	local def = reg_items[item]
 
 	if def then
-		local desc = def.description
-		desc = lang_code and translate(lang_code, desc) or desc
+		local desc = ItemStack(item):get_short_description()
 
 		if true_str(desc) then
-			desc = desc:trim():match("[^\n]*")
+			desc = desc:trim()
 
 			if not find(desc, "%u") then
 				desc = toupper(desc)
@@ -1490,7 +1489,7 @@ local function get_header(fs, data)
 	end
 
 	local desc_lim, name_lim = 32, 34
-	local desc = ESC(get_desc(data.query_item, data.lang_code))
+	local desc = ESC(get_desc(data.query_item))
 	local tech_name = data.query_item
 	local X = data.xoffset + 1.05
 	local Y1 = data.yoffset + 0.47
