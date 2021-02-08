@@ -1687,7 +1687,7 @@ local function get_item_list(fs, data, full_height)
 			fs(fmt("image", X, Y, 1, 1, PNG.slot))
 		end
 
-		fs(fmt("item_image_button", X, Y, 1, 1, item, sprintf("%s_inv", item), ""))
+		fs[#fs + 1] = fmt("item_image_button", X, Y, 1, 1, item, sprintf("%s_inv", item), "")
 	end
 end
 
